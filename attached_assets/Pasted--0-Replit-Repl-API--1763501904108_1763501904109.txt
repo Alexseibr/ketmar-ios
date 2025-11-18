@@ -1,0 +1,107 @@
+Шаг 0. Открой проект на Replit
+
+Зайди в свой Repl (где у тебя уже работает API работает...).
+
+В левой панели видишь список файлов (index.js, package.json, папки и т.д.).
+
+Шаг 1. Создаём файл сидера категорий
+1.1. Создай папку scripts
+
+В левой панели нажми правой кнопкой → New Folder.
+
+Назови папку: scripts.
+
+1.2. Создай файл seedCategories.js
+
+Кликни правой кнопкой по папке scripts → New File.
+
+Назови файл: seedCategories.js.
+
+Открой этот файл и Полностью вставь вот этот код:
+
+// scripts/seedCategories.js
+require("dotenv").config();
+const mongoose = require("mongoose");
+
+const Category = require("../models/Category");
+const Season = require("../models/Season");
+
+async function main() {
+  const uri = process.env.MONGO_URL;
+  if (!uri) {
+    console.error("❌ MONGO_URL не указан в переменных окружения");
+    process.exit(1);
+  }
+
+  try {
+    await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+
+    console.log("📦 MongoDB connected (seeding)");
+
+    const categories = [
+      // Авто
+      { slug: "auto", name: "Авто", parentSlug: null, sortOrder: 10 },
+      { slug: "cars", name: "Легковые автомобили", parentSlug: "auto", sortOrder: 11 },
+      { slug: "moto", name: "Мотоциклы", parentSlug: "auto", sortOrder: 12 },
+      { slug: "trucks", name: "Грузовики", parentSlug: "auto", sortOrder: 13 },
+
+      // Недвижимость
+      { slug: "realty", name: "Недвижимость", parentSlug: null, sortOrder: 20 },
+      { slug: "rent_flat", name: "Аренда квартир", parentSlug: "realty", sortOrder: 21 },
+      { slug: "rent_house", name: "Аренда домов", parentSlug: "realty", sortOrder: 22 },
+      { slug: "country_base", name: "Базы отдыха и домики", parentSlug: "realty", sortOrder: 23 },
+
+      // Фермеры
+      { slug: "farm", name: "Фермерские товары", parentSlug: null, sortOrder: 30 },
+      { slug: "berries", name: "Ягоды", parentSlug: "farm", sortOrder: 31 },
+      { slug: "vegetables", name: "Овощи", parentSlug: "farm", sortOrder: 32 },
+      { slug: "fruits", name: "Фрукты", parentSlug: "farm", sortOrder: 33 },
+      { slug: "eggs", name: "Яйца", parentSlug: "farm", sortOrder: 34 },
+      { slug: "milk", name: "Молочная продукция", parentSlug: "farm", sortOrder: 35 },
+      { slug: "meat", name: "Мясо", parentSlug: "farm", sortOrder: 36 },
+
+      // Ремесленничество и выпечка
+      { slug: "craft", name: "Ремесленничество и выпечка", parentSlug: null, sortOrder: 40 },
+      { slug: "cakes", name: "Торты", parentSlug: "craft", sortOrder: 41 },
+      { slug: "eclairs", name: "Эклеры", parentSlug: "craft", sortOrder: 42 },
+      { slug: "cupcakes", name: "Капкейки и маффины", parentSlug: "craft", sortOrder: 43 },
+      { slug: "sweets_sets", name: "Подарочные наборы", parentSlug: "craft", sortOrder: 44 },
+
+      // Услуги
+      { slug: "services", name: "Услуги", parentSlug: null, sortOrder: 50 },
+      { slug: "build", name: "Строительные услуги", parentSlug: "services", sortOrder: 51 },
+      { slug: "delivery_services", name: "Курьеры и доставка", parentSlug: "services", sortOrder: 52 },
+    ];
+
+    const season = {
+      code: "march8_tulips",
+      name: "Ярмарка 8 Марта — тюльпаны и подарки",
+      description: "Сезонная ярмарка для продажи тюльпанов, букетов и сладких подарков.",
+      startDate: new Date("2025-03-01T00:00:00Z"),
+      endDate: new Date("2025-03-10T23:59:59Z"),
+      isActive: true,
+    };
+
+    await Category.deleteMany({});
+    await Season.deleteMany({ code: season.code });
+
+    await Category.insertMany(categories);
+    await Season.create(season);
+
+    console.log("✅ Категории и сезон 8 Марта добавлены.");
+  } catch (err) {
+    console.error("Ошибка при заполнении:", err);
+  } finally {
+    await mongoose.disconnect();
+    console.log("🔌 MongoDB disconnected");
+    process.exit(0);
+  }
+}
+
+main();
+
+
+Сохрани файл.
