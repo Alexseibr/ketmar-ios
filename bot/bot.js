@@ -6,17 +6,37 @@ const bot = new Telegraf(config.botToken);
 // API базовый URL (для запросов к нашему Express API)
 const API_URL = config.apiBaseUrl;
 
+// Хелпер для получения активных сезонов
+async function getActiveSeason() {
+  try {
+    const response = await fetch(`${API_URL}/api/seasons/active`);
+    if (response.ok) {
+      const seasons = await response.json();
+      return seasons.length > 0 ? seasons[0] : null;
+    }
+  } catch (error) {
+    console.error('Ошибка получения активного сезона:', error);
+  }
+  return null;
+}
+
 // === КОМАНДЫ ===
 
 // /start - приветствие
 bot.command('start', async (ctx) => {
   const firstName = ctx.from.first_name || 'друг';
   
+  const activeSeason = await getActiveSeason();
+  const seasonText = activeSeason 
+    ? `\n\n🌟 Сейчас активна: **${activeSeason.name}**!`
+    : '';
+  
   await ctx.reply(
     `👋 Привет, ${firstName}!\n\n` +
-    `Добро пожаловать в **KETMAR Market**! 🛍️\n\n` +
+    `Добро пожаловать в **KETMAR Market**! 🛍️${seasonText}\n\n` +
     `Доступные команды:\n` +
     `/catalog - 📦 Каталог объявлений\n` +
+    `/season - 🌟 Сезонные предложения\n` +
     `/categories - 📂 Категории товаров\n` +
     `/search <запрос> - 🔍 Поиск объявлений\n` +
     `/myorders - 📋 Мои заказы\n` +
@@ -72,6 +92,73 @@ bot.command('categories', async (ctx) => {
   }
 });
 
+// /season - показать сезонные предложения
+bot.command('season', async (ctx) => {
+  try {
+    const activeSeason = await getActiveSeason();
+    
+    if (!activeSeason) {
+      return ctx.reply('🌟 Сейчас нет активных сезонов.\n\nСледите за обновлениями!');
+    }
+    
+    const response = await fetch(`${API_URL}/api/ads?seasonCode=${activeSeason.code}&limit=10`);
+    
+    if (!response.ok) {
+      throw new Error('Ошибка получения сезонных объявлений');
+    }
+    
+    const data = await response.json();
+    const ads = data.items || [];
+    
+    if (ads.length === 0) {
+      return ctx.reply(
+        `🌟 **${activeSeason.name}**\n\n` +
+        `${activeSeason.description}\n\n` +
+        `📦 Пока нет объявлений в этом сезоне.`,
+        { parse_mode: 'Markdown' }
+      );
+    }
+    
+    await ctx.reply(
+      `🌟 **${activeSeason.name}**\n\n` +
+      `${activeSeason.description}\n\n` +
+      `📦 Найдено предложений: ${ads.length}`,
+      { parse_mode: 'Markdown' }
+    );
+    
+    // Показываем сезонные объявления
+    for (const ad of ads.slice(0, 5)) {
+      const message = 
+        `**${ad.title}**\n\n` +
+        `${ad.description || 'Без описания'}\n\n` +
+        `💰 Цена: **${ad.price} ${ad.currency}**\n` +
+        `📂 Категория: ${ad.categoryId} → ${ad.subcategoryId}\n` +
+        `👤 Продавец: ID ${ad.sellerTelegramId}`;
+      
+      const keyboard = Markup.inlineKeyboard([
+        [Markup.button.callback('🛒 Заказать', `order_${ad._id}`)],
+        [Markup.button.callback('👁️ Подробнее', `view_${ad._id}`)],
+      ]);
+      
+      if (ad.photos && ad.photos.length > 0) {
+        await ctx.replyWithPhoto(ad.photos[0], {
+          caption: message,
+          parse_mode: 'Markdown',
+          ...keyboard,
+        });
+      } else {
+        await ctx.reply(message, {
+          parse_mode: 'Markdown',
+          ...keyboard,
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка в /season:', error);
+    await ctx.reply('❌ Произошла ошибка при загрузке сезонных предложений.');
+  }
+});
+
 // /catalog - показать каталог объявлений
 bot.command('catalog', async (ctx) => {
   try {
@@ -88,19 +175,26 @@ bot.command('catalog', async (ctx) => {
       return ctx.reply('📦 Каталог пока пуст.\n\nСоздайте объявление командой /new_test_ad');
     }
     
-    await ctx.reply(`📦 **Каталог объявлений** (${ads.length})\n\nПросматривайте объявления:`, {
-      parse_mode: 'Markdown',
-    });
+    // Проверяем активный сезон
+    const activeSeason = await getActiveSeason();
+    const seasonHint = activeSeason 
+      ? `\n\n🌟 Сезонные предложения: /season`
+      : '';
+    
+    await ctx.reply(
+      `📦 **Каталог объявлений** (${ads.length})${seasonHint}\n\nПросматривайте объявления:`, 
+      { parse_mode: 'Markdown' }
+    );
     
     // Показываем объявления по одному
     for (const ad of ads.slice(0, 5)) {
+      const seasonBadge = ad.seasonCode ? ' 🌟' : '';
       const message = 
-        `**${ad.title}**\n\n` +
+        `**${ad.title}**${seasonBadge}\n\n` +
         `${ad.description || 'Без описания'}\n\n` +
         `💰 Цена: **${ad.price} ${ad.currency}**\n` +
         `📂 Категория: ${ad.categoryId} → ${ad.subcategoryId}\n` +
         `👤 Продавец: ID ${ad.sellerTelegramId}\n` +
-        (ad.seasonCode ? `🌸 Сезон: ${ad.seasonCode}\n` : '') +
         `📊 Статус: ${ad.status}`;
       
       const keyboard = Markup.inlineKeyboard([
@@ -141,7 +235,7 @@ bot.command('search', async (ctx) => {
   
   try {
     // Поиск по заголовку и описанию
-    const response = await fetch(`${API_URL}/api/ads?limit=20`);
+    const response = await fetch(`${API_URL}/api/ads?limit=50`);
     
     if (!response.ok) {
       throw new Error('Ошибка поиска');
@@ -168,8 +262,9 @@ bot.command('search', async (ctx) => {
     });
     
     for (const ad of results.slice(0, 5)) {
+      const seasonBadge = ad.seasonCode ? ' 🌟' : '';
       const message = 
-        `**${ad.title}**\n` +
+        `**${ad.title}**${seasonBadge}\n` +
         `💰 ${ad.price} ${ad.currency}\n` +
         `📂 ${ad.categoryId} → ${ad.subcategoryId}`;
       
@@ -216,7 +311,7 @@ bot.command('myorders', async (ctx) => {
       };
       
       const itemsList = order.items
-        .map((item) => `  • ${item.title} × ${item.quantity} = ${item.price * item.quantity} ${order.items[0]?.currency || 'BYN'}`)
+        .map((item) => `  • ${item.title} × ${item.quantity} = ${item.price * item.quantity} ${item.currency || 'BYN'}`)
         .join('\n');
       
       const totalPrice = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -243,18 +338,7 @@ bot.command('new_test_ad', async (ctx) => {
     const user = ctx.from;
     
     // Получаем активный сезон
-    let seasonCode = null;
-    try {
-      const seasonsResp = await fetch(`${API_URL}/api/seasons/active`);
-      if (seasonsResp.ok) {
-        const seasons = await seasonsResp.json();
-        if (seasons.length > 0) {
-          seasonCode = seasons[0].code;
-        }
-      }
-    } catch (e) {
-      console.log('Не удалось получить активный сезон:', e.message);
-    }
+    const activeSeason = await getActiveSeason();
     
     const testAd = {
       title: `Тестовое объявление от ${user.first_name || 'пользователя'}`,
@@ -270,7 +354,7 @@ bot.command('new_test_ad', async (ctx) => {
         condition: 'new',
         location: 'Минск',
       },
-      seasonCode: seasonCode,
+      seasonCode: activeSeason ? activeSeason.code : null,
     };
     
     const response = await fetch(`${API_URL}/api/ads`, {
@@ -286,14 +370,14 @@ bot.command('new_test_ad', async (ctx) => {
     
     const createdAd = await response.json();
     
+    const seasonBadge = createdAd.seasonCode ? ` 🌟\n🌟 Сезон: ${createdAd.seasonCode}` : '';
     const message = 
       `✅ **Объявление создано!**\n\n` +
-      `📝 **${createdAd.title}**\n` +
+      `📝 **${createdAd.title}**${seasonBadge}\n` +
       `📂 Категория: ${createdAd.categoryId} → ${createdAd.subcategoryId}\n` +
       `💰 Цена: **${createdAd.price} ${createdAd.currency}**\n` +
       `🆔 ID: \`${createdAd._id}\`\n` +
-      `👤 Продавец: ${user.id}` +
-      (createdAd.seasonCode ? `\n🌸 Сезон: ${createdAd.seasonCode}` : '');
+      `👤 Продавец: ${user.id}`;
     
     await ctx.reply(message, { parse_mode: 'Markdown' });
   } catch (error) {
