@@ -29,6 +29,7 @@ const seasonSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: false,
+      index: true,
     },
   },
   {
@@ -36,7 +37,6 @@ const seasonSchema = new mongoose.Schema(
   }
 );
 
-seasonSchema.index({ code: 1 });
 seasonSchema.index({ isActive: 1, startDate: 1 });
 
 module.exports = mongoose.model('Season', seasonSchema);

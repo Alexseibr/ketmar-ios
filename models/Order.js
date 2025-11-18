@@ -1,46 +1,74 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
-  productId: {
+  adId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
+    ref: 'Ad',
     required: true,
   },
-  productName: String,
+  title: {
+    type: String,
+    required: true,
+  },
   quantity: {
     type: Number,
     required: true,
     min: 1,
+    default: 1,
   },
   price: {
     type: Number,
     required: true,
-  },
-});
-
-const orderSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  telegramId: {
-    type: String,
-    required: true,
-  },
-  items: [orderItemSchema],
-  total: {
-    type: Number,
-    required: true,
     min: 0,
   },
-  status: {
-    type: String,
-    enum: ['pending', 'confirmed', 'completed', 'cancelled'],
-    default: 'pending',
+  sellerTelegramId: {
+    type: Number,
+    required: true,
   },
-}, {
-  timestamps: true,
 });
 
-export default mongoose.model('Order', orderSchema);
+const orderSchema = new mongoose.Schema(
+  {
+    buyerTelegramId: {
+      type: Number,
+      required: true,
+      index: true,
+    },
+    buyerName: {
+      type: String,
+      trim: true,
+    },
+    buyerUsername: {
+      type: String,
+      trim: true,
+    },
+    buyerPhone: {
+      type: String,
+      trim: true,
+    },
+    items: [orderItemSchema],
+    status: {
+      type: String,
+      enum: ['pending', 'confirmed', 'processing', 'completed', 'cancelled'],
+      default: 'pending',
+    },
+    seasonCode: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    comment: {
+      type: String,
+      trim: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+orderSchema.index({ buyerTelegramId: 1, createdAt: -1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ seasonCode: 1 });
+
+module.exports = mongoose.model('Order', orderSchema);

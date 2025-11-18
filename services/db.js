@@ -1,31 +1,19 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
+const config = require('../config/config.js');
 
-const connectDB = async () => {
+async function connectDB() {
   try {
-    const mongoUri = process.env.MONGODB_URI;
+    await mongoose.connect(config.mongoUrl);
     
-    if (!mongoUri) {
-      throw new Error('MONGODB_URI is not defined in environment variables');
-    }
-
-    const conn = await mongoose.connect(mongoUri);
-
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
-    console.log(`📊 Database: ${conn.connection.name}`);
+    const connection = mongoose.connection;
+    console.log('✅ MongoDB Connected:', connection.host);
+    console.log('📊 Database:', connection.name);
     
-    return conn;
+    return connection;
   } catch (error) {
-    console.error('❌ MongoDB connection error:', error.message);
+    console.error('❌ MongoDB connection error:', error);
     process.exit(1);
   }
-};
+}
 
-mongoose.connection.on('disconnected', () => {
-  console.log('⚠️  MongoDB disconnected');
-});
-
-mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB error:', err);
-});
-
-export default connectDB;
+module.exports = connectDB;

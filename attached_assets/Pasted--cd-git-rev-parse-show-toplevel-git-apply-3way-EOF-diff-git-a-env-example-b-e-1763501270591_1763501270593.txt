@@ -1,0 +1,916 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/.env.example b/.env.example
+new file mode 100644
+index 0000000000000000000000000000000000000000..4a11c6f823147441dea816a5eab81bbf7f9c2b11
+--- /dev/null
++++ b/.env.example
+@@ -0,0 +1,4 @@
++BOT_TOKEN=123456789:ABCDEF...
++MONGO_URL=mongodb://localhost:27017/miniapp
++PORT=3000
++API_BASE_URL=http://localhost:3000
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000000000000000000000000000000000000..6e96afaedc912323dcaf593fde8fafe9d2ad236b
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,7 @@
++node_modules
++.env
++npm-debug.log*
++yarn-debug.log*
++yarn-error.log*
++pnpm-debug.log*
++.DS_Store
+diff --git a/.replit b/.replit
+new file mode 100644
+index 0000000000000000000000000000000000000000..8e2893a31698437547a63880b77f9436863bc029
+--- /dev/null
++++ b/.replit
+@@ -0,0 +1,9 @@
++run = "npm install && npm start"
++entrypoint = "index.js"
++language = "nodejs"
++
++[env]
++PORT = "3000"
++
++[nix]
++channel = "stable-23.05"
+diff --git a/README.md b/README.md
+index 0256397edb74f864b292a040670f3498abd1f867..a9ed51512fb4fb078c0716b6f7dbea703e5b093e 100644
+--- a/README.md
++++ b/README.md
+@@ -1,2 +1,125 @@
+ # miniapp
+-отличный миниапп
++
++Backend и Telegram-бот для маркетплейса объявлений (Node.js 18+, Express, MongoDB/Mongoose, Telegraf).
++
++## Быстрый старт
++
++1. Скопируйте `.env.example` в `.env` и задайте переменные:
++   - `BOT_TOKEN` — токен Telegram-бота (если пуст, бот не запустится).
++   - `MONGO_URL` — строка подключения к MongoDB.
++   - `PORT` — порт API (по умолчанию 3000).
++   - `API_BASE_URL` — базовый URL API, который использует бот (по умолчанию `http://localhost:3000`).
++2. Установите зависимости:
++
++   ```bash
++   npm install
++   ```
++
++3. Запустите сервер и бота:
++
++   ```bash
++   npm start
++   # или с перезапуском
++   npm run dev
++   ```
++
++### Запуск в Replit
++
++- В репозитории уже есть файлы `.replit` и `replit.nix` с Node.js 18 и командой запуска.
++- В разделе Secrets добавьте значения `BOT_TOKEN` и `MONGO_URL` (если используете MongoDB Atlas).
++- Нажмите **Run** — Replit автоматически выполнит `npm install` и `npm start`.
++- API будет доступно на порту, который выдаст Replit; в консоли появится URL.
++
++4. (Опционально) Засейдите категории и пример сезона:
++
++   ```bash
++   npm run seed
++   ```
++
++## Структура проекта
++
++```
++project-root/
++  index.js                # точка входа: запускает API и бота
++  package.json
++  .env.example
++
++  /config
++    config.js             # чтение env, базовые константы
++
++  /services
++    db.js                 # подключение к MongoDB (mongoose)
++
++  /models
++    User.js
++    Category.js
++    Season.js
++    Ad.js
++    Order.js
++
++  /api
++    server.js             # создание Express-приложения
++    /routes
++      ads.js
++      categories.js
++      seasons.js
++      orders.js
++      users.js (заглушка)
++
++  /bot
++    bot.js                # Telegraf-бот
++
++  /scripts
++    seedCategories.js     # заполнение Category и Season стартовыми данными
++```
++
++## API
++
++- `GET /` — проверка базовой доступности API.
++- `GET /health` — healthcheck.
++
++### Категории
++- `GET /api/categories` — дерево категорий (parentSlug → subcategories), отсортировано по `sortOrder`.
++
++### Сезоны
++- `GET /api/seasons` — список всех сезонов.
++
++### Объявления
++- `GET /api/ads` — список активных объявлений. Query: `limit` (по умолчанию 20, максимум 100), опционально `categoryId`, `subcategoryId`, `seasonCode`. Ответ: `{ items: Ad[] }`.
++- `GET /api/ads/:id` — полное объявление по `_id`.
++- `POST /api/ads` — создать объявление. Обязательные поля: `title`, `categoryId`, `subcategoryId`, `price`, `sellerTelegramId`. Пример payload см. команду бота `/new_test_ad`.
++
++### Заказы
++- `POST /api/orders` — создать заказ. Бекенд подтягивает актуальные данные объявлений по `adId` (title, price, sellerTelegramId) и сохраняет итоговые `items`.
++- `GET /api/orders/:buyerTelegramId` — список заказов покупателя.
++
++## Модели (Mongoose)
++
++- **User**: Telegram-данные, роль, верификация телефона, соцсети, флаги приватности, локация.
++- **Category**: `slug`, `name`, `parentSlug`, `sortOrder`.
++- **Season**: `code`, `name`, `description`, `startDate`, `endDate`, `isActive`.
++- **Ad**: категории/подкатегории, цена + `currency` (BYN по умолчанию), гибкие `attributes`, `photos`, доставка, `sellerTelegramId`, `seasonCode`, статусы, `lifetimeDays` и авто-расчёт `validUntil`, `isLiveSpot`.
++- **Order**: покупатель (Telegram ID/имя/username/phone), массив `items` (adId, title, quantity, price, sellerTelegramId), `status`, `seasonCode`, `comment`.
++
++## Telegram-бот
++
++Токен берётся из `BOT_TOKEN`. Использует `API_BASE_URL` для запросов к API.
++
++Команды:
++- `/start` — приветствие и список команд.
++- `/myid` — ваш Telegram ID, username и имя.
++- `/categories` — дерево категорий из API.
++- `/new_test_ad` — создаёт тестовое объявление с вашим `sellerTelegramId`.
++
++Бот запускается вместе с API из `index.js`.
++
++## Seed-данные
++
++Скрипт `npm run seed` очищает `Category` и `Season`, затем добавляет базовые категории и сезон `march8_tulips`:
++- Авто: auto → cars, moto, trucks
++- Недвижимость: realty → rent_flat, rent_house, country_base
++- Фермерские товары: farm → berries, vegetables, fruits, eggs, milk, meat
++- Ремесленники: craft → cakes, eclairs, cupcakes, sweets_sets
++- Услуги: services → build, delivery_services
++- Сезон: `code = "march8_tulips"`, `name = "Ярмарка 8 Марта — тюльпаны и подарки"`
++
+diff --git a/api/routes/ads.js b/api/routes/ads.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9736293500a2f3cbe0cdb28603220666460341b4
+--- /dev/null
++++ b/api/routes/ads.js
+@@ -0,0 +1,59 @@
++const { Router } = require('express');
++const Ad = require('../../models/Ad.js');
++
++const router = Router();
++
++const handle = (fn) => async (req, res, next) => {
++  try {
++    await fn(req, res, next);
++  } catch (error) {
++    next(error);
++  }
++};
++
++router.get(
++  '/',
++  handle(async (req, res) => {
++    const { limit = 20, categoryId, subcategoryId, seasonCode } = req.query;
++    const filters = { status: 'active' };
++
++    if (categoryId) filters.categoryId = categoryId;
++    if (subcategoryId) filters.subcategoryId = subcategoryId;
++    if (seasonCode) filters.seasonCode = seasonCode;
++
++    const items = await Ad.find(filters)
++      .sort({ createdAt: -1 })
++      .limit(Math.min(Number(limit) || 20, 100));
++
++    res.json({ items });
++  })
++);
++
++router.get(
++  '/:id',
++  handle(async (req, res) => {
++    const ad = await Ad.findById(req.params.id);
++    if (!ad) {
++      return res.status(404).json({ message: 'Объявление не найдено' });
++    }
++    res.json(ad);
++  })
++);
++
++router.post(
++  '/',
++  handle(async (req, res) => {
++    const { title, categoryId, subcategoryId, price, sellerTelegramId } = req.body;
++
++    if (!title || !categoryId || !subcategoryId || price === undefined || !sellerTelegramId) {
++      return res.status(400).json({
++        message: 'Необходимо указать title, categoryId, subcategoryId, price и sellerTelegramId',
++      });
++    }
++
++    const ad = await Ad.create(req.body);
++    res.status(201).json(ad);
++  })
++);
++
++module.exports = router;
+diff --git a/api/routes/categories.js b/api/routes/categories.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..62fb7a733c482c42c671d0bb0c28bc4091adbc8e
+--- /dev/null
++++ b/api/routes/categories.js
+@@ -0,0 +1,52 @@
++const { Router } = require('express');
++const Category = require('../../models/Category.js');
++
++const router = Router();
++
++function buildTree(categories) {
++  const map = new Map();
++  categories.forEach((cat) => {
++    map.set(cat.slug, { ...cat.toObject(), subcategories: [] });
++  });
++
++  const roots = [];
++
++  map.forEach((category) => {
++    if (category.parentSlug) {
++      const parent = map.get(category.parentSlug);
++      if (parent) {
++        parent.subcategories.push(category);
++      }
++    } else {
++      roots.push(category);
++    }
++  });
++
++  const sortRecursive = (nodes) => {
++    nodes.sort((a, b) => a.sortOrder - b.sortOrder);
++    nodes.forEach((n) => sortRecursive(n.subcategories));
++  };
++
++  sortRecursive(roots);
++
++  const stripInternal = (node) => ({
++    slug: node.slug,
++    name: node.name,
++    parentSlug: node.parentSlug,
++    subcategories: node.subcategories.map(stripInternal),
++  });
++
++  return roots.map(stripInternal);
++}
++
++router.get('/', async (_req, res, next) => {
++  try {
++    const categories = await Category.find().sort({ sortOrder: 1, slug: 1 });
++    const tree = buildTree(categories);
++    res.json(tree);
++  } catch (error) {
++    next(error);
++  }
++});
++
++module.exports = router;
+diff --git a/api/routes/orders.js b/api/routes/orders.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f2126cb05c9e4f394d27829f98adad9c2313bff6
+--- /dev/null
++++ b/api/routes/orders.js
+@@ -0,0 +1,83 @@
++const { Router } = require('express');
++const Ad = require('../../models/Ad.js');
++const Order = require('../../models/Order.js');
++
++const router = Router();
++
++const handle = (fn) => async (req, res, next) => {
++  try {
++    await fn(req, res, next);
++  } catch (error) {
++    next(error);
++  }
++};
++
++router.post(
++  '/',
++  handle(async (req, res) => {
++    const { buyerTelegramId, buyerName, buyerUsername, buyerPhone, items, seasonCode, comment } =
++      req.body;
++
++    if (!buyerTelegramId) {
++      return res.status(400).json({ message: 'buyerTelegramId обязателен' });
++    }
++
++    if (!Array.isArray(items) || items.length === 0) {
++      return res.status(400).json({ message: 'Необходимо передать хотя бы один товар' });
++    }
++
++    const adIds = items.map((item) => item.adId).filter(Boolean);
++    if (!adIds.length) {
++      return res.status(400).json({ message: 'Каждый товар должен содержать adId' });
++    }
++
++    const ads = await Ad.find({ _id: { $in: adIds } }).lean();
++    const adsMap = new Map(ads.map((ad) => [ad._id.toString(), ad]));
++
++    const orderItems = [];
++
++    for (const item of items) {
++      const ad = adsMap.get(String(item.adId));
++      if (!ad) {
++        return res.status(400).json({ message: `Объявление ${item.adId} не найдено` });
++      }
++
++      const quantity = Number(item.quantity) || 1;
++
++      orderItems.push({
++        adId: ad._id,
++        title: ad.title,
++        quantity,
++        price: ad.price,
++        sellerTelegramId: ad.sellerTelegramId,
++      });
++    }
++
++    const order = await Order.create({
++      buyerTelegramId,
++      buyerName,
++      buyerUsername,
++      buyerPhone,
++      items: orderItems,
++      seasonCode: seasonCode ?? null,
++      comment,
++    });
++
++    res.status(201).json(order);
++  })
++);
++
++router.get(
++  '/:buyerTelegramId',
++  handle(async (req, res) => {
++    const buyerTelegramId = Number(req.params.buyerTelegramId);
++    if (!buyerTelegramId) {
++      return res.status(400).json({ message: 'Некорректный buyerTelegramId' });
++    }
++
++    const orders = await Order.find({ buyerTelegramId }).sort({ createdAt: -1 });
++    res.json(orders);
++  })
++);
++
++module.exports = router;
+diff --git a/api/routes/seasons.js b/api/routes/seasons.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9b3445c37c61428119710875e06ff445f84a7c12
+--- /dev/null
++++ b/api/routes/seasons.js
+@@ -0,0 +1,15 @@
++const { Router } = require('express');
++const Season = require('../../models/Season.js');
++
++const router = Router();
++
++router.get('/', async (_req, res, next) => {
++  try {
++    const seasons = await Season.find();
++    res.json(seasons);
++  } catch (error) {
++    next(error);
++  }
++});
++
++module.exports = router;
+diff --git a/api/routes/users.js b/api/routes/users.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..bec62e20fe27f6ed33462efbd9d4eaaec0b8adc3
+--- /dev/null
++++ b/api/routes/users.js
+@@ -0,0 +1,9 @@
++const { Router } = require('express');
++
++const router = Router();
++
++router.get('/', (_req, res) => {
++  res.json([]);
++});
++
++module.exports = router;
+diff --git a/api/server.js b/api/server.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8118cad997378d61a2a17c9f8d4d4e6a90b2c01e
+--- /dev/null
++++ b/api/server.js
+@@ -0,0 +1,29 @@
++const express = require('express');
++const cors = require('cors');
++const categoriesRouter = require('./routes/categories.js');
++const seasonsRouter = require('./routes/seasons.js');
++const adsRouter = require('./routes/ads.js');
++
++function createServer() {
++  const app = express();
++
++  app.use(cors());
++  app.use(express.json());
++
++  app.get('/', (_req, res) => {
++    res.send('API работает. KETMAR Market backend запущен.');
++  });
++
++  app.use('/api/categories', categoriesRouter);
++  app.use('/api/seasons', seasonsRouter);
++  app.use('/api/ads', adsRouter);
++
++  app.use((err, _req, res, _next) => {
++    console.error('[api] Unexpected error:', err);
++    res.status(500).json({ message: 'Внутренняя ошибка сервера' });
++  });
++
++  return app;
++}
++
++module.exports = { createServer };
+diff --git a/bot/bot.js b/bot/bot.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..49574e7843c3c7cf69a50bfa26ea92d190634ab2
+--- /dev/null
++++ b/bot/bot.js
+@@ -0,0 +1,35 @@
++const { Telegraf } = require('telegraf');
++const { BOT_TOKEN } = require('../config/config.js');
++
++function startBot() {
++  if (!BOT_TOKEN) {
++    console.warn('[bot] BOT_TOKEN не задан, бот не будет запущен');
++    return null;
++  }
++
++  const bot = new Telegraf(BOT_TOKEN);
++
++  bot.start(async (ctx) => {
++    await ctx.reply(
++      'Привет! Я бот маркетплейса объявлений. Доступные команды:\n' +
++        '/myid — показать ваш Telegram ID'
++    );
++  });
++
++  bot.command('myid', async (ctx) => {
++    const user = ctx.from;
++    await ctx.reply(
++      `ID: ${user.id}\nUsername: ${user.username || '—'}\nИмя: ${user.first_name || '—'}`
++    );
++  });
++
++  bot.launch();
++  console.log('[bot] Bot launched');
++
++  process.once('SIGINT', () => bot.stop('SIGINT'));
++  process.once('SIGTERM', () => bot.stop('SIGTERM'));
++
++  return bot;
++}
++
++module.exports = { startBot };
+diff --git a/config/config.js b/config/config.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..36e49bdea2db8f2acf80162607566d134c59ea39
+--- /dev/null
++++ b/config/config.js
+@@ -0,0 +1,15 @@
++const dotenv = require('dotenv');
++
++dotenv.config();
++
++const PORT = process.env.PORT || 3000;
++const BOT_TOKEN = process.env.BOT_TOKEN || '';
++const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/miniapp';
++const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
++
++module.exports = {
++  PORT,
++  BOT_TOKEN,
++  MONGO_URL,
++  API_BASE_URL,
++};
+diff --git a/index.js b/index.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..6ca401dbda4a7da51770b8ddabebba9cbea3e88a
+--- /dev/null
++++ b/index.js
+@@ -0,0 +1,24 @@
++const { createServer } = require('./api/server.js');
++const { BOT_TOKEN, PORT } = require('./config/config.js');
++const { startBot } = require('./bot/bot.js');
++const { connectDB } = require('./services/db.js');
++
++async function bootstrap() {
++  await connectDB();
++
++  const app = createServer();
++  app.listen(PORT, () => {
++    console.log(`[api] Listening on port ${PORT}`);
++  });
++
++  if (BOT_TOKEN) {
++    startBot();
++  } else {
++    console.warn('[bot] BOT_TOKEN не указан, бот не запущен');
++  }
++}
++
++bootstrap().catch((error) => {
++  console.error('[bootstrap] Failed to start application', error);
++  process.exit(1);
++});
+diff --git a/models/Ad.js b/models/Ad.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b2b61e5632d6e5c06babf0632abb7a700eeaaa7d
+--- /dev/null
++++ b/models/Ad.js
+@@ -0,0 +1,93 @@
++const mongoose = require('mongoose');
++
++const locationSchema = new mongoose.Schema(
++  {
++    lat: { type: Number, required: true },
++    lng: { type: Number, required: true },
++  },
++  { _id: false }
++);
++
++const DAY_MS = 24 * 60 * 60 * 1000;
++
++const adSchema = new mongoose.Schema(
++  {
++    title: { type: String, required: true, trim: true, minlength: 3, maxlength: 200 },
++    description: { type: String, trim: true, maxlength: 4000 },
++    categoryId: { type: String, required: true, trim: true, lowercase: true },
++    subcategoryId: { type: String, trim: true, lowercase: true, default: null },
++    price: { type: Number, required: true, min: 0 },
++    currency: { type: String, required: true, trim: true, uppercase: true, default: 'BYN' },
++    attributes: { type: mongoose.Schema.Types.Mixed, default: {} },
++    photos: { type: [String], default: [] },
++    sellerTelegramId: { type: Number, required: true, index: true },
++    deliveryType: {
++      type: String,
++      enum: ['pickup_only', 'delivery_only', 'delivery_and_pickup'],
++      default: null,
++    },
++    deliveryRadiusKm: { type: Number, min: 0, default: null },
++    location: locationSchema,
++    seasonCode: { type: String, trim: true, lowercase: true, default: null },
++    status: {
++      type: String,
++      enum: ['active', 'expired', 'archived', 'hidden'],
++      required: true,
++      default: 'active',
++    },
++    moderationStatus: {
++      type: String,
++      enum: ['pending', 'approved', 'rejected'],
++      required: true,
++      default: 'pending',
++    },
++    lifetimeDays: { type: Number, required: true, min: 1 },
++    validUntil: { type: Date },
++    isLiveSpot: { type: Boolean, required: true, default: false },
++  },
++  {
++    timestamps: true,
++  }
++);
++
++function computeValidUntil(createdAt, lifetimeDays) {
++  if (!createdAt || !lifetimeDays) return undefined;
++  return new Date(createdAt.getTime() + lifetimeDays * DAY_MS);
++}
++
++adSchema.pre('validate', function setValidUntil(next) {
++  if (!this.validUntil && this.lifetimeDays) {
++    const baseDate = this.createdAt || new Date();
++    this.validUntil = computeValidUntil(baseDate, this.lifetimeDays);
++  }
++  next();
++});
++
++adSchema.pre('findOneAndUpdate', async function ensureValidUntil(next) {
++  const update = this.getUpdate() || {};
++  const hasValidUntilInUpdate =
++    Object.prototype.hasOwnProperty.call(update, 'validUntil') ||
++    (update.$set && Object.prototype.hasOwnProperty.call(update.$set, 'validUntil'));
++
++  if (hasValidUntilInUpdate) return next();
++
++  const lifetimeFromUpdate = update.lifetimeDays ?? update.$set?.lifetimeDays;
++  const doc = await this.model.findOne(this.getQuery()).lean();
++
++  if (!doc) return next();
++  if (!lifetimeFromUpdate && doc.validUntil) return next();
++
++  const lifetimeDays = lifetimeFromUpdate ?? doc.lifetimeDays;
++  if (!lifetimeDays) return next();
++
++  const baseDate = doc.createdAt ? new Date(doc.createdAt) : new Date();
++  const validUntil = computeValidUntil(baseDate, lifetimeDays);
++
++  const newUpdate = { ...update };
++  newUpdate.$set = { ...(update.$set || {}), validUntil };
++  this.setUpdate(newUpdate);
++
++  next();
++});
++
++module.exports = mongoose.model('Ad', adSchema);
+diff --git a/models/Category.js b/models/Category.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fa194a6a2c501d01439805f10a2c48122c61777a
+--- /dev/null
++++ b/models/Category.js
+@@ -0,0 +1,15 @@
++const mongoose = require('mongoose');
++
++const categorySchema = new mongoose.Schema(
++  {
++    slug: { type: String, required: true, unique: true, index: true, trim: true, lowercase: true },
++    name: { type: String, required: true, trim: true },
++    parentSlug: { type: String, default: null, trim: true, lowercase: true },
++    sortOrder: { type: Number, required: true, default: 0, min: 0 },
++  },
++  {
++    timestamps: true,
++  }
++);
++
++module.exports = mongoose.model('Category', categorySchema);
+diff --git a/models/Order.js b/models/Order.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..49af29ab6f6da55016785cd607c0bd16b36031fb
+--- /dev/null
++++ b/models/Order.js
+@@ -0,0 +1,30 @@
++const mongoose = require('mongoose');
++
++const orderItemSchema = new mongoose.Schema(
++  {
++    adId: { type: mongoose.Schema.Types.ObjectId, ref: 'Ad', required: true },
++    title: { type: String, required: true },
++    quantity: { type: Number, required: true, min: 1 },
++    price: { type: Number, required: true, min: 0 },
++    sellerTelegramId: { type: Number, required: true },
++  },
++  { _id: false }
++);
++
++const orderSchema = new mongoose.Schema(
++  {
++    buyerTelegramId: { type: Number, required: true, index: true },
++    buyerName: { type: String, trim: true },
++    buyerUsername: { type: String, trim: true },
++    buyerPhone: { type: String, trim: true },
++    items: { type: [orderItemSchema], required: true, validate: [(arr) => arr.length > 0, 'Добавьте товары'] },
++    status: { type: String, enum: ['new', 'sent_to_sellers', 'processed', 'cancelled'], required: true, default: 'new' },
++    seasonCode: { type: String, trim: true, lowercase: true, default: null },
++    comment: { type: String, trim: true },
++  },
++  {
++    timestamps: true,
++  }
++);
++
++module.exports = mongoose.model('Order', orderSchema);
+diff --git a/models/Season.js b/models/Season.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..2d4e90382a1585fac93564cac304753703ea3d85
+--- /dev/null
++++ b/models/Season.js
+@@ -0,0 +1,17 @@
++const mongoose = require('mongoose');
++
++const seasonSchema = new mongoose.Schema(
++  {
++    code: { type: String, required: true, unique: true, index: true, trim: true, lowercase: true },
++    name: { type: String, required: true, trim: true },
++    description: { type: String, trim: true },
++    startDate: { type: Date },
++    endDate: { type: Date },
++    isActive: { type: Boolean, required: true, default: false },
++  },
++  {
++    timestamps: true,
++  }
++);
++
++module.exports = mongoose.model('Season', seasonSchema);
+diff --git a/models/User.js b/models/User.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..14cb3a97555c84f200fa0fc6d91abd0f5cbfdac0
+--- /dev/null
++++ b/models/User.js
+@@ -0,0 +1,32 @@
++const mongoose = require('mongoose');
++
++const locationSchema = new mongoose.Schema(
++  {
++    lat: { type: Number, required: true },
++    lng: { type: Number, required: true },
++    updatedAt: { type: Date, required: true },
++  },
++  { _id: false }
++);
++
++const userSchema = new mongoose.Schema(
++  {
++    telegramId: { type: Number, required: true, unique: true, index: true },
++    username: { type: String, trim: true },
++    firstName: { type: String, trim: true },
++    lastName: { type: String, trim: true },
++    role: { type: String, enum: ['buyer', 'seller', 'both'], required: true },
++    phoneVerified: { type: Boolean, default: false },
++    verifiedPhone: { type: String, trim: true },
++    instagram: { type: String, trim: true },
++    showUsername: { type: Boolean, default: false },
++    showPhone: { type: Boolean, default: false },
++    showInstagram: { type: Boolean, default: false },
++    location: locationSchema,
++  },
++  {
++    timestamps: true,
++  }
++);
++
++module.exports = mongoose.model('User', userSchema);
+diff --git a/package.json b/package.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..86cb378a6b2f83392546bf70da5b95f2d06f6201
+--- /dev/null
++++ b/package.json
+@@ -0,0 +1,33 @@
++{
++  "name": "miniapp",
++  "version": "1.0.0",
++  "description": "Каркас backend и Telegram-бота для маркетплейса",
++  "main": "index.js",
++  "scripts": {
++    "start": "node index.js",
++    "dev": "NODE_ENV=development nodemon index.js",
++    "seed": "node scripts/seedCategories.js"
++  },
++  "keywords": [
++    "express",
++    "telegram",
++    "telegraf",
++    "marketplace"
++  ],
++  "author": "",
++  "license": "ISC",
++  "dependencies": {
++    "axios": "^1.7.7",
++    "cors": "^2.8.5",
++    "dotenv": "^16.4.5",
++    "express": "^4.19.2",
++    "mongoose": "^8.7.0",
++    "telegraf": "^4.16.3"
++  },
++  "devDependencies": {
++    "nodemon": "^3.1.7"
++  },
++  "engines": {
++    "node": ">=18"
++  }
++}
+diff --git a/replit.nix b/replit.nix
+new file mode 100644
+index 0000000000000000000000000000000000000000..3bf728293e925c753ac2fbeec7261bba22f1d22e
+--- /dev/null
++++ b/replit.nix
+@@ -0,0 +1,6 @@
++{ pkgs }: {
++  deps = [
++    pkgs.nodejs-18_x
++    pkgs.nodePackages.npm
++  ];
++}
+diff --git a/scripts/seedCategories.js b/scripts/seedCategories.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..2609d9ba7d16a571a2c476104ab448f97e2f8934
+--- /dev/null
++++ b/scripts/seedCategories.js
+@@ -0,0 +1,74 @@
++const mongoose = require('mongoose');
++const { MONGO_URL } = require('../config/config.js');
++const Category = require('../models/Category.js');
++const Season = require('../models/Season.js');
++
++const categoriesSeed = [
++  // Авто
++  { slug: 'auto', name: 'Авто', parentSlug: null, sortOrder: 1 },
++  { slug: 'cars', name: 'Легковые', parentSlug: 'auto', sortOrder: 2 },
++  { slug: 'moto', name: 'Мото', parentSlug: 'auto', sortOrder: 3 },
++  { slug: 'trucks', name: 'Грузовики', parentSlug: 'auto', sortOrder: 4 },
++
++  // Недвижимость
++  { slug: 'realty', name: 'Недвижимость', parentSlug: null, sortOrder: 10 },
++  { slug: 'rent_flat', name: 'Аренда квартир', parentSlug: 'realty', sortOrder: 11 },
++  { slug: 'rent_house', name: 'Аренда домов', parentSlug: 'realty', sortOrder: 12 },
++  { slug: 'country_base', name: 'Загородные базы', parentSlug: 'realty', sortOrder: 13 },
++
++  // Фермерские товары
++  { slug: 'farm', name: 'Фермерские товары', parentSlug: null, sortOrder: 20 },
++  { slug: 'berries', name: 'Ягоды', parentSlug: 'farm', sortOrder: 21 },
++  { slug: 'vegetables', name: 'Овощи', parentSlug: 'farm', sortOrder: 22 },
++  { slug: 'fruits', name: 'Фрукты', parentSlug: 'farm', sortOrder: 23 },
++  { slug: 'eggs', name: 'Яйца', parentSlug: 'farm', sortOrder: 24 },
++  { slug: 'milk', name: 'Молочная продукция', parentSlug: 'farm', sortOrder: 25 },
++  { slug: 'meat', name: 'Мясо', parentSlug: 'farm', sortOrder: 26 },
++
++  // Ремесленники
++  { slug: 'craft', name: 'Ремесленники', parentSlug: null, sortOrder: 30 },
++  { slug: 'cakes', name: 'Торты', parentSlug: 'craft', sortOrder: 31 },
++  { slug: 'eclairs', name: 'Эклеры', parentSlug: 'craft', sortOrder: 32 },
++  { slug: 'cupcakes', name: 'Капкейки', parentSlug: 'craft', sortOrder: 33 },
++  { slug: 'sweets_sets', name: 'Наборы сладостей', parentSlug: 'craft', sortOrder: 34 },
++
++  // Услуги
++  { slug: 'services', name: 'Услуги', parentSlug: null, sortOrder: 40 },
++  { slug: 'build', name: 'Строительство и ремонт', parentSlug: 'services', sortOrder: 41 },
++  { slug: 'delivery_services', name: 'Доставка и курьеры', parentSlug: 'services', sortOrder: 42 },
++];
++
++const seasonsSeed = [
++  {
++    code: 'march8_tulips',
++    name: 'Ярмарка 8 Марта — тюльпаны и подарки',
++    description: 'Сезонная подборка тюльпанов, букетов и подарков к 8 Марта.',
++    startDate: new Date('2025-03-01T00:00:00Z'),
++    endDate: new Date('2025-03-10T23:59:59Z'),
++    isActive: true,
++  },
++];
++
++async function seed() {
++  await mongoose.connect(MONGO_URL, { autoIndex: true });
++  console.log('[seed] Connected to MongoDB');
++
++  await Category.deleteMany({});
++  await Season.deleteMany({});
++
++  await Category.insertMany(categoriesSeed);
++  await Season.insertMany(seasonsSeed);
++
++  console.log(`[seed] Inserted ${categoriesSeed.length} categories and ${seasonsSeed.length} seasons`);
++  await mongoose.disconnect();
++}
++
++seed()
++  .then(() => {
++    console.log('[seed] Done');
++    process.exit(0);
++  })
++  .catch((error) => {
++    console.error('[seed] Error', error);
++    process.exit(1);
++  });
+diff --git a/services/db.js b/services/db.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..813b760365eb3e1f3743cbc894a8c827ec9246e0
+--- /dev/null
++++ b/services/db.js
+@@ -0,0 +1,14 @@
++const mongoose = require('mongoose');
++const { MONGO_URL } = require('../config/config.js');
++
++async function connectDB() {
++  try {
++    await mongoose.connect(MONGO_URL, { autoIndex: true });
++    console.log('[db] Connected to MongoDB');
++  } catch (error) {
++    console.error('[db] MongoDB connection error:', error.message);
++    process.exit(1);
++  }
++}
++
++module.exports = { connectDB };
+ 
+EOF
+)

@@ -1,27 +1,78 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
-const userSchema = new mongoose.Schema({
-  telegramId: {
-    type: String,
-    required: true,
-    unique: true,
+const userSchema = new mongoose.Schema(
+  {
+    telegramId: {
+      type: Number,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    username: {
+      type: String,
+      trim: true,
+    },
+    firstName: {
+      type: String,
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    phoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+    role: {
+      type: String,
+      enum: ['user', 'seller', 'admin'],
+      default: 'user',
+    },
+    socialLinks: {
+      instagram: String,
+      vk: String,
+      facebook: String,
+      website: String,
+    },
+    privacy: {
+      showPhone: {
+        type: Boolean,
+        default: false,
+      },
+      showSocials: {
+        type: Boolean,
+        default: true,
+      },
+    },
+    location: {
+      city: String,
+      region: String,
+      coordinates: {
+        lat: Number,
+        lng: Number,
+      },
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    lastActiveAt: {
+      type: Date,
+      default: Date.now,
+    },
   },
-  username: {
-    type: String,
-  },
-  firstName: {
-    type: String,
-  },
-  lastName: {
-    type: String,
-  },
-  role: {
-    type: String,
-    enum: ['admin', 'seller', 'buyer'],
-    default: 'buyer',
-  },
-}, {
-  timestamps: true,
-});
+  {
+    timestamps: true,
+  }
+);
 
-export default mongoose.model('User', userSchema);
+userSchema.index({ telegramId: 1 });
+userSchema.index({ username: 1 });
+userSchema.index({ role: 1 });
+
+module.exports = mongoose.model('User', userSchema);

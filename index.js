@@ -1,17 +1,14 @@
-import dotenv from 'dotenv';
-import connectDB from './services/db.js';
-import app from './api/server.js';
-import bot from './bot/bot.js';
+const config = require('./config/config.js');
+const connectDB = require('./services/db.js');
+const app = require('./api/server.js');
+const bot = require('./bot/bot.js');
 
-// Загрузка переменных окружения
-dotenv.config();
-
-const PORT = process.env.PORT || 3000;
+const PORT = config.port;
 
 // Главная функция запуска приложения
 async function start() {
   try {
-    console.log('🚀 Запуск Telegram Marketplace...\n');
+    console.log('🚀 Запуск KETMAR Market...\n');
     
     // 1. Подключение к MongoDB
     console.log('📊 Подключение к MongoDB...');
@@ -19,28 +16,23 @@ async function start() {
     
     // 2. Запуск Express API сервера
     console.log(`\n🌐 Запуск API сервера на порту ${PORT}...`);
-    const server = app.listen(PORT, () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ API сервер запущен: http://localhost:${PORT}`);
       console.log(`   Health check: http://localhost:${PORT}/health`);
+      console.log(`   Доступен по адресу: https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
     });
     
     // 3. Запуск Telegram бота
     console.log('\n🤖 Запуск Telegram бота...');
-    bot.launch().then(() => {
-      console.log('✅ Telegram бот запущен и готов к работе!');
-      
-      console.log('\n✨ Все сервисы успешно запущены!\n');
-      console.log('📋 Доступные команды бота:');
-      console.log('   /start - Приветствие');
-      console.log('   /catalog - Каталог товаров');
-      console.log('   /categories - Список категорий');
-      console.log('   /search - Поиск товаров');
-      console.log('   /myorders - Мои заказы');
-      console.log('   /myid - Узнать свой Telegram ID\n');
-    }).catch(err => {
-      console.error('❌ Ошибка запуска бота:', err);
-      process.exit(1);
-    });
+    await bot.launch();
+    console.log('✅ Telegram бот запущен и готов к работе!');
+    
+    console.log('\n✨ Все сервисы успешно запущены!\n');
+    console.log('📋 Доступные команды бота:');
+    console.log('   /start - Приветствие');
+    console.log('   /myid - Узнать свой Telegram ID');
+    console.log('   /categories - Список категорий');
+    console.log('   /new_test_ad - Создать тестовое объявление\n');
     
     // Graceful shutdown
     const shutdown = async (signal) => {
@@ -51,9 +43,8 @@ async function start() {
       
       server.close(() => {
         console.log('✅ API сервер остановлен');
+        process.exit(0);
       });
-      
-      process.exit(0);
     };
     
     process.once('SIGINT', () => shutdown('SIGINT'));

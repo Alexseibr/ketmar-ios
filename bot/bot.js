@@ -1,16 +1,10 @@
-import { Telegraf, Markup } from 'telegraf';
+const { Telegraf, Markup } = require('telegraf');
+const config = require('../config/config.js');
 
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-
-if (!BOT_TOKEN) {
-  console.error('❌ TELEGRAM_BOT_TOKEN не найден в переменных окружения!');
-  process.exit(1);
-}
-
-const bot = new Telegraf(BOT_TOKEN);
+const bot = new Telegraf(config.botToken);
 
 // API базовый URL (для запросов к нашему Express API)
-const API_URL = process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+const API_URL = config.apiBaseUrl;
 
 // === КОМАНДЫ ===
 
@@ -20,29 +14,14 @@ bot.command('start', async (ctx) => {
   
   await ctx.reply(
     `👋 Привет, ${firstName}!\n\n` +
-    `Добро пожаловать в **Telegram Marketplace**! 🛍️\n\n` +
-    `Вот что я умею:\n` +
-    `/catalog - 📦 Просмотр каталога товаров\n` +
-    `/categories - 📂 Список категорий\n` +
-    `/search <запрос> - 🔍 Поиск товаров\n` +
+    `Добро пожаловать в **KETMAR Market**! 🛍️\n\n` +
+    `Доступные команды:\n` +
+    `/catalog - 📦 Каталог объявлений\n` +
+    `/categories - 📂 Категории товаров\n` +
+    `/search <запрос> - 🔍 Поиск объявлений\n` +
     `/myorders - 📋 Мои заказы\n` +
-    `/help - ❓ Помощь`,
-    { parse_mode: 'Markdown' }
-  );
-});
-
-// /help - помощь
-bot.command('help', async (ctx) => {
-  await ctx.reply(
-    `🆘 **Помощь по боту**\n\n` +
-    `**Доступные команды:**\n` +
-    `/start - Начать работу\n` +
-    `/catalog - Открыть каталог товаров\n` +
-    `/categories - Посмотреть все категории\n` +
-    `/search <название> - Найти товары\n` +
-    `/myorders - Посмотреть мои заказы\n` +
-    `/myid - Узнать свой Telegram ID\n\n` +
-    `По вопросам обращайтесь к администратору.`,
+    `/myid - 🆔 Узнать свой Telegram ID\n` +
+    `/new_test_ad - ➕ Создать тестовое объявление`,
     { parse_mode: 'Markdown' }
   );
 });
@@ -59,60 +38,7 @@ bot.command('myid', async (ctx) => {
   );
 });
 
-// /catalog - показать каталог товаров
-bot.command('catalog', async (ctx) => {
-  try {
-    const response = await fetch(`${API_URL}/api/products?status=active&limit=10`);
-    
-    if (!response.ok) {
-      throw new Error('Ошибка получения товаров');
-    }
-    
-    const products = await response.json();
-    
-    if (products.length === 0) {
-      return ctx.reply('📦 Каталог пока пуст. Скоро добавим товары!');
-    }
-    
-    await ctx.reply(`📦 **Каталог товаров** (${products.length} товаров)\n\nВыберите товар для просмотра:`, {
-      parse_mode: 'Markdown',
-    });
-    
-    // Показываем товары по одному
-    for (const product of products.slice(0, 5)) {
-      const categoryName = product.categoryId?.name || 'Без категории';
-      const message = 
-        `**${product.name}**\n\n` +
-        `${product.description}\n\n` +
-        `💰 Цена: **${product.price} ₽**\n` +
-        `📂 Категория: ${categoryName}\n` +
-        `📦 В наличии: ${product.stock} шт.`;
-      
-      const keyboard = Markup.inlineKeyboard([
-        [Markup.button.callback('🛒 В корзину', `add_${product._id}`)],
-        [Markup.button.callback('👁️ Подробнее', `view_${product._id}`)],
-      ]);
-      
-      if (product.images && product.images.length > 0) {
-        await ctx.replyWithPhoto(product.images[0], {
-          caption: message,
-          parse_mode: 'Markdown',
-          ...keyboard,
-        });
-      } else {
-        await ctx.reply(message, {
-          parse_mode: 'Markdown',
-          ...keyboard,
-        });
-      }
-    }
-  } catch (error) {
-    console.error('Ошибка в /catalog:', error);
-    await ctx.reply('❌ Произошла ошибка при загрузке каталога. Попробуйте позже.');
-  }
-});
-
-// /categories - показать категории
+// /categories - показать категории (дерево)
 bot.command('categories', async (ctx) => {
   try {
     const response = await fetch(`${API_URL}/api/categories`);
@@ -124,60 +50,131 @@ bot.command('categories', async (ctx) => {
     const categories = await response.json();
     
     if (categories.length === 0) {
-      return ctx.reply('📂 Категории пока не добавлены.');
+      return ctx.reply('📂 Категории пока не добавлены.\n\nВыполните `npm run seed` для заполнения базы данных.');
     }
     
-    const categoriesList = categories
-      .map((cat, index) => `${cat.icon} **${cat.name}**${cat.description ? '\n   _' + cat.description + '_' : ''}`)
-      .join('\n\n');
+    let message = '📂 **Доступные категории:**\n\n';
     
-    await ctx.reply(
-      `📂 **Доступные категории:**\n\n${categoriesList}`,
-      { parse_mode: 'Markdown' }
-    );
+    categories.forEach((cat) => {
+      message += `📁 **${cat.name}** (${cat.slug})\n`;
+      if (cat.subcategories && cat.subcategories.length > 0) {
+        cat.subcategories.forEach((sub) => {
+          message += `   └─ ${sub.name} (${sub.slug})\n`;
+        });
+      }
+      message += '\n';
+    });
+    
+    await ctx.reply(message, { parse_mode: 'Markdown' });
   } catch (error) {
     console.error('Ошибка в /categories:', error);
     await ctx.reply('❌ Произошла ошибка при загрузке категорий.');
   }
 });
 
-// /search - поиск товаров
+// /catalog - показать каталог объявлений
+bot.command('catalog', async (ctx) => {
+  try {
+    const response = await fetch(`${API_URL}/api/ads?limit=10`);
+    
+    if (!response.ok) {
+      throw new Error('Ошибка получения объявлений');
+    }
+    
+    const data = await response.json();
+    const ads = data.items || [];
+    
+    if (ads.length === 0) {
+      return ctx.reply('📦 Каталог пока пуст.\n\nСоздайте объявление командой /new_test_ad');
+    }
+    
+    await ctx.reply(`📦 **Каталог объявлений** (${ads.length})\n\nПросматривайте объявления:`, {
+      parse_mode: 'Markdown',
+    });
+    
+    // Показываем объявления по одному
+    for (const ad of ads.slice(0, 5)) {
+      const message = 
+        `**${ad.title}**\n\n` +
+        `${ad.description || 'Без описания'}\n\n` +
+        `💰 Цена: **${ad.price} ${ad.currency}**\n` +
+        `📂 Категория: ${ad.categoryId} → ${ad.subcategoryId}\n` +
+        `👤 Продавец: ID ${ad.sellerTelegramId}\n` +
+        (ad.seasonCode ? `🌸 Сезон: ${ad.seasonCode}\n` : '') +
+        `📊 Статус: ${ad.status}`;
+      
+      const keyboard = Markup.inlineKeyboard([
+        [Markup.button.callback('🛒 Заказать', `order_${ad._id}`)],
+        [Markup.button.callback('👁️ Подробнее', `view_${ad._id}`)],
+      ]);
+      
+      if (ad.photos && ad.photos.length > 0) {
+        await ctx.replyWithPhoto(ad.photos[0], {
+          caption: message,
+          parse_mode: 'Markdown',
+          ...keyboard,
+        });
+      } else {
+        await ctx.reply(message, {
+          parse_mode: 'Markdown',
+          ...keyboard,
+        });
+      }
+    }
+    
+    if (ads.length > 5) {
+      await ctx.reply(`Показано 5 из ${ads.length} объявлений`);
+    }
+  } catch (error) {
+    console.error('Ошибка в /catalog:', error);
+    await ctx.reply('❌ Произошла ошибка при загрузке каталога.');
+  }
+});
+
+// /search - поиск объявлений
 bot.command('search', async (ctx) => {
   const query = ctx.message.text.split(' ').slice(1).join(' ');
   
   if (!query) {
-    return ctx.reply('🔍 Использование: /search <название товара>\n\nПример: /search телефон');
+    return ctx.reply('🔍 Использование: /search <запрос>\n\nПример: /search торт');
   }
   
   try {
-    const response = await fetch(`${API_URL}/api/products/search`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-    });
+    // Поиск по заголовку и описанию
+    const response = await fetch(`${API_URL}/api/ads?limit=20`);
     
     if (!response.ok) {
       throw new Error('Ошибка поиска');
     }
     
-    const products = await response.json();
+    const data = await response.json();
+    const allAds = data.items || [];
     
-    if (products.length === 0) {
+    // Фильтрация на стороне бота (в будущем можно добавить в API)
+    const queryLower = query.toLowerCase();
+    const results = allAds.filter(ad => 
+      ad.title.toLowerCase().includes(queryLower) ||
+      (ad.description && ad.description.toLowerCase().includes(queryLower)) ||
+      ad.categoryId.toLowerCase().includes(queryLower) ||
+      ad.subcategoryId.toLowerCase().includes(queryLower)
+    );
+    
+    if (results.length === 0) {
       return ctx.reply(`🔍 По запросу "${query}" ничего не найдено.`);
     }
     
-    await ctx.reply(`🔍 **Результаты поиска "${query}":**\n\nНайдено товаров: ${products.length}`, {
+    await ctx.reply(`🔍 **Результаты поиска "${query}":**\n\nНайдено: ${results.length}`, {
       parse_mode: 'Markdown',
     });
     
-    for (const product of products.slice(0, 5)) {
+    for (const ad of results.slice(0, 5)) {
       const message = 
-        `**${product.name}**\n` +
-        `💰 ${product.price} ₽\n` +
-        `📦 В наличии: ${product.stock} шт.`;
+        `**${ad.title}**\n` +
+        `💰 ${ad.price} ${ad.currency}\n` +
+        `📂 ${ad.categoryId} → ${ad.subcategoryId}`;
       
-      if (product.images && product.images.length > 0) {
-        await ctx.replyWithPhoto(product.images[0], {
+      if (ad.photos && ad.photos.length > 0) {
+        await ctx.replyWithPhoto(ad.photos[0], {
           caption: message,
           parse_mode: 'Markdown',
         });
@@ -194,7 +191,7 @@ bot.command('search', async (ctx) => {
 // /myorders - мои заказы
 bot.command('myorders', async (ctx) => {
   try {
-    const telegramId = ctx.from.id.toString();
+    const telegramId = ctx.from.id;
     const response = await fetch(`${API_URL}/api/orders/${telegramId}`);
     
     if (!response.ok) {
@@ -213,20 +210,24 @@ bot.command('myorders', async (ctx) => {
       const statusEmoji = {
         pending: '⏳',
         confirmed: '✅',
+        processing: '🔄',
         completed: '🎉',
         cancelled: '❌',
       };
       
       const itemsList = order.items
-        .map((item) => `  • ${item.productName || 'Товар'} × ${item.quantity} = ${item.price * item.quantity} ₽`)
+        .map((item) => `  • ${item.title} × ${item.quantity} = ${item.price * item.quantity} ${order.items[0]?.currency || 'BYN'}`)
         .join('\n');
+      
+      const totalPrice = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       
       const message = 
         `**Заказ #${order._id.slice(-6)}**\n\n` +
         `${itemsList}\n\n` +
-        `💰 Итого: **${order.total} ₽**\n` +
+        `💰 Итого: **${totalPrice} BYN**\n` +
         `📊 Статус: ${statusEmoji[order.status] || '❓'} ${order.status}\n` +
-        `📅 Дата: ${new Date(order.createdAt).toLocaleDateString('ru-RU')}`;
+        `📅 Дата: ${new Date(order.createdAt).toLocaleDateString('ru-RU')}` +
+        (order.comment ? `\n💬 Комментарий: ${order.comment}` : '');
       
       await ctx.reply(message, { parse_mode: 'Markdown' });
     }
@@ -236,14 +237,83 @@ bot.command('myorders', async (ctx) => {
   }
 });
 
+// /new_test_ad - создать тестовое объявление
+bot.command('new_test_ad', async (ctx) => {
+  try {
+    const user = ctx.from;
+    
+    // Получаем активный сезон
+    let seasonCode = null;
+    try {
+      const seasonsResp = await fetch(`${API_URL}/api/seasons/active`);
+      if (seasonsResp.ok) {
+        const seasons = await seasonsResp.json();
+        if (seasons.length > 0) {
+          seasonCode = seasons[0].code;
+        }
+      }
+    } catch (e) {
+      console.log('Не удалось получить активный сезон:', e.message);
+    }
+    
+    const testAd = {
+      title: `Тестовое объявление от ${user.first_name || 'пользователя'}`,
+      description: 'Это тестовое объявление, созданное через Telegram бота',
+      categoryId: 'farm',
+      subcategoryId: 'berries',
+      price: 299,
+      currency: 'BYN',
+      sellerTelegramId: user.id,
+      photos: [],
+      deliveryOptions: ['pickup', 'delivery'],
+      attributes: {
+        condition: 'new',
+        location: 'Минск',
+      },
+      seasonCode: seasonCode,
+    };
+    
+    const response = await fetch(`${API_URL}/api/ads`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(testAd),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Ошибка создания объявления');
+    }
+    
+    const createdAd = await response.json();
+    
+    const message = 
+      `✅ **Объявление создано!**\n\n` +
+      `📝 **${createdAd.title}**\n` +
+      `📂 Категория: ${createdAd.categoryId} → ${createdAd.subcategoryId}\n` +
+      `💰 Цена: **${createdAd.price} ${createdAd.currency}**\n` +
+      `🆔 ID: \`${createdAd._id}\`\n` +
+      `👤 Продавец: ${user.id}` +
+      (createdAd.seasonCode ? `\n🌸 Сезон: ${createdAd.seasonCode}` : '');
+    
+    await ctx.reply(message, { parse_mode: 'Markdown' });
+  } catch (error) {
+    console.error('Ошибка в /new_test_ad:', error);
+    await ctx.reply(
+      `❌ Ошибка при создании объявления:\n${error.message}\n\n` +
+      `💡 Убедитесь, что категории заполнены командой \`npm run seed\``,
+      { parse_mode: 'Markdown' }
+    );
+  }
+});
+
 // Обработка callback кнопок
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery.data;
   
-  if (data.startsWith('add_')) {
-    await ctx.answerCbQuery('🛒 Товар добавлен в корзину!');
+  if (data.startsWith('order_')) {
+    await ctx.answerCbQuery('🛒 Функция оформления заказа в разработке');
   } else if (data.startsWith('view_')) {
-    await ctx.answerCbQuery('👁️ Открываем товар...');
+    await ctx.answerCbQuery('👁️ Просмотр деталей...');
   } else {
     await ctx.answerCbQuery();
   }
@@ -255,4 +325,4 @@ bot.catch((err, ctx) => {
   ctx.reply('❌ Произошла ошибка. Попробуйте позже.');
 });
 
-export default bot;
+module.exports = bot;
