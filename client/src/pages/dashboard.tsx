@@ -1,0 +1,91 @@
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Package, ShoppingCart, TrendingUp, Users } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function Dashboard() {
+  const { data: stats, isLoading } = useQuery<{
+    totalProducts: number;
+    activeListings: number;
+    totalOrders: number;
+    totalRevenue: string;
+  }>({
+    queryKey: ["/api/stats"],
+  });
+
+  const statCards = [
+    {
+      title: "Total Products",
+      value: stats?.totalProducts ?? 0,
+      icon: Package,
+      testId: "stat-total-products",
+    },
+    {
+      title: "Active Listings",
+      value: stats?.activeListings ?? 0,
+      icon: TrendingUp,
+      testId: "stat-active-listings",
+    },
+    {
+      title: "Total Orders",
+      value: stats?.totalOrders ?? 0,
+      icon: ShoppingCart,
+      testId: "stat-total-orders",
+    },
+    {
+      title: "Revenue",
+      value: stats?.totalRevenue ? `$${stats.totalRevenue}` : "$0.00",
+      icon: Users,
+      testId: "stat-revenue",
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <div>
+        <h1 className="text-3xl font-bold" data-testid="heading-dashboard">
+          Dashboard
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Overview of your marketplace
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map((stat) => (
+          <Card key={stat.title} data-testid={stat.testId}>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {stat.title}
+              </CardTitle>
+              <stat.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <Skeleton className="h-8 w-20" />
+              ) : (
+                <div className="text-2xl font-bold" data-testid={`value-${stat.testId}`}>
+                  {stat.value}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card data-testid="card-welcome">
+        <CardHeader>
+          <CardTitle>Welcome to your Marketplace Admin</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-muted-foreground">
+            Manage your products, categories, and orders from this dashboard.
+          </p>
+          <p className="text-muted-foreground">
+            Your Telegram bot is connected and ready to serve customers.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
