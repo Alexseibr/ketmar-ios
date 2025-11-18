@@ -132,7 +132,7 @@ bot.command('season', async (ctx) => {
         `**${ad.title}**\n\n` +
         `${ad.description || 'Без описания'}\n\n` +
         `💰 Цена: **${ad.price} ${ad.currency}**\n` +
-        `📂 Категория: ${ad.categoryId} → ${ad.subcategoryId}\n` +
+        `📂 Категория: ${ad.categoryId} - ${ad.subcategoryId}\n` +
         `👤 Продавец: ID ${ad.sellerTelegramId}`;
       
       const keyboard = Markup.inlineKeyboard([
@@ -193,7 +193,7 @@ bot.command('catalog', async (ctx) => {
         `**${ad.title}**${seasonBadge}\n\n` +
         `${ad.description || 'Без описания'}\n\n` +
         `💰 Цена: **${ad.price} ${ad.currency}**\n` +
-        `📂 Категория: ${ad.categoryId} → ${ad.subcategoryId}\n` +
+        `📂 Категория: ${ad.categoryId} - ${ad.subcategoryId}\n` +
         `👤 Продавец: ID ${ad.sellerTelegramId}\n` +
         `📊 Статус: ${ad.status}`;
       
@@ -266,7 +266,7 @@ bot.command('search', async (ctx) => {
       const message = 
         `**${ad.title}**${seasonBadge}\n` +
         `💰 ${ad.price} ${ad.currency}\n` +
-        `📂 ${ad.categoryId} → ${ad.subcategoryId}`;
+        `📂 ${ad.categoryId} - ${ad.subcategoryId}`;
       
       if (ad.photos && ad.photos.length > 0) {
         await ctx.replyWithPhoto(ad.photos[0], {
@@ -374,7 +374,7 @@ bot.command('new_test_ad', async (ctx) => {
     const message = 
       `✅ **Объявление создано!**\n\n` +
       `📝 **${createdAd.title}**${seasonBadge}\n` +
-      `📂 Категория: ${createdAd.categoryId} → ${createdAd.subcategoryId}\n` +
+      `📂 Категория: ${createdAd.categoryId} - ${createdAd.subcategoryId}\n` +
       `💰 Цена: **${createdAd.price} ${createdAd.currency}**\n` +
       `🆔 ID: \`${createdAd._id}\`\n` +
       `👤 Продавец: ${user.id}`;
