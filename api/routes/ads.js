@@ -5,7 +5,7 @@ const router = Router();
 
 router.get('/', async (req, res, next) => {
   try {
-    const { limit, categoryId, subcategoryId, seasonCode } = req.query;
+    const { limit, categoryId, subcategoryId, seasonCode, sellerTelegramId } = req.query;
     
     const query = { status: 'active' };
     
@@ -19,6 +19,10 @@ router.get('/', async (req, res, next) => {
     
     if (seasonCode) {
       query.seasonCode = seasonCode;
+    }
+    
+    if (sellerTelegramId) {
+      query.sellerTelegramId = parseInt(sellerTelegramId, 10);
     }
     
     const parsedLimit = limit ? parseInt(limit, 10) : 50;

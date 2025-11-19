@@ -39,6 +39,7 @@ bot.command('start', async (ctx) => {
     `Добро пожаловать в **KETMAR Market**! 🛍️${seasonText}\n\n` +
     `Доступные команды:\n` +
     `/sell - 🏪 Создать объявление\n` +
+    `/my_ads - 📋 Мои объявления\n` +
     `/catalog - 📦 Каталог объявлений\n` +
     `/season - 🌟 Сезонные предложения\n` +
     `/categories - 📂 Категории товаров\n` +
@@ -440,6 +441,55 @@ bot.command("sell", async (ctx) => {
   } catch (err) {
     console.error("/sell error:", err.response?.data || err.message);
     ctx.reply("⚠️ Ошибка при подготовке категорий. Попробуй позже.");
+  }
+});
+
+// /my_ads - показать мои объявления
+bot.command("my_ads", async (ctx) => {
+  try {
+    const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:5000";
+    const telegramId = ctx.from.id;
+
+    // получаем объявления пользователя
+    const res = await axios.get(`${API_BASE_URL}/api/ads`, {
+      params: { sellerTelegramId: telegramId, limit: 20 },
+    });
+
+    const ads = res.data.items || [];
+
+    if (!ads.length) {
+      return ctx.reply(
+        "📭 У тебя пока нет объявлений.\n\n" +
+        "Создай своё первое объявление командой /sell"
+      );
+    }
+
+    const adsList = ads
+      .map((ad, index) => {
+        const statusEmoji = {
+          active: "✅",
+          draft: "📝",
+          sold: "🔒",
+          archived: "📦",
+        };
+        const emoji = statusEmoji[ad.status] || "❓";
+        return (
+          `${index + 1}. ${emoji} **${ad.title}**\n` +
+          `   💰 ${ad.price} ${ad.currency || "BYN"}\n` +
+          `   📂 ${ad.categoryId} / ${ad.subcategoryId}\n` +
+          `   🆔 \`${ad._id}\``
+        );
+      })
+      .join("\n\n");
+
+    await ctx.reply(
+      `📋 **Твои объявления** (${ads.length}):\n\n${adsList}\n\n` +
+      `Создать новое: /sell`,
+      { parse_mode: "Markdown" }
+    );
+  } catch (err) {
+    console.error("/my_ads error:", err.response?.data || err.message);
+    ctx.reply("⚠️ Ошибка при загрузке объявлений. Попробуй позже.");
   }
 });
 
