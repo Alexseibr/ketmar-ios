@@ -1,10 +1,5 @@
 node_modules
 .env
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+.env.local
+npm-debug.log
 .DS_Store
-dist
-.cache
-.replit.local
