@@ -499,6 +499,29 @@ bot.action(/sell_cat:(.+)/, async (ctx) => {
   }
 });
 
+// Обработка выбора подкатегории (callback sell_subcat:<slug>)
+bot.action(/sell_subcat:(.+)/, async (ctx) => {
+  try {
+    const slug = ctx.match[1];
+
+    if (!ctx.session || !ctx.session.sell) {
+      return ctx.answerCbQuery("Диалог создания объявления не активен. Введи /sell.");
+    }
+
+    ctx.session.sell.data.subcategoryId = slug;
+    ctx.session.sell.step = "title";
+
+    await ctx.editMessageText(
+      "Категория и подкатегория выбраны.\n\n" +
+      "📝 Шаг 3/5 — введи заголовок объявления.\n" +
+      "Например: «Свежая малина»."
+    );
+  } catch (err) {
+    console.error("sell_subcat error:", err.response?.data || err.message);
+    ctx.reply("⚠️ Ошибка при обработке подкатегории. Попробуй ещё раз /sell.");
+  }
+});
+
 // Обработка callback кнопок
 bot.on('callback_query', async (ctx) => {
   const data = ctx.callbackQuery.data;
