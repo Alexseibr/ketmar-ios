@@ -1,0 +1,38 @@
+~/workspace$ # Посмотреть последние коммиты в ветке replit
+git fetch origin replit
+git log origin/replit --oneline -30
+
+# Сравнить с main - какие файлы отличаются
+git diff --stat main origin/replit | head -50
+
+# Посмотреть какие уникальные файлы есть в replit
+git diff --name-only main origin/replit
+From https://github.com/Alexseibr/miniapp
+ * branch            replit     -> FETCH_HEAD
+830d18d (origin/replit) Добавить региональные настройки и поддержку валют i18n
+5311138 (origin/codex/design-currency-and-language-architecture) Add region presets and i18n-ready currency support
+29a1f3d Добавьте варианты доставки и планирования заказов в магазине
+f8e1894 (origin/codex/enhance-my-shop-module-with-delivery-and-orders) Merge branch 'replit' into codex/enhance-my-shop-module-with-delivery-and-orders
+f2cb539 Добавьте планирование маршрутов доставки фермерам и аналитику магазинов
+e107a58 (origin/codex/enhance-my-shop-module-with-delivery-and-orders-i1faxi) Merge branch 'replit' into codex/enhance-my-shop-module-with-delivery-and-orders-i1faxi
+d46f6f1 Add farmer delivery route planning and shop analytics
+5817d85 Merge branch 'replit' into codex/enhance-my-shop-module-with-delivery-and-orders
+6d71617 Merge pull request #184 from Alexseibr/codex/add-seller-create-product-tab-with-base-location
+a9cdc11 (origin/codex/add-seller-create-product-tab-with-base-location) Add seller draft flow with base location support
+9570d86 Add delivery options and shop order planning
+dedda9d Улучшить анализ русской кодовой базы
+fac1929 (origin/codex/analyze-code) Enhance Russian codebase analysis
+3edc92c Merge pull request #178 from Alexseibr/codex/implement-geo-based-ad-retrieval-system-7o5lkp
+f2d1171 (origin/codex/implement-geo-based-ad-retrieval-system-7o5lkp) Add geo near ads endpoint and in-memory feed
+37e61fa Merge pull request #177 from Alexseibr/codex/implement-geo-based-ad-retrieval-system
+cb14bb0 (origin/codex/implement-geo-based-ad-retrieval-system) Add Yandex Go-style geo feed blueprint
+8ee9667 Добавьте справедливые конечные точки и макеты слотов зон
+7a57011 (origin/codex/add-seasonal-fairs-with-top-slots) Add fair endpoints and zone slot mocks
+c0d2b34 Улучшение стиля и состояния карточек входа в магазин
+aca0dd9 (origin/codex/implement-seller-dashboard-for-ketmar-market-ygdsjr) Merge branch 'replit' into codex/implement-seller-dashboard-for-ketmar-market-ygdsjr
+68d86b4 Add neon shop entry card with loading and error states
+c84cbb7 Добавить доступ к экрану входа в магазин из профиля
+c037695 (origin/codex/implement-seller-dashboard-for-ketmar-market-8rdcno) Add shop entry screen access from profile
+4aac3fc Добавить QR-код и подсказки боту-администратору, а также QR-модель
+3da4521 (origin/codex/implement-seller-dashboard-for-ketmar-market-98nsik) Merge branch 'replit' into codex/implement-seller-dashboard-for-ketmar-market-98nsik
+299ee84 Add QR and admin-bot prompts plus QR code model
