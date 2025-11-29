@@ -496,9 +496,15 @@ export default function ShopCabinetPage() {
       } else if (activeTab === 'fairs') {
         const res = await http.get('/api/farmer/season-events');
         if (res.data.success) {
+          const allowedFairs = getFairsForRole(shopRole);
+          const allowedFairIds = new Set(allowedFairs.map(f => f.id));
+          
+          const filterByRole = (events: SeasonEvent[]) => 
+            events.filter(e => allowedFairIds.has(e.id));
+          
           setSeasonEvents({
-            active: res.data.data.active || [],
-            upcoming: res.data.data.upcoming || [],
+            active: filterByRole(res.data.data.active || []),
+            upcoming: filterByRole(res.data.data.upcoming || []),
           });
         }
       }

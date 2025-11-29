@@ -1490,6 +1490,7 @@ function Step5Confirm({
   categories: CategoryNode[];
   onEdit: (step: number) => void;
 }) {
+  const { formatCard } = useFormatPrice();
   const selectedCategory = categories.find(c => c.slug === draft.info.categoryId);
   const selectedSubcategory = selectedCategory?.subcategories?.find(s => s.slug === draft.info.subcategoryId);
   
