@@ -90,3 +90,6 @@ $RECYCLE.BIN/
 *.bak
 *.swp
 *.orig
+attached_assets/generated_images.tar.gz
+ketmar-deploy.tar.gz
+*.tar.gz
