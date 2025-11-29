@@ -24,6 +24,7 @@ interface GeoMapProps {
   feed: Ad[];
   selectedAdId: string | null;
   onMarkerClick: (adId: string) => void;
+  onMapClick?: () => void;
   onMapMove: (lat: number, lng: number) => void;
 }
 
@@ -85,10 +86,12 @@ const userIcon = L.divIcon({
 
 function MapController({ 
   center, 
-  onMove 
+  onMove,
+  onMapClick 
 }: { 
   center: [number, number];
   onMove: (lat: number, lng: number) => void;
+  onMapClick?: () => void;
 }) {
   const map = useMap();
   const initializedRef = useRef(false);
@@ -104,13 +107,18 @@ function MapController({
     moveend: () => {
       const c = map.getCenter();
       onMove(c.lat, c.lng);
+    },
+    click: () => {
+      if (onMapClick) {
+        onMapClick();
+      }
     }
   });
   
   return null;
 }
 
-export default function GeoMap({ lat, lng, radiusKm, feed, selectedAdId, onMarkerClick, onMapMove }: GeoMapProps) {
+export default function GeoMap({ lat, lng, radiusKm, feed, selectedAdId, onMarkerClick, onMapClick, onMapMove }: GeoMapProps) {
   const center: [number, number] = [lat, lng];
   
   return (
@@ -143,7 +151,7 @@ export default function GeoMap({ lat, lng, radiusKm, feed, selectedAdId, onMarke
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        <MapController center={center} onMove={onMapMove} />
+        <MapController center={center} onMove={onMapMove} onMapClick={onMapClick} />
         
         {/* User location */}
         <Marker position={center} icon={userIcon} />
