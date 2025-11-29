@@ -55,6 +55,12 @@ export interface PriceBadgeData {
   windowDays?: number | null;
 }
 
+export interface PriceHistoryEntry {
+  oldPrice: number;
+  newPrice: number;
+  changedAt?: string;
+}
+
 export interface AdPreview {
   _id: string;
   title: string;
@@ -82,6 +88,9 @@ export interface AdPreview {
   } | null;
   createdAt?: string;
   priceBadge?: PriceBadgeData | null;
+  isFreeGiveaway?: boolean;
+  isFarmerAd?: boolean;
+  priceHistory?: PriceHistoryEntry[];
 }
 
 export interface Ad extends AdPreview {

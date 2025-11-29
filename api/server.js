@@ -54,6 +54,7 @@ import farmerOrdersRoutes from './routes/farmer-orders.js';
 import myShopRoutes from './routes/my-shop.js';
 import storiesRoutes from './routes/stories.js';
 import categoryProposalsRoutes from './routes/categoryProposals.js';
+import homeFeedRoutes from './routes/home-feed.js';
 import { registerMobileApi } from './mobile/index.js';
 
 const app = express();
@@ -159,6 +160,7 @@ app.use('/api/devices', devicesRoutes);
 app.use('/api/my-shop', myShopRoutes);
 app.use('/api/stories', storiesRoutes);
 app.use('/api/admin/category-proposals', adminAuth, categoryProposalsRoutes);
+app.use('/api/home-feed', homeFeedRoutes);
 
 // Mobile API v1 (for native apps)
 registerMobileApi(app);
