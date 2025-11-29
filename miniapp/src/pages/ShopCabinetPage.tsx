@@ -505,7 +505,7 @@ export default function ShopCabinetPage() {
     try {
       const res = await http.post('/api/farmer/subscriptions/upgrade', {
         telegramId: user.telegramId,
-        tier,
+        tier: tier.toLowerCase(),
       });
       
       if (res.data.success) {
@@ -1537,8 +1537,8 @@ export default function ShopCabinetPage() {
   );
 
   const renderSubscriptionTab = () => {
-    const currentTier = subscription?.tier || 'FREE';
-    const tierInfo = SUBSCRIPTION_TIERS[currentTier];
+    const currentTier = (subscription?.tier || 'free').toUpperCase();
+    const tierInfo = SUBSCRIPTION_TIERS[currentTier] || SUBSCRIPTION_TIERS.FREE;
 
     return (
       <div style={{ padding: 16 }}>
