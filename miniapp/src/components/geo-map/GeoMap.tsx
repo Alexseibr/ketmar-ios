@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import useGeoStore from '../../store/useGeoStore';
-import { Locate, Layers, TrendingUp, Package } from 'lucide-react';
+import { Locate, List, ShoppingBag } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 
 const RADIUS_OPTIONS = [0.3, 1, 3, 5, 10, 20];
@@ -19,33 +19,12 @@ const userIcon = L.divIcon({
   iconAnchor: [8, 8]
 });
 
-const adMarkerIcon = L.divIcon({
-  className: 'ad-marker',
-  html: `
-    <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #34D399, #10B981); border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;">
-      <span style="color: white; font-size: 10px; font-weight: bold;">K</span>
-    </div>
-  `,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12]
-});
-
-const clusterIcon = (count: number) => L.divIcon({
-  className: 'cluster-marker',
-  html: `
-    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #FB923C, #EA580C); border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;">
-      <span style="color: white; font-size: 12px; font-weight: bold;">${count > 99 ? '99+' : count}</span>
-    </div>
-  `,
-  iconSize: [40, 40],
-  iconAnchor: [20, 20]
-});
-
-interface HeatmapPoint {
+interface HeatZone {
+  geoHash: string;
   lat: number;
   lng: number;
-  intensity: number;
   count: number;
+  radius: number;
 }
 
 interface ClusterData {
@@ -97,7 +76,13 @@ function MapController({
   return null;
 }
 
-function HeatmapLayer({ points, type }: { points: HeatmapPoint[]; type: 'demand' | 'supply' }) {
+function HeatmapZones({ 
+  zones, 
+  onZoneClick 
+}: { 
+  zones: HeatZone[]; 
+  onZoneClick: (zone: HeatZone) => void;
+}) {
   const map = useMap();
   const layerRef = useRef<L.LayerGroup | null>(null);
   
@@ -108,19 +93,65 @@ function HeatmapLayer({ points, type }: { points: HeatmapPoint[]; type: 'demand'
     
     const layer = L.layerGroup();
     
-    points.forEach(point => {
-      const color = type === 'demand' 
-        ? `rgba(255, ${Math.round(100 + (1 - point.intensity) * 155)}, 0, ${0.3 + point.intensity * 0.4})`
-        : `rgba(0, ${Math.round(100 + point.intensity * 155)}, 255, ${0.3 + point.intensity * 0.4})`;
+    zones.forEach(zone => {
+      const intensity = Math.min(zone.count / 10, 1);
       
-      const radius = 100 + point.intensity * 200;
+      const r = Math.round(34 + intensity * 221);
+      const g = Math.round(197 - intensity * 100);
+      const b = Math.round(94 - intensity * 60);
+      const color = `rgb(${r}, ${g}, ${b})`;
       
-      L.circle([point.lat, point.lng], {
-        radius,
-        color: 'transparent',
+      const baseRadius = 200 + (zone.radius || 300);
+      const circleRadius = baseRadius + Math.min(zone.count * 20, 300);
+      
+      const circle = L.circle([zone.lat, zone.lng], {
+        radius: circleRadius,
+        color: color,
         fillColor: color,
-        fillOpacity: 0.6
-      }).addTo(layer);
+        fillOpacity: 0.35 + intensity * 0.25,
+        weight: 2,
+        opacity: 0.6
+      });
+      
+      circle.on('click', () => onZoneClick(zone));
+      circle.addTo(layer);
+      
+      if (zone.count > 0) {
+        const countLabel = L.divIcon({
+          className: 'zone-count-label',
+          html: `
+            <div style="
+              background: white;
+              border-radius: 12px;
+              padding: 4px 10px;
+              font-size: 12px;
+              font-weight: 600;
+              color: #1F2937;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              white-space: nowrap;
+            ">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+              ${zone.count}
+            </div>
+          `,
+          iconSize: [50, 24],
+          iconAnchor: [25, 12]
+        });
+        
+        const marker = L.marker([zone.lat, zone.lng], { 
+          icon: countLabel,
+          interactive: true
+        });
+        marker.on('click', () => onZoneClick(zone));
+        marker.addTo(layer);
+      }
     });
     
     layer.addTo(map);
@@ -131,7 +162,7 @@ function HeatmapLayer({ points, type }: { points: HeatmapPoint[]; type: 'demand'
         map.removeLayer(layerRef.current);
       }
     };
-  }, [points, type, map]);
+  }, [zones, map, onZoneClick]);
   
   return null;
 }
@@ -140,61 +171,55 @@ export function GeoMap({
   onMarkerClick, 
   onMapMove, 
   onClustersUpdate,
-  heatmapType = 'supply',
   categoryId 
 }: GeoMapProps) {
   const { coords, radiusKm, setRadius, requestLocation } = useGeoStore();
   const lat = coords?.lat;
   const lng = coords?.lng;
   
-  const [clusters, setClusters] = useState<ClusterData[]>([]);
-  const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
+  const [heatZones, setHeatZones] = useState<HeatZone[]>([]);
+  const [totalAdsCount, setTotalAdsCount] = useState(0);
   const [zoom, setZoom] = useState(13);
   const [isLocating, setIsLocating] = useState(false);
-  const [activeLayer, setActiveLayer] = useState<'markers' | 'demand' | 'supply'>('markers');
   const debounceRef = useRef<NodeJS.Timeout>();
   
   const defaultCenter: [number, number] = [lat || 53.9, lng || 27.5667];
   
-  const fetchClusters = useCallback(async (centerLat: number, centerLng: number, currentZoom: number) => {
+  const fetchHeatZones = useCallback(async (centerLat: number, centerLng: number, currentZoom: number) => {
     try {
       const response = await fetch(
         `/api/geo-intelligence/clusters?lat=${centerLat}&lng=${centerLng}&radiusKm=${radiusKm}&zoom=${currentZoom}${categoryId ? `&categoryId=${categoryId}` : ''}`
       );
       const data = await response.json();
-      if (data.success) {
-        setClusters(data.data.clusters);
-        const totalCount = data.data.clusters.reduce((sum: number, c: ClusterData) => sum + c.count, 0);
+      if (data.success && data.data.clusters) {
+        const zones: HeatZone[] = data.data.clusters.map((cluster: ClusterData) => {
+          const offsetLat = (Math.random() - 0.5) * 0.003;
+          const offsetLng = (Math.random() - 0.5) * 0.003;
+          
+          return {
+            geoHash: cluster.geoHash,
+            lat: cluster.lat + offsetLat,
+            lng: cluster.lng + offsetLng,
+            count: cluster.count,
+            radius: 200 + Math.random() * 100
+          };
+        });
+        
+        setHeatZones(zones);
+        const totalCount = zones.reduce((sum, z) => sum + z.count, 0);
+        setTotalAdsCount(totalCount);
         onClustersUpdate?.(totalCount);
       }
     } catch (error) {
-      console.error('Failed to fetch clusters:', error);
+      console.error('Failed to fetch heat zones:', error);
     }
   }, [radiusKm, categoryId, onClustersUpdate]);
   
-  const fetchHeatmap = useCallback(async (centerLat: number, centerLng: number, type: 'demand' | 'supply') => {
-    try {
-      const endpoint = type === 'demand' ? 'heatmap/demand' : 'heatmap/supply';
-      const response = await fetch(
-        `/api/geo-intelligence/${endpoint}?lat=${centerLat}&lng=${centerLng}&radiusKm=${radiusKm}${categoryId ? `&categoryId=${categoryId}` : ''}`
-      );
-      const data = await response.json();
-      if (data.success) {
-        setHeatmapPoints(data.data.points);
-      }
-    } catch (error) {
-      console.error('Failed to fetch heatmap:', error);
-    }
-  }, [radiusKm, categoryId]);
-  
   useEffect(() => {
     if (lat && lng) {
-      fetchClusters(lat, lng, zoom);
-      if (activeLayer !== 'markers') {
-        fetchHeatmap(lat, lng, activeLayer);
-      }
+      fetchHeatZones(lat, lng, zoom);
     }
-  }, [lat, lng, zoom, activeLayer, fetchClusters, fetchHeatmap]);
+  }, [lat, lng, zoom, fetchHeatZones]);
   
   const handleMapMove = useCallback((center: { lat: number; lng: number }, newZoom: number) => {
     setZoom(newZoom);
@@ -204,13 +229,10 @@ export function GeoMap({
     }
     
     debounceRef.current = setTimeout(() => {
-      fetchClusters(center.lat, center.lng, newZoom);
-      if (activeLayer !== 'markers') {
-        fetchHeatmap(center.lat, center.lng, activeLayer);
-      }
+      fetchHeatZones(center.lat, center.lng, newZoom);
       onMapMove?.(center, newZoom);
     }, 300);
-  }, [activeLayer, fetchClusters, fetchHeatmap, onMapMove]);
+  }, [fetchHeatZones, onMapMove]);
   
   const handleLocate = async () => {
     setIsLocating(true);
@@ -221,12 +243,17 @@ export function GeoMap({
     }
   };
   
-  const handleLayerChange = (layer: 'markers' | 'demand' | 'supply') => {
-    setActiveLayer(layer);
-    if (layer !== 'markers' && lat && lng) {
-      fetchHeatmap(lat, lng, layer);
+  const handleZoneClick = useCallback((zone: HeatZone) => {
+    if (onMarkerClick) {
+      onMarkerClick({
+        geoHash: zone.geoHash,
+        lat: zone.lat,
+        lng: zone.lng,
+        count: zone.count,
+        isCluster: true
+      });
     }
-  };
+  }, [onMarkerClick]);
   
   return (
     <div className="relative w-full h-full" style={{ minHeight: '400px' }}>
@@ -239,6 +266,10 @@ export function GeoMap({
           height: 100%;
           min-height: 400px;
           z-index: 0;
+        }
+        .zone-count-label {
+          background: transparent;
+          border: none;
         }
       `}</style>
       
@@ -269,34 +300,21 @@ export function GeoMap({
               pathOptions={{
                 color: '#3B82F6',
                 fillColor: '#3B82F6',
-                fillOpacity: 0.1,
+                fillOpacity: 0.08,
                 weight: 2,
-                dashArray: '5, 10'
+                dashArray: '8, 12'
               }}
             />
           </>
         )}
         
-        {activeLayer === 'markers' && clusters.map((cluster) => (
-          <Marker
-            key={cluster.geoHash}
-            position={[cluster.lat, cluster.lng]}
-            icon={cluster.isCluster ? clusterIcon(cluster.count) : adMarkerIcon}
-            eventHandlers={{
-              click: () => onMarkerClick?.(cluster)
-            }}
-          />
-        ))}
-        
-        {activeLayer !== 'markers' && heatmapPoints.length > 0 && (
-          <HeatmapLayer points={heatmapPoints} type={activeLayer} />
-        )}
+        <HeatmapZones zones={heatZones} onZoneClick={handleZoneClick} />
       </MapContainer>
       
       {/* Floating Controls */}
       <div className="absolute top-4 right-4 flex flex-col gap-2" style={{ zIndex: 1000 }}>
         <button
-          className="w-12 h-12 rounded-full shadow-lg bg-white flex items-center justify-center"
+          className="w-12 h-12 rounded-full shadow-lg bg-white flex items-center justify-center active:scale-95 transition-transform"
           onClick={handleLocate}
           disabled={isLocating}
           data-testid="button-locate"
@@ -304,30 +322,29 @@ export function GeoMap({
           <Locate className={`w-5 h-5 ${isLocating ? 'animate-pulse text-blue-500' : 'text-gray-700'}`} />
         </button>
         
-        <div className="bg-white rounded-xl shadow-lg p-1 flex flex-col gap-1">
+        {totalAdsCount > 0 && (
           <button
-            className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeLayer === 'markers' ? 'bg-blue-500 text-white' : 'text-gray-700'}`}
-            onClick={() => handleLayerChange('markers')}
-            data-testid="button-layer-markers"
+            className="w-12 h-12 rounded-full shadow-lg bg-green-500 flex items-center justify-center active:scale-95 transition-transform"
+            onClick={() => onMarkerClick?.({ geoHash: '', lat: lat || 0, lng: lng || 0, count: totalAdsCount, isCluster: true })}
+            data-testid="button-view-all"
           >
-            <Package className="w-4 h-4" />
+            <List className="w-5 h-5 text-white" />
           </button>
-          <button
-            className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeLayer === 'demand' ? 'bg-orange-500 text-white' : 'text-orange-500'}`}
-            onClick={() => handleLayerChange('demand')}
-            data-testid="button-layer-demand"
-          >
-            <TrendingUp className="w-4 h-4" />
-          </button>
-          <button
-            className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeLayer === 'supply' ? 'bg-blue-500 text-white' : 'text-blue-500'}`}
-            onClick={() => handleLayerChange('supply')}
-            data-testid="button-layer-supply"
-          >
-            <Layers className="w-4 h-4" />
-          </button>
-        </div>
+        )}
       </div>
+      
+      {/* Info Badge */}
+      {totalAdsCount > 0 && (
+        <div 
+          className="absolute top-4 left-4 bg-white rounded-xl shadow-lg px-3 py-2 flex items-center gap-2"
+          style={{ zIndex: 1000 }}
+        >
+          <ShoppingBag className="w-4 h-4 text-green-500" />
+          <span className="text-sm font-medium text-gray-700">
+            {totalAdsCount} {totalAdsCount === 1 ? 'товар' : totalAdsCount < 5 ? 'товара' : 'товаров'} рядом
+          </span>
+        </div>
+      )}
       
       {/* Radius Selector */}
       <div className="absolute bottom-4 left-4 right-4" style={{ zIndex: 1000 }}>
