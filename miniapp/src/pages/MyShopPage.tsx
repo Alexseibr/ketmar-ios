@@ -392,70 +392,115 @@ export default function MyShopPage() {
 
   return (
     <ScreenLayout header={header}>
-      <div className="px-4 py-4 space-y-4">
+      <div style={{ padding: '16px' }}>
         {isSuperAdmin && (
-          <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl p-4 text-white mb-2">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                <Sparkles className="h-5 w-5" />
+          <div style={{
+            background: 'linear-gradient(135deg, #F59E0B 0%, #EA580C 100%)',
+            borderRadius: 16,
+            padding: '14px 16px',
+            marginBottom: 16,
+            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.25)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Sparkles size={20} color="#fff" />
               </div>
               <div>
-                <p className="font-bold">Режим супер-админа</p>
-                <p className="text-white/80 text-sm">Доступ ко всем типам кабинетов</p>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>
+                  Режим супер-админа
+                </div>
+                <div style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.8)' }}>
+                  Доступ ко всем типам кабинетов
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {ROLE_CONFIGS.map((config) => {
             const Icon = config.icon;
-            const roleLabel = ROLE_LABELS[config.key];
             
             return (
-              <Card
+              <button
                 key={config.key}
-                className="overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-md active:scale-[0.98]"
-                style={{ borderColor: config.borderColor, borderWidth: '2px' }}
                 onClick={() => handleRoleSelect(config.key)}
                 data-testid={`card-role-${config.key.toLowerCase()}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  padding: '14px 16px',
+                  background: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 16,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                  transition: 'all 0.15s ease',
+                  width: '100%',
+                  textAlign: 'left',
+                }}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div 
-                      className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: config.gradient }}
-                    >
-                      <Icon className="h-7 w-7 text-white" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl">{roleLabel.emoji}</span>
-                        <h3 className="font-bold text-lg">{config.title}</h3>
-                      </div>
-                      <p className="text-muted-foreground text-sm">{config.subtitle}</p>
-                    </div>
-                    
-                    <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <div style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 14,
+                  background: config.gradient,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: `0 4px 12px ${config.iconBgColor}40`,
+                }}>
+                  <Icon size={26} color="#fff" strokeWidth={2} />
+                </div>
+                
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: '#1F2937',
+                    marginBottom: 2,
+                  }}>
+                    {config.title}
                   </div>
-                </CardContent>
-              </Card>
+                  <div style={{
+                    fontSize: 13,
+                    color: '#6B7280',
+                  }}>
+                    {config.subtitle}
+                  </div>
+                </div>
+                
+                <ChevronRight size={20} color="#9CA3AF" style={{ flexShrink: 0 }} />
+              </button>
             );
           })}
         </div>
 
         {!isSuperAdmin && (
-          <div className="bg-muted/50 rounded-xl p-4 mt-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Выберите тип деятельности, который лучше всего описывает ваш бизнес. 
-                  Это определит внешний вид вашего профиля и доступные функции.
-                </p>
-              </div>
-            </div>
+          <div style={{
+            background: '#F3F4F6',
+            borderRadius: 12,
+            padding: '14px 16px',
+            marginTop: 20,
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 12,
+          }}>
+            <AlertCircle size={18} color="#6B7280" style={{ marginTop: 2, flexShrink: 0 }} />
+            <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.5, margin: 0 }}>
+              Выберите тип деятельности, который лучше всего описывает ваш бизнес. 
+              Это определит внешний вид вашего профиля и доступные функции.
+            </p>
           </div>
         )}
       </div>
