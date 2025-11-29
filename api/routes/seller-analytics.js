@@ -250,14 +250,14 @@ router.get('/ads/:adId/heatmap', authMiddleware, async (req, res) => {
     
     const ad = await Ad.findById(adId);
     if (!ad) {
-      return res.status(404).json({ error: 'Объявление не найдено' });
+      return res.status(404).json({ success: false, error: 'Объявление не найдено' });
     }
     
     const isOwner = ad.userId?.toString() === req.user._id.toString();
     const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
     
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ error: 'Доступ запрещён' });
+      return res.status(403).json({ success: false, error: 'Доступ запрещён' });
     }
     
     const days = parseInt(period) || 7;
@@ -274,16 +274,21 @@ router.get('/ads/:adId/heatmap', authMiddleware, async (req, res) => {
     
     res.json({
       success: true,
-      ...heatmapData,
-      ad: {
-        _id: ad._id,
-        title: ad.title,
-        location: ad.location,
+      data: {
+        ...heatmapData,
+        ad: {
+          _id: ad._id,
+          title: ad.title,
+          location: ad.location?.coordinates ? {
+            lat: ad.location.coordinates[1],
+            lng: ad.location.coordinates[0],
+          } : null,
+        }
       }
     });
   } catch (error) {
     console.error('[SellerAnalytics] Heatmap error:', error);
-    res.status(500).json({ error: 'Failed to get heatmap data' });
+    res.status(500).json({ success: false, error: 'Ошибка при загрузке данных' });
   }
 });
 

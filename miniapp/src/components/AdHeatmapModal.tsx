@@ -59,18 +59,26 @@ function HeatmapLayer({ points }: { points: HeatmapPoint[] }) {
       map.removeLayer(heatLayerRef.current);
     }
     
-    if (points.length > 0) {
-      const heatData: [number, number, number][] = points.map(p => [
+    const validPoints = (points || []).filter(
+      p => typeof p.lat === 'number' && 
+           typeof p.lng === 'number' && 
+           typeof p.weight === 'number' &&
+           !isNaN(p.lat) && !isNaN(p.lng) && !isNaN(p.weight) &&
+           Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180
+    );
+    
+    if (validPoints.length > 0) {
+      const heatData: [number, number, number][] = validPoints.map(p => [
         p.lat,
         p.lng,
-        p.weight * 0.5
+        Math.max(0, p.weight) * 0.5
       ]);
       
       heatLayerRef.current = L.heatLayer(heatData, {
         radius: 35,
         blur: 25,
         maxZoom: 17,
-        max: Math.max(...points.map(p => p.weight), 1),
+        max: Math.max(...validPoints.map(p => p.weight), 1),
         gradient: {
           0.2: '#4ADE80',
           0.4: '#FACC15',
@@ -82,7 +90,7 @@ function HeatmapLayer({ points }: { points: HeatmapPoint[] }) {
       
       heatLayerRef.current.addTo(map);
       
-      const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
+      const bounds = L.latLngBounds(validPoints.map(p => [p.lat, p.lng]));
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
       }
@@ -130,12 +138,27 @@ export default function AdHeatmapModal({ adId, adTitle, onClose }: AdHeatmapModa
           }
         });
         
-        if (!response.ok) {
-          throw new Error('Не удалось загрузить данные');
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          throw new Error(result.error || 'Не удалось загрузить данные');
         }
         
-        const result = await response.json();
-        setData(result);
+        const rawData = result.data;
+        if (!rawData || typeof rawData !== 'object') {
+          throw new Error('Некорректный формат данных');
+        }
+        
+        const safeData: HeatmapData = {
+          adId: rawData.adId || adId,
+          totalViews: typeof rawData.totalViews === 'number' ? rawData.totalViews : 0,
+          timeRange: rawData.timeRange || { from: '', to: '' },
+          points: Array.isArray(rawData.points) ? rawData.points : [],
+          areas: Array.isArray(rawData.areas) ? rawData.areas : [],
+          ad: rawData.ad || { _id: adId, title: adTitle },
+        };
+        
+        setData(safeData);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки');
       } finally {
@@ -144,7 +167,7 @@ export default function AdHeatmapModal({ adId, adTitle, onClose }: AdHeatmapModa
     };
     
     fetchHeatmap();
-  }, [adId, period]);
+  }, [adId, period, adTitle]);
   
   const defaultCenter: [number, number] = data?.ad?.location
     ? [data.ad.location.lat, data.ad.location.lng]
@@ -308,7 +331,7 @@ export default function AdHeatmapModal({ adId, adTitle, onClose }: AdHeatmapModa
             }}>
               <p style={{ color: '#EF4444' }}>{error}</p>
             </div>
-          ) : data && data.points.length > 0 ? (
+          ) : data && Array.isArray(data.points) && data.points.length > 0 ? (
             <MapContainer
               center={defaultCenter}
               zoom={12}
@@ -362,7 +385,7 @@ export default function AdHeatmapModal({ adId, adTitle, onClose }: AdHeatmapModa
                 </span>
               </div>
               
-              {data.areas.length > 0 && (
+              {Array.isArray(data.areas) && data.areas.length > 0 && (
                 <>
                   <h3 style={{ 
                     fontSize: 14, 
