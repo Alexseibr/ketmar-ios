@@ -18,6 +18,8 @@ import {
   Sparkles,
   Clock,
   CheckCircle,
+  Info,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,6 +106,63 @@ const ROLE_LABELS: Record<ShopRole, { emoji: string; label: string }> = {
   ARTISAN: { emoji: '🎨', label: 'Ремесленник' },
 };
 
+const ROLE_INFO: Record<ShopRole, {
+  title: string;
+  description: string;
+  features: string[];
+  examples: string[];
+  categories: string[];
+}> = {
+  SHOP: {
+    title: 'Магазин',
+    description: 'Подходит для розничных продавцов, интернет-магазинов и точек продаж. Идеально для продажи готовых товаров массового потребления.',
+    features: [
+      'Каталог товаров с ценами',
+      'Управление заказами',
+      'Аналитика продаж',
+      'Участие в городских ярмарках',
+    ],
+    examples: ['Магазин одежды', 'Магазин электроники', 'Магазин косметики', 'Продуктовый магазин'],
+    categories: ['Одежда и обувь', 'Техника', 'Косметика', 'Товары для дома', 'Продукты питания'],
+  },
+  FARMER: {
+    title: 'Фермер',
+    description: 'Для производителей сельскохозяйственной продукции. Продавайте свежие продукты напрямую покупателям.',
+    features: [
+      'Сезонные ярмарки урожая',
+      'Карта фермерских хозяйств',
+      'Рекомендации по выращиванию',
+      'Прямые продажи без посредников',
+    ],
+    examples: ['Фермерское хозяйство', 'Пасека', 'Молочная ферма', 'Овощеводство'],
+    categories: ['Овощи и фрукты', 'Молоко и молочка', 'Мясо и птица', 'Яйца', 'Мёд', 'Ягоды'],
+  },
+  BLOGGER: {
+    title: 'Авторский бренд',
+    description: 'Для блогеров, инфлюенсеров и создателей уникального контента. Продвигайте свой личный бренд через соцсети.',
+    features: [
+      'Интеграция с Instagram',
+      'Статистика переходов в соцсети',
+      'Уникальные авторские товары',
+      'Публикации и посты',
+    ],
+    examples: ['Beauty-блогер', 'Кондитер в Instagram', 'Автор курсов', 'Дизайнер одежды'],
+    categories: ['Авторская выпечка', 'Пошив одежды', 'Beauty-услуги', 'Курсы и обучение', 'Handmade premium'],
+  },
+  ARTISAN: {
+    title: 'Ремесленник',
+    description: 'Для мастеров ручной работы и создателей уникальных изделий. Продавайте хендмейд и авторские работы.',
+    features: [
+      'Участие в ярмарках handmade',
+      'Витрина уникальных изделий',
+      'Индивидуальные заказы',
+      'Категории для мастеров',
+    ],
+    examples: ['Гончар', 'Ювелир', 'Мастер по дереву', 'Свечник'],
+    categories: ['Изделия из дерева', 'Керамика и глина', 'Свечи и мыло', 'Украшения', 'Игрушки', 'Декор'],
+  },
+};
+
 interface RegistrationFormData {
   name: string;
   description: string;
@@ -122,6 +181,7 @@ export default function MyShopPage() {
   
   const [selectedRole, setSelectedRole] = useState<ShopRole | null>(null);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [showRoleInfo, setShowRoleInfo] = useState<ShopRole | null>(null);
   const [formData, setFormData] = useState<RegistrationFormData>({
     name: '',
     description: '',
@@ -566,58 +626,92 @@ export default function MyShopPage() {
             const Icon = config.icon;
             
             return (
-              <button
+              <div
                 key={config.key}
-                onClick={() => handleRoleSelect(config.key)}
-                data-testid={`card-role-${config.key.toLowerCase()}`}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 14,
-                  padding: '14px 16px',
+                  gap: 8,
                   background: '#FFFFFF',
-                  border: 'none',
                   borderRadius: 16,
-                  cursor: 'pointer',
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                  transition: 'all 0.15s ease',
-                  width: '100%',
-                  textAlign: 'left',
+                  overflow: 'hidden',
                 }}
               >
-                <div style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 14,
-                  background: config.gradient,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  boxShadow: `0 4px 12px ${config.iconBgColor}40`,
-                }}>
-                  <Icon size={26} color="#fff" strokeWidth={2} />
-                </div>
-                
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <button
+                  onClick={() => handleRoleSelect(config.key)}
+                  data-testid={`card-role-${config.key.toLowerCase()}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    padding: '14px 16px',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    flex: 1,
+                    textAlign: 'left',
+                  }}
+                >
                   <div style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: '#1F2937',
-                    marginBottom: 2,
+                    width: 52,
+                    height: 52,
+                    borderRadius: 14,
+                    background: config.gradient,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    boxShadow: `0 4px 12px ${config.iconBgColor}40`,
                   }}>
-                    {config.title}
+                    <Icon size={26} color="#fff" strokeWidth={2} />
                   </div>
-                  <div style={{
-                    fontSize: 13,
-                    color: '#6B7280',
-                  }}>
-                    {config.subtitle}
+                  
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 16,
+                      fontWeight: 600,
+                      color: '#1F2937',
+                      marginBottom: 2,
+                    }}>
+                      {config.title}
+                    </div>
+                    <div style={{
+                      fontSize: 13,
+                      color: '#6B7280',
+                    }}>
+                      {config.subtitle}
+                    </div>
                   </div>
-                </div>
+                  
+                  <ChevronRight size={20} color="#9CA3AF" style={{ flexShrink: 0 }} />
+                </button>
                 
-                <ChevronRight size={20} color="#9CA3AF" style={{ flexShrink: 0 }} />
-              </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRoleInfo(config.key);
+                  }}
+                  data-testid={`button-info-${config.key.toLowerCase()}`}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 10,
+                    background: '#F3F4F6',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 12,
+                    flexShrink: 0,
+                    transition: 'background 0.15s ease',
+                  }}
+                >
+                  <Info size={18} color="#6B7280" />
+                </button>
+              </div>
             );
           })}
         </div>
@@ -640,6 +734,191 @@ export default function MyShopPage() {
           </div>
         )}
       </div>
+
+      {showRoleInfo && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowRoleInfo(null)}
+          data-testid="modal-role-info"
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              width: '100%',
+              maxHeight: '85vh',
+              overflowY: 'auto',
+              animation: 'slideUp 0.3s ease',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(() => {
+              const config = ROLE_CONFIGS.find(r => r.key === showRoleInfo);
+              const info = ROLE_INFO[showRoleInfo];
+              const Icon = config?.icon || Store;
+              
+              return (
+                <>
+                  <div
+                    style={{
+                      padding: '20px',
+                      background: config?.gradient,
+                      position: 'relative',
+                    }}
+                  >
+                    <button
+                      onClick={() => setShowRoleInfo(null)}
+                      style={{
+                        position: 'absolute',
+                        top: 16,
+                        right: 16,
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        background: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      data-testid="button-close-info"
+                    >
+                      <X size={20} color="#fff" />
+                    </button>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div
+                        style={{
+                          width: 64,
+                          height: 64,
+                          borderRadius: 16,
+                          background: 'rgba(255, 255, 255, 0.2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <Icon size={32} color="#fff" />
+                      </div>
+                      <div>
+                        <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: 0 }}>
+                          {ROLE_LABELS[showRoleInfo].emoji} {info.title}
+                        </h2>
+                        <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: 14, margin: '4px 0 0' }}>
+                          {config?.subtitle}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ padding: '20px' }}>
+                    <p style={{ fontSize: 15, color: '#374151', lineHeight: 1.6, margin: '0 0 20px' }}>
+                      {info.description}
+                    </p>
+                    
+                    <div style={{ marginBottom: 20 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', marginBottom: 12 }}>
+                        Возможности
+                      </h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {info.features.map((feature, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div
+                              style={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: 10,
+                                background: `${config?.iconBgColor}20`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Check size={12} color={config?.iconBgColor} />
+                            </div>
+                            <span style={{ fontSize: 14, color: '#4B5563' }}>{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div style={{ marginBottom: 20 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', marginBottom: 12 }}>
+                        Примеры
+                      </h3>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {info.examples.map((example, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              padding: '6px 12px',
+                              background: '#F3F4F6',
+                              borderRadius: 20,
+                              fontSize: 13,
+                              color: '#4B5563',
+                            }}
+                          >
+                            {example}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div style={{ marginBottom: 24 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#1F2937', marginBottom: 12 }}>
+                        Категории товаров
+                      </h3>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {info.categories.map((cat, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              padding: '6px 12px',
+                              background: `${config?.iconBgColor}15`,
+                              borderRadius: 20,
+                              fontSize: 13,
+                              color: config?.iconBgColor,
+                              fontWeight: 500,
+                            }}
+                          >
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <Button
+                      onClick={() => {
+                        setShowRoleInfo(null);
+                        handleRoleSelect(showRoleInfo);
+                      }}
+                      className="w-full h-12"
+                      style={{ background: config?.gradient }}
+                      data-testid="button-select-role"
+                    >
+                      Выбрать {info.title}
+                    </Button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </ScreenLayout>
   );
 }
