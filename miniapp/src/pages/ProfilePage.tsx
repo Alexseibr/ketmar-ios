@@ -112,7 +112,7 @@ export default function ProfilePage() {
     { icon: Heart, label: 'Избранное', path: '/favorites', color: '#EC4899' },
     { icon: MessageCircle, label: 'Сообщения', path: '/chats', color: '#22C55E' },
     { icon: Store, label: 'Мой магазин', path: '/seller/cabinet', color: '#7C3AED' },
-    { icon: Camera, label: 'Истории', path: '/seller/stories', color: '#F97316' },
+    // { icon: Camera, label: 'Истории', path: '/seller/stories', color: '#F97316' }, // temporarily hidden
     { icon: Star, label: 'AI Ассистент', path: '/twin', color: '#06B6D4' },
   ];
 

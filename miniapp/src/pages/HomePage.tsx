@@ -272,8 +272,8 @@ export default function HomePage() {
         paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)',
         overflowY: 'auto',
       }}>
-        {/* Stories */}
-        <StoryCarousel />
+        {/* Stories - temporarily hidden */}
+        {/* <StoryCarousel /> */}
 
         {/* Service Icons Grid */}
         <section style={{ padding: '16px 16px 20px' }}>
