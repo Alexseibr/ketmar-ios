@@ -90,7 +90,7 @@ const SHOP_TYPES = [
   },
   { 
     id: 'blogger', 
-    label: 'Блогер / Instagram', 
+    label: 'Авторский бренд', 
     description: 'Продажа через соцсети и Instagram',
     icon: Camera, 
     color: '#EC4899',

@@ -319,7 +319,7 @@ export default function AdminAnalyticsPage() {
                   color="#10B981"
                 />
                 <ProgressBar
-                  label="Блогеры"
+                  label="Авторские бренды"
                   value={data.sellers.bloggers || 0}
                   total={data.sellers.total || 1}
                   color="#EC4899"

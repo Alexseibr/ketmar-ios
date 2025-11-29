@@ -79,7 +79,7 @@ const ROLE_CONFIGS: RoleConfig[] = [
   },
   {
     key: 'BLOGGER',
-    title: 'Блогер',
+    title: 'Авторский бренд',
     subtitle: 'Контент и реклама',
     icon: Camera,
     gradient: 'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)',
@@ -100,7 +100,7 @@ const ROLE_CONFIGS: RoleConfig[] = [
 const ROLE_LABELS: Record<ShopRole, { emoji: string; label: string }> = {
   SHOP: { emoji: '🏪', label: 'Магазин' },
   FARMER: { emoji: '🌾', label: 'Фермер' },
-  BLOGGER: { emoji: '📸', label: 'Блогер' },
+  BLOGGER: { emoji: '📸', label: 'Авторский бренд' },
   ARTISAN: { emoji: '🎨', label: 'Ремесленник' },
 };
 

@@ -191,7 +191,7 @@ const ROLE_TABS: Record<ShopRole, TabType[]> = {
 const ROLE_BADGES: Record<ShopRole, { label: string; emoji: string; color: string; bgColor: string }> = {
   FARMER: { label: 'Фермер', emoji: '🌾', color: '#047857', bgColor: '#D1FAE5' },
   SHOP: { label: 'Магазин', emoji: '🏪', color: '#1D4ED8', bgColor: '#DBEAFE' },
-  BLOGGER: { label: 'Блогер', emoji: '📸', color: '#BE185D', bgColor: '#FCE7F3' },
+  BLOGGER: { label: 'Авторский бренд', emoji: '📸', color: '#BE185D', bgColor: '#FCE7F3' },
   ARTISAN: { label: 'Ремесленник', emoji: '🎨', color: '#6D28D9', bgColor: '#EDE9FE' },
 };
 
