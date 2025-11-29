@@ -5,8 +5,24 @@ import {
   Eye, MessageCircle, Heart, Clock, AlertCircle, ChevronRight,
   Leaf, MapPin, Bell, Crown, Calendar, Star, Zap, Check, Gift,
   Store, Camera, Palette, Tractor, ClipboardList, Truck, Navigation, Phone,
-  Shield
+  Shield, FileText, Image, Instagram, Send
 } from 'lucide-react';
+import { 
+  BUSINESS_CONFIG, 
+  getTabsForRole, 
+  getFairsForRole,
+  getCategoriesForRole,
+  canAccessFeature,
+  shouldShowSocialLinks,
+  ROLE_BADGES,
+  ROLE_GRADIENTS,
+  ROLE_ICONS,
+  ALL_FAIRS,
+  ALL_TABS,
+  type TabConfig,
+  type TabType as BusinessTabType,
+  type ShopRole as BusinessShopRole,
+} from '@/config/businessConfig';
 import http from '@/api/http';
 import { fetchShopOrders, fetchDeliveryRoutePlan } from '@/api/orders';
 import { useUserStore } from '@/store/useUserStore';
@@ -16,7 +32,7 @@ import ScreenLayout from '@/components/layout/ScreenLayout';
 import ProTrendsWidget from '@/components/ProTrendsWidget';
 import { useFormatPrice } from '@/hooks/useFormatPrice';
 
-type ShopRole = 'SHOP' | 'FARMER' | 'BLOGGER' | 'ARTISAN';
+type ShopRole = BusinessShopRole;
 
 interface SellerProfile {
   _id: string;
@@ -162,67 +178,32 @@ interface RoutePlanResult {
   }>;
 }
 
-type TabType = 'products' | 'create' | 'stats' | 'demand' | 'subscription' | 'fairs' | 'orders';
-
-interface TabConfig {
-  key: TabType;
-  label: string;
-  icon: any;
-  color: string;
-}
-
-const ALL_TABS: TabConfig[] = [
-  { key: 'products', label: 'Товары', icon: Package, color: '#10B981' },
-  { key: 'orders', label: 'Заказы', icon: ClipboardList, color: '#F97316' },
-  { key: 'create', label: 'Подача', icon: PlusCircle, color: '#F59E0B' },
-  { key: 'stats', label: 'Статистика', icon: BarChart3, color: '#3B73FC' },
-  { key: 'demand', label: 'Спрос', icon: TrendingUp, color: '#8B5CF6' },
-  { key: 'subscription', label: 'PRO', icon: Crown, color: '#F59E0B' },
-  { key: 'fairs', label: 'Ярмарки', icon: Calendar, color: '#EC4899' },
-];
-
-const ROLE_TABS: Record<ShopRole, TabType[]> = {
-  FARMER: ['products', 'orders', 'create', 'stats', 'demand', 'subscription', 'fairs'],
-  SHOP: ['products', 'orders', 'create', 'stats', 'demand', 'subscription', 'fairs'],
-  BLOGGER: ['products', 'orders', 'create', 'stats', 'demand', 'subscription', 'fairs'],
-  ARTISAN: ['products', 'orders', 'create', 'stats', 'demand', 'subscription', 'fairs'],
-};
-
-const ROLE_BADGES: Record<ShopRole, { label: string; emoji: string; color: string; bgColor: string }> = {
-  FARMER: { label: 'Фермер', emoji: '🌾', color: '#047857', bgColor: '#D1FAE5' },
-  SHOP: { label: 'Магазин', emoji: '🏪', color: '#1D4ED8', bgColor: '#DBEAFE' },
-  BLOGGER: { label: 'Авторский бренд', emoji: '📸', color: '#BE185D', bgColor: '#FCE7F3' },
-  ARTISAN: { label: 'Ремесленник', emoji: '🎨', color: '#6D28D9', bgColor: '#EDE9FE' },
-};
+type TabType = BusinessTabType;
 
 const ROLE_CONFIGS: Record<ShopRole, RoleConfig> = {
   FARMER: {
-    title: 'Кабинет продавца',
-    subtitle: 'Товары, аналитика, спрос и ярмарки',
-    icon: Tractor,
-    gradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-    iconBgColor: '#059669',
+    title: 'Кабинет фермера',
+    subtitle: 'Товары, заказы, аналитика урожая',
+    icon: ROLE_ICONS.FARMER,
+    ...ROLE_GRADIENTS.FARMER,
   },
   SHOP: {
-    title: 'Кабинет продавца',
-    subtitle: 'Товары, аналитика, спрос и ярмарки',
-    icon: Store,
-    gradient: 'linear-gradient(135deg, #3B73FC 0%, #2563EB 100%)',
-    iconBgColor: '#3B73FC',
+    title: 'Кабинет магазина',
+    subtitle: 'Товары, заказы, аналитика продаж',
+    icon: ROLE_ICONS.SHOP,
+    ...ROLE_GRADIENTS.SHOP,
   },
   BLOGGER: {
-    title: 'Кабинет продавца',
-    subtitle: 'Товары, аналитика, спрос и ярмарки',
-    icon: Camera,
-    gradient: 'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)',
-    iconBgColor: '#EC4899',
+    title: 'Кабинет автора',
+    subtitle: 'Товары, заявки, публикации, соцсети',
+    icon: ROLE_ICONS.BLOGGER,
+    ...ROLE_GRADIENTS.BLOGGER,
   },
   ARTISAN: {
-    title: 'Кабинет продавца',
-    subtitle: 'Товары, аналитика, спрос и ярмарки',
-    icon: Palette,
-    gradient: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
-    iconBgColor: '#8B5CF6',
+    title: 'Кабинет мастера',
+    subtitle: 'Изделия, заказы, аналитика',
+    icon: ROLE_ICONS.ARTISAN,
+    ...ROLE_GRADIENTS.ARTISAN,
   },
 };
 
@@ -407,10 +388,7 @@ export default function ShopCabinetPage() {
     }
   };
 
-  const getRoleTabs = (): TabConfig[] => {
-    const allowedTabs = ROLE_TABS[shopRole];
-    return ALL_TABS.filter(tab => allowedTabs.includes(tab.key));
-  };
+  const roleTabs = getTabsForRole(shopRole);
 
   const getRoleConfig = (): RoleConfig => {
     return ROLE_CONFIGS[shopRole];
@@ -1916,7 +1894,6 @@ export default function ShopCabinetPage() {
   }
 
   const roleConfig = getRoleConfig();
-  const roleTabs = getRoleTabs();
   const RoleIcon = roleConfig.icon;
   const roleBadge = ROLE_BADGES[shopRole];
 
