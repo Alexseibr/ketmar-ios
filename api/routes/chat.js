@@ -35,14 +35,14 @@ router.post('/start', async (req, res, next) => {
       return res.status(400).json({ message: 'adId обязателен' });
     }
 
-    const ad = await Ad.findById(adId).populate({ path: 'owner', select: 'phone telegramUsername telegramId firstName lastName username' });
+    const ad = await Ad.findById(adId);
     if (!ad) {
       return res.status(404).json({ message: 'Объявление не найдено' });
     }
 
-    const seller =
-      ad.owner ||
-      (await User.findOne({ telegramId: ad.sellerTelegramId || ad.userTelegramId }).select('phone telegramUsername telegramId firstName lastName username'));
+    // Find seller by telegramId from ad
+    const sellerTelegramId = ad.sellerTelegramId || ad.userTelegramId;
+    const seller = await User.findOne({ telegramId: sellerTelegramId }).select('phone telegramUsername telegramId firstName lastName username');
 
     if (!seller) {
       return res.status(404).json({ message: 'Продавец не найден' });
