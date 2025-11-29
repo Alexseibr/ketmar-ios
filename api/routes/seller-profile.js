@@ -141,6 +141,20 @@ router.put('/', authMiddleware, async (req, res) => {
       }
     }
     
+    if (req.body.messengers) {
+      profile.messengers = {
+        ...profile.messengers,
+        ...req.body.messengers,
+      };
+    }
+    
+    if (req.body.socials) {
+      profile.socials = {
+        ...profile.socials,
+        ...req.body.socials,
+      };
+    }
+    
     if (req.body.geo) {
       profile.geo = {
         type: 'Point',

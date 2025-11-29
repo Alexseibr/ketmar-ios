@@ -41,6 +41,7 @@ interface SellerProfile {
   avatar?: string;
   isFarmer?: boolean;
   role?: ShopRole;
+  shopRole?: ShopRole;
   description?: string;
   phone?: string;
   instagram?: string;
@@ -48,6 +49,16 @@ interface SellerProfile {
   address?: string;
   city?: string;
   isVerified?: boolean;
+  messengers?: {
+    telegram?: string;
+    viber?: string;
+    whatsapp?: string;
+  };
+  socials?: {
+    tiktok?: string;
+    youtube?: string;
+    website?: string;
+  };
 }
 
 interface RoleConfig {

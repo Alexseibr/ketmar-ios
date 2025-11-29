@@ -142,6 +142,23 @@ const sellerProfileSchema = new mongoose.Schema(
         default: null,
       },
     },
+    socials: {
+      tiktok: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      youtube: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      website: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+    },
     address: {
       type: String,
       trim: true,
