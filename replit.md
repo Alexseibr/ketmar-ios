@@ -114,3 +114,34 @@ Uses nearest-neighbor algorithm starting from seller's base location. Orders wit
 - `CategoryGrid` - 4x3 grid of category icons
 - `HorizontalSection` - Horizontal scrolling ad cards
 - `CompactAdCard` - Small ad preview with discount display
+
+## TikTok-Style Feed System
+
+### Architecture
+The feed uses a filtered pipeline architecture with memoized data:
+- `items` - Raw list from API with cursor-based pagination
+- `filteredItems` - Memoized subset based on active filter (useMemo)
+- `idToBaseIndex` - Map from item._id to raw index for analytics
+
+### Quick Filters
+- **All** - No filtering
+- **Free** - `isFreeGiveaway === true`
+- **Farmer** - `farmerData` exists
+- **Discount** - `priceHistory` with lower current price
+
+### Key Technical Details
+1. **Load-more debounce**: 150ms debounce with `isFetchingRef` guard prevents duplicate loadFeed(nextCursor) calls. Timer clears only on unmount.
+2. **Filter analytics**: Before switching filters, emit dwell event for current card, await sendEvents, then reset timers.
+3. **Empty filtered state**: Shows "No items match filter" UI with "Show all" button. Resets `currentIndex`, `scrollTop`, and defers initial impression via double RAF until scroll snap completes.
+4. **Virtual scroll sync**: `isScrollSnapPendingRef` guards impression tracking during scroll transitions.
+
+### FeedCard Features
+- Photo slider with swipe gestures (only if multiple photos)
+- TikTok-style badges: Даром (pink), Фермер (green), Скидка (amber)
+- Like button with auth guard
+- Share button with cleanup timer on unmount
+- Dark overlay design with gradient
+
+### Files
+- `miniapp/src/pages/FeedPage.tsx` - Main feed with filters and pagination
+- `miniapp/src/components/FeedCard.tsx` - Individual card component

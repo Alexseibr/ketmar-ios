@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, MapPin, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Bell, MapPin, Loader2, ChevronUp, ChevronDown, Gift, Leaf, TrendingDown, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FeedCard from '@/components/FeedCard';
 import ScreenLayout from '@/components/layout/ScreenLayout';
@@ -14,47 +14,119 @@ const FEED_RADIUS_KM = 20;
 const FEED_LIMIT = 20;
 const AUTO_REFRESH_INTERVAL = 45000; // 45 seconds
 
-function FeedHeader({ onNotificationsClick }: { onNotificationsClick: () => void }) {
+type FilterType = 'all' | 'free' | 'farmer' | 'discount';
+
+interface FilterOption {
+  id: FilterType;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+}
+
+const FILTER_OPTIONS: FilterOption[] = [
+  { id: 'all', label: 'Все', icon: <Sparkles size={14} />, color: '#3A7BFF', bgColor: 'rgba(58, 123, 255, 0.1)' },
+  { id: 'free', label: 'Даром', icon: <Gift size={14} />, color: '#EC4899', bgColor: 'rgba(236, 72, 153, 0.1)' },
+  { id: 'farmer', label: 'Фермер', icon: <Leaf size={14} />, color: '#10B981', bgColor: 'rgba(16, 185, 129, 0.1)' },
+  { id: 'discount', label: 'Скидки', icon: <TrendingDown size={14} />, color: '#F59E0B', bgColor: 'rgba(245, 158, 11, 0.1)' },
+];
+
+interface FeedHeaderProps {
+  onNotificationsClick: () => void;
+  activeFilter: FilterType;
+  onFilterChange: (filter: FilterType) => void;
+}
+
+function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: FeedHeaderProps) {
   return (
     <header
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '12px 16px',
-        borderBottom: '1px solid #E5E7EB',
-        background: '#FFFFFF',
+        background: '#000',
         flexShrink: 0,
       }}
     >
-      <h1
+      {/* Top row: Logo + Notifications */}
+      <div
         style={{
-          margin: 0,
-          fontSize: 20,
-          fontWeight: 700,
-          color: '#1F2937',
-          letterSpacing: '-0.5px',
-        }}
-      >
-        KETMAR
-      </h1>
-      <button
-        onClick={onNotificationsClick}
-        data-testid="button-notifications"
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: '50%',
-          border: 'none',
-          background: '#F5F6F8',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
+          justifyContent: 'space-between',
+          padding: '12px 16px 8px',
         }}
       >
-        <Bell size={20} color="#6B7280" />
-      </button>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 800,
+            color: '#fff',
+            letterSpacing: '-0.5px',
+          }}
+        >
+          KETMAR
+        </h1>
+        <button
+          onClick={onNotificationsClick}
+          data-testid="button-notifications"
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: '50%',
+            border: 'none',
+            background: 'rgba(255,255,255,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <Bell size={20} color="#fff" />
+        </button>
+      </div>
+      
+      {/* Filter tabs row */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          padding: '8px 16px 12px',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+      >
+        {FILTER_OPTIONS.map((filter) => {
+          const isActive = activeFilter === filter.id;
+          return (
+            <motion.button
+              key={filter.id}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onFilterChange(filter.id)}
+              data-testid={`filter-${filter.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 14px',
+                borderRadius: 20,
+                border: 'none',
+                background: isActive ? '#fff' : 'rgba(255,255,255,0.15)',
+                color: isActive ? '#000' : '#fff',
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span style={{ color: isActive ? filter.color : 'inherit' }}>
+                {filter.icon}
+              </span>
+              {filter.label}
+            </motion.button>
+          );
+        })}
+      </div>
     </header>
   );
 }
@@ -73,6 +145,131 @@ export default function FeedPage() {
   const [newBuffer, setNewBuffer] = useState<FeedItem[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [cardHeight, setCardHeight] = useState<number>(0);
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const prevFilterRef = useRef<FilterType>('all');
+
+  const { filteredItems, idToBaseIndex } = useMemo(() => {
+    const filtered = items.filter(item => {
+      switch (activeFilter) {
+        case 'free':
+          return item.isFreeGiveaway || item.price === 0;
+        case 'farmer':
+          return item.isFarmerAd;
+        case 'discount':
+          return item.priceHistory && item.priceHistory.length > 0;
+        default:
+          return true;
+      }
+    });
+    const idMap = new Map<string, number>();
+    items.forEach((item, idx) => idMap.set(item._id, idx));
+    return { filteredItems: filtered, idToBaseIndex: idMap };
+  }, [items, activeFilter]);
+
+  const handleFilterChange = useCallback(async (filter: FilterType) => {
+    // Emit dwell event for the currently in-view card BEFORE clearing timers
+    if (currentStartTime.current && filteredItems.length > 0) {
+      const currentItem = filteredItems[currentIndex];
+      if (currentItem) {
+        const dwellTimeMs = Date.now() - currentStartTime.current;
+        trackEvent({
+          adId: currentItem._id,
+          eventType: 'impression',
+          dwellTimeMs,
+          positionIndex: currentIndex,
+          radiusKm: FEED_RADIUS_KM,
+          meta: { categoryId: currentItem.categoryId },
+        });
+      }
+    }
+    
+    // Flush all pending analytics before switching filters - only clear on success
+    if (pendingEvents.current.length > 0) {
+      const eventsToSend = [...pendingEvents.current];
+      try {
+        await sendEvents(eventsToSend);
+        // Only clear after successful send
+        pendingEvents.current = pendingEvents.current.filter(
+          e => !eventsToSend.includes(e)
+        );
+      } catch (error) {
+        console.error('Failed to flush events on filter change:', error);
+        // Keep events in queue for retry
+      }
+    }
+    
+    setActiveFilter(filter);
+    setCurrentIndex(0);
+    lastScrollIndex.current = 0;
+    currentStartTime.current = null;
+  }, [sendEvents, trackEvent, filteredItems, currentIndex]);
+
+  useEffect(() => {
+    if (prevFilterRef.current !== activeFilter && scrollContainerRef.current && filteredItems.length > 0) {
+      const container = scrollContainerRef.current;
+      const cardHeight = container.clientHeight;
+      if (cardHeight > 0) {
+        container.scrollTop = cardHeight * filteredItems.length;
+        lastScrollIndex.current = filteredItems.length;
+      }
+    }
+    prevFilterRef.current = activeFilter;
+  }, [activeFilter, filteredItems.length]);
+
+  // Handle empty filtered state and repopulation
+  useEffect(() => {
+    const prevLength = prevFilteredLengthRef.current;
+    const currentLength = filteredItems.length;
+    
+    // When filteredItems becomes empty (but items exist), reset refs and scroll
+    if (currentLength === 0 && items.length > 0) {
+      setCurrentIndex(0);
+      lastScrollIndex.current = 0;
+      currentStartTime.current = null;
+      
+      // Explicitly reset scroll container to top position
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+    }
+    // When filteredItems repopulate from empty, restart analytics after scroll snap
+    else if (prevLength === 0 && currentLength > 0 && items.length > 0) {
+      setCurrentIndex(0);
+      isScrollSnapPendingRef.current = true;
+      
+      // Reset scroll position to middle set first
+      if (scrollContainerRef.current) {
+        const container = scrollContainerRef.current;
+        const cardHeight = container.clientHeight;
+        if (cardHeight > 0) {
+          container.scrollTop = cardHeight * currentLength;
+          lastScrollIndex.current = currentLength;
+        }
+      }
+      
+      // Use requestAnimationFrame to ensure scroll snap completes before emitting impression
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          isScrollSnapPendingRef.current = false;
+          currentStartTime.current = Date.now();
+          
+          // Track initial impression for first item AFTER scroll is complete
+          const firstItem = filteredItems[0];
+          if (firstItem) {
+            trackEvent({
+              adId: firstItem._id,
+              eventType: 'impression',
+              positionIndex: 0,
+              radiusKm: FEED_RADIUS_KM,
+              meta: { categoryId: firstItem.categoryId },
+            });
+          }
+        });
+      });
+    }
+    
+    prevFilteredLengthRef.current = currentLength;
+  }, [filteredItems.length, items.length, trackEvent, filteredItems]);
   
   // Auto-request location when page opens if not available
   useEffect(() => {
@@ -103,6 +300,10 @@ export default function FeedPage() {
   const hasShownHint = useRef(false);
   const lastFetchTime = useRef<number>(Date.now());
   const lastScrollIndex = useRef<number>(0);
+  const isFetchingRef = useRef<boolean>(false);
+  const loadMoreDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const prevFilteredLengthRef = useRef<number>(0);
+  const isScrollSnapPendingRef = useRef<boolean>(false);
 
   // Calculate card height based on scroll container size
   useEffect(() => {
@@ -204,7 +405,15 @@ export default function FeedPage() {
   const loadFeed = useCallback(async (cursor?: string, isRefresh?: boolean) => {
     if (!coords || !coords.lat || !coords.lng) return;
     
+    // Guard against duplicate fetches for cursor-based loads
+    if (cursor && isFetchingRef.current) {
+      return;
+    }
+    
     try {
+      if (cursor) {
+        isFetchingRef.current = true;
+      }
       if (!cursor && !isRefresh) {
         setIsLoading(true);
       }
@@ -267,6 +476,9 @@ export default function FeedPage() {
       console.error('[FeedPage] Failed to load feed:', error);
     } finally {
       setIsLoading(false);
+      if (cursor) {
+        isFetchingRef.current = false;
+      }
     }
   }, [coords, items, trackEvent]);
 
@@ -277,12 +489,34 @@ export default function FeedPage() {
     }
   }, [coords]);
 
-  // Load more when approaching end
+  // Load more when approaching end of filtered items with debounce guard
+  // Note: We load more based on raw items having more data (nextCursor/hasMore)
+  // but trigger based on approaching end of filtered view
+  // Timer persists between renders - only cleared on unmount via separate effect
   useEffect(() => {
-    if (hasMore && nextCursor && currentIndex >= items.length - 3) {
-      loadFeed(nextCursor);
+    if (hasMore && nextCursor && filteredItems.length > 0 && currentIndex >= filteredItems.length - 3) {
+      // Only set timer if not already pending and not currently fetching
+      if (!loadMoreDebounceRef.current && !isFetchingRef.current) {
+        loadMoreDebounceRef.current = setTimeout(() => {
+          loadMoreDebounceRef.current = null;
+          if (!isFetchingRef.current) {
+            loadFeed(nextCursor);
+          }
+        }, 150);
+      }
     }
-  }, [currentIndex, items.length, hasMore, nextCursor]);
+    // No cleanup here - timer persists between renders to avoid premature cancellation
+  }, [currentIndex, filteredItems.length, hasMore, nextCursor, loadFeed]);
+
+  // Cleanup load-more timer only on unmount
+  useEffect(() => {
+    return () => {
+      if (loadMoreDebounceRef.current) {
+        clearTimeout(loadMoreDebounceRef.current);
+        loadMoreDebounceRef.current = null;
+      }
+    };
+  }, []);
 
   // Periodic refresh for new items
   useEffect(() => {
@@ -303,8 +537,8 @@ export default function FeedPage() {
   }, [flushPendingEvents]);
 
   // Create infinite scroll list (3x items for seamless looping)
-  const infiniteItems = items.length > 0 ? [...items, ...items, ...items] : [];
-  const itemsPerSet = items.length;
+  const infiniteItems = filteredItems.length > 0 ? [...filteredItems, ...filteredItems, ...filteredItems] : [];
+  const itemsPerSet = filteredItems.length;
   
   // Initialize scroll position to middle set
   useEffect(() => {
@@ -319,7 +553,10 @@ export default function FeedPage() {
 
   // Handle scroll with infinite loop logic
   const handleScroll = useCallback(() => {
-    if (!scrollContainerRef.current || items.length === 0 || itemsPerSet === 0) return;
+    if (!scrollContainerRef.current || filteredItems.length === 0 || itemsPerSet === 0) return;
+    
+    // Skip impression tracking while scroll snap is pending (prevents duplicates during repopulation)
+    if (isScrollSnapPendingRef.current) return;
     
     const container = scrollContainerRef.current;
     const cardHeight = container.clientHeight;
@@ -328,8 +565,8 @@ export default function FeedPage() {
     const scrollTop = container.scrollTop;
     const virtualIndex = Math.round(scrollTop / cardHeight);
     
-    // Calculate real index (0 to items.length-1), with safety check
-    const realIndex = Math.max(0, Math.min(items.length - 1, ((virtualIndex % itemsPerSet) + itemsPerSet) % itemsPerSet));
+    // Calculate real index (0 to filteredItems.length-1), with safety check
+    const realIndex = Math.max(0, Math.min(filteredItems.length - 1, ((virtualIndex % itemsPerSet) + itemsPerSet) % itemsPerSet));
     
     // Jump to middle set if at edges (for seamless infinite scroll)
     if (virtualIndex < itemsPerSet * 0.5) {
@@ -345,8 +582,8 @@ export default function FeedPage() {
     if (virtualIndex !== lastScrollIndex.current) {
       const prevVirtualIndex = lastScrollIndex.current;
       const prevRealIndex = ((prevVirtualIndex % itemsPerSet) + itemsPerSet) % itemsPerSet;
-      const prevItem = items[prevRealIndex];
-      const newItem = items[realIndex];
+      const prevItem = filteredItems[prevRealIndex];
+      const newItem = filteredItems[realIndex];
       
       // Track dwell time for previous item
       if (currentStartTime.current && prevItem) {
@@ -386,12 +623,12 @@ export default function FeedPage() {
       setCurrentIndex(realIndex);
       dismissHint();
     }
-  }, [items, itemsPerSet, trackEvent, dismissHint]);
+  }, [filteredItems, itemsPerSet, trackEvent, dismissHint]);
 
   const handleLike = useCallback(async (adId: string) => {
     if (!user?.telegramId) return;
     
-    const item = items.find(i => i._id === adId);
+    const item = filteredItems.find(i => i._id === adId);
     if (!item) return;
     
     const isCurrentlyFavorite = favoriteIds.has(adId);
@@ -410,10 +647,11 @@ export default function FeedPage() {
     
     // Track event (only track on adding to favorites)
     if (newFavoriteState) {
+      const baseIndex = idToBaseIndex.get(adId) ?? filteredItems.indexOf(item);
       trackEvent({
         adId: item._id,
         eventType: 'like',
-        positionIndex: items.indexOf(item),
+        positionIndex: baseIndex,
         radiusKm: FEED_RADIUS_KM,
         meta: { categoryId: item.categoryId },
       });
@@ -436,10 +674,10 @@ export default function FeedPage() {
         return newSet;
       });
     }
-  }, [items, favoriteIds, user?.telegramId, trackEvent, flushPendingEvents]);
+  }, [filteredItems, idToBaseIndex, favoriteIds, user?.telegramId, trackEvent, flushPendingEvents]);
 
   const handleViewOpen = useCallback(() => {
-    const item = items[currentIndex];
+    const item = filteredItems[currentIndex];
     if (item) {
       trackEvent({
         adId: item._id,
@@ -450,7 +688,7 @@ export default function FeedPage() {
       });
       flushPendingEvents();
     }
-  }, [currentIndex, items, trackEvent, flushPendingEvents]);
+  }, [currentIndex, filteredItems, trackEvent, flushPendingEvents]);
 
   const handleNotificationsClick = useCallback(() => {
     navigate('/notifications');
@@ -471,7 +709,7 @@ export default function FeedPage() {
             background: '#FFFFFF',
           }}
         >
-          <FeedHeader onNotificationsClick={handleNotificationsClick} />
+          <FeedHeader onNotificationsClick={handleNotificationsClick} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
 
           <div
             style={{
@@ -519,7 +757,7 @@ export default function FeedPage() {
             background: '#FFFFFF',
           }}
         >
-          <FeedHeader onNotificationsClick={handleNotificationsClick} />
+          <FeedHeader onNotificationsClick={handleNotificationsClick} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
 
           <main
             style={{
@@ -607,7 +845,7 @@ export default function FeedPage() {
             background: '#FFFFFF',
           }}
         >
-          <FeedHeader onNotificationsClick={handleNotificationsClick} />
+          <FeedHeader onNotificationsClick={handleNotificationsClick} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
 
           <div
             style={{
@@ -655,7 +893,7 @@ export default function FeedPage() {
             background: '#FFFFFF',
           }}
         >
-          <FeedHeader onNotificationsClick={handleNotificationsClick} />
+          <FeedHeader onNotificationsClick={handleNotificationsClick} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
 
           <div
             style={{
@@ -711,6 +949,94 @@ export default function FeedPage() {
     );
   }
 
+  // Empty filter result - show message when filter applied but no matches
+  if (filteredItems.length === 0 && items.length > 0) {
+    const filterLabel = FILTER_OPTIONS.find(f => f.id === activeFilter)?.label || 'Выбранный фильтр';
+    return (
+      <ScreenLayout showBottomNav={true}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            background: '#000',
+          }}
+        >
+          <FeedHeader onNotificationsClick={handleNotificationsClick} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
+
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+            }}
+          >
+            <div
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 24,
+              }}
+            >
+              {activeFilter === 'free' && <Gift size={36} color="#EC4899" />}
+              {activeFilter === 'farmer' && <Leaf size={36} color="#10B981" />}
+              {activeFilter === 'discount' && <TrendingDown size={36} color="#F59E0B" />}
+            </div>
+            
+            <h2
+              style={{
+                margin: '0 0 12px',
+                fontSize: 20,
+                fontWeight: 600,
+                color: '#fff',
+                textAlign: 'center',
+              }}
+            >
+              Нет объявлений "{filterLabel}"
+            </h2>
+            
+            <p
+              style={{
+                margin: '0 0 24px',
+                fontSize: 15,
+                color: 'rgba(255,255,255,0.7)',
+                textAlign: 'center',
+                lineHeight: 1.5,
+              }}
+            >
+              Попробуйте другой фильтр или посмотрите все объявления
+            </p>
+
+            <button
+              onClick={() => handleFilterChange('all')}
+              data-testid="button-show-all"
+              style={{
+                padding: '12px 24px',
+                background: '#fff',
+                color: '#000',
+                border: 'none',
+                borderRadius: 24,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Показать все
+            </button>
+          </div>
+        </div>
+      </ScreenLayout>
+    );
+  }
+
   return (
     <ScreenLayout showBottomNav={true} noPadding={true}>
       <div
@@ -720,56 +1046,18 @@ export default function FeedPage() {
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
-          background: '#F5F6F8',
+          background: '#000',
           overflow: 'hidden',
         }}
       >
-        {/* Header - sticky at top */}
-        <header
-          style={{
-            position: 'sticky',
-            top: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 16px',
-            background: '#FFFFFF',
-            borderBottom: '1px solid #E5E7EB',
-            zIndex: 50,
-            flexShrink: 0,
-          }}
-        >
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 20,
-              fontWeight: 700,
-              color: '#1F2937',
-              letterSpacing: '-0.5px',
-            }}
-          >
-            KETMAR
-          </h1>
-          <button
-            onClick={handleNotificationsClick}
-            data-testid="button-notifications"
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              border: 'none',
-              background: '#F5F6F8',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <Bell size={20} color="#6B7280" />
-          </button>
-        </header>
+        {/* Header with filters - TikTok style */}
+        <FeedHeader 
+          onNotificationsClick={handleNotificationsClick} 
+          activeFilter={activeFilter} 
+          onFilterChange={handleFilterChange} 
+        />
 
-        {/* Main content - Instagram-style infinite scroll with scroll-snap */}
+        {/* Main content - TikTok-style infinite scroll with scroll-snap */}
         <main
           ref={scrollContainerRef}
           onScroll={handleScroll}
@@ -784,7 +1072,7 @@ export default function FeedPage() {
           {infiniteItems.map((item, index) => {
             const realIndex = index % itemsPerSet;
             const nextRealIndex = (realIndex + 1) % itemsPerSet;
-            const nextItem = items[nextRealIndex];
+            const nextItem = filteredItems[nextRealIndex];
             
             return (
               <div

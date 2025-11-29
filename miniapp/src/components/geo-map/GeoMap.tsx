@@ -66,6 +66,7 @@ interface ClusterData {
 interface GeoMapProps {
   onMarkerClick?: (cluster: ClusterData) => void;
   onMapMove?: (center: { lat: number; lng: number }, zoom: number) => void;
+  onClustersUpdate?: (count: number) => void;
   showHeatmap?: boolean;
   heatmapType?: 'demand' | 'supply';
   categoryId?: string;
@@ -138,6 +139,7 @@ function HeatmapLayer({ points, type }: { points: HeatmapPoint[]; type: 'demand'
 export function GeoMap({ 
   onMarkerClick, 
   onMapMove, 
+  onClustersUpdate,
   heatmapType = 'supply',
   categoryId 
 }: GeoMapProps) {
@@ -162,11 +164,13 @@ export function GeoMap({
       const data = await response.json();
       if (data.success) {
         setClusters(data.data.clusters);
+        const totalCount = data.data.clusters.reduce((sum: number, c: ClusterData) => sum + c.count, 0);
+        onClustersUpdate?.(totalCount);
       }
     } catch (error) {
       console.error('Failed to fetch clusters:', error);
     }
-  }, [radiusKm, categoryId]);
+  }, [radiusKm, categoryId, onClustersUpdate]);
   
   const fetchHeatmap = useCallback(async (centerLat: number, centerLng: number, type: 'demand' | 'supply') => {
     try {
