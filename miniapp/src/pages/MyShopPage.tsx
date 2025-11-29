@@ -16,6 +16,8 @@ import {
   FileText,
   AlertCircle,
   Sparkles,
+  Clock,
+  CheckCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -146,6 +148,21 @@ export default function MyShopPage() {
     retry: false,
   });
 
+  const shopRequestQuery = useQuery({
+    queryKey: ['my-shop-request'],
+    queryFn: async () => {
+      const token = await getAuthToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const res = await http.get('/api/seller-profile/my/shop-request', { headers });
+      return res.data;
+    },
+    enabled: !!user && !isSuperAdmin,
+    retry: false,
+  });
+
   const registerMutation = useMutation({
     mutationFn: async (data: RegistrationFormData) => {
       const token = await getAuthToken();
@@ -153,23 +170,35 @@ export default function MyShopPage() {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      const res = await http.post('/api/seller-profile', data, { headers });
+      const requestData = {
+        name: data.name,
+        shopRole: data.role,
+        description: data.description,
+        address: data.address,
+        contacts: {
+          phone: data.phone || null,
+          instagram: data.instagram || null,
+          telegram: user?.username || null,
+        },
+      };
+      const res = await http.post('/api/seller-profile/shop-request', requestData, { headers });
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['seller-profile-my'] });
-      toast({ title: 'Профиль продавца создан!' });
+      queryClient.invalidateQueries({ queryKey: ['my-shop-request'] });
+      toast({ title: 'Заявка отправлена на модерацию!' });
       setShowRegistrationForm(false);
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Ошибка регистрации';
+      const message = error?.response?.data?.message || 'Ошибка отправки заявки';
       toast({ title: message, variant: 'destructive' });
     },
   });
 
   const profile = profileQuery.data?.profile as SellerProfile | undefined;
-  const hasProfile = !!profile && profile.name !== 'Мой магазин';
-  const profileRole = profile?.role || (profile?.isFarmer ? 'FARMER' : 'SHOP');
+  const hasProfile = !!profile && profile.name !== 'Мой магазин' && profile.isVerified;
+  const pendingRequest = shopRequestQuery.data?.request;
+  const hasPendingRequest = pendingRequest?.status === 'pending';
 
   useEffect(() => {
     if (hasProfile && !isSuperAdmin) {
@@ -198,6 +227,11 @@ export default function MyShopPage() {
     }
     if (formData.name.trim().length < 2) {
       toast({ title: 'Название должно содержать минимум 2 символа', variant: 'destructive' });
+      return;
+    }
+    const hasContact = formData.phone?.trim() || formData.instagram?.trim() || user?.username;
+    if (!hasContact) {
+      toast({ title: 'Укажите хотя бы один способ связи', variant: 'destructive' });
       return;
     }
     registerMutation.mutate(formData);
@@ -230,12 +264,114 @@ export default function MyShopPage() {
     </div>
   );
 
-  if (profileQuery.isLoading) {
+  if (profileQuery.isLoading || shopRequestQuery.isLoading) {
     return (
       <ScreenLayout header={header}>
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
           <p className="text-muted-foreground">Загрузка...</p>
+        </div>
+      </ScreenLayout>
+    );
+  }
+
+  if (hasPendingRequest && !isSuperAdmin) {
+    const requestRole = pendingRequest?.shopRole as ShopRole || 'SHOP';
+    const roleConfig = ROLE_CONFIGS.find(r => r.key === requestRole) || ROLE_CONFIGS[0];
+    const RoleIcon = roleConfig.icon;
+
+    return (
+      <ScreenLayout header={header}>
+        <div style={{ padding: '24px 16px' }}>
+          <div style={{
+            background: '#FFFBEB',
+            border: '1px solid #FCD34D',
+            borderRadius: 16,
+            padding: '20px',
+            marginBottom: 20,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+              <div style={{
+                width: 56,
+                height: 56,
+                borderRadius: 14,
+                background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+              }}>
+                <Clock size={28} color="#fff" />
+              </div>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: '#92400E' }}>
+                  Заявка на модерации
+                </div>
+                <div style={{ fontSize: 14, color: '#B45309' }}>
+                  Ожидайте подтверждения
+                </div>
+              </div>
+            </div>
+            
+            <p style={{ fontSize: 14, color: '#78350F', lineHeight: 1.5, margin: 0 }}>
+              Ваша заявка на регистрацию отправлена и находится на рассмотрении. 
+              Мы проверим данные и активируем ваш профиль в ближайшее время.
+            </p>
+          </div>
+
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: 16,
+            padding: '16px',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+          }}>
+            <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>
+              Информация о заявке
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: roleConfig.gradient,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <RoleIcon size={22} color="#fff" />
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: '#1F2937' }}>
+                  {pendingRequest?.name}
+                </div>
+                <div style={{ fontSize: 13, color: '#6B7280' }}>
+                  {roleConfig.title} • {roleConfig.subtitle}
+                </div>
+              </div>
+            </div>
+
+            {pendingRequest?.description && (
+              <p style={{ fontSize: 14, color: '#4B5563', marginTop: 8, marginBottom: 0 }}>
+                {pendingRequest.description}
+              </p>
+            )}
+          </div>
+
+          <div style={{
+            background: '#F0FDF4',
+            borderRadius: 12,
+            padding: '14px 16px',
+            marginTop: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}>
+            <CheckCircle size={20} color="#16A34A" />
+            <p style={{ fontSize: 13, color: '#166534', margin: 0 }}>
+              После одобрения вы сможете создавать объявления и управлять магазином
+            </p>
+          </div>
         </div>
       </ScreenLayout>
     );
@@ -352,15 +488,15 @@ export default function MyShopPage() {
             </CardContent>
           </Card>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="h-4 w-4 text-blue-600" />
+              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <Clock className="h-4 w-4 text-amber-600" />
               </div>
               <div>
-                <p className="font-medium text-blue-900 text-sm">Бесплатная регистрация</p>
-                <p className="text-blue-700 text-xs mt-1">
-                  Начните продавать прямо сейчас. Обновите до PRO для расширенных возможностей.
+                <p className="font-medium text-amber-900 text-sm">Модерация заявок</p>
+                <p className="text-amber-700 text-xs mt-1">
+                  Заявка будет рассмотрена модератором в течение 1-2 рабочих дней
                 </p>
               </div>
             </div>
@@ -376,12 +512,12 @@ export default function MyShopPage() {
             {registerMutation.isPending ? (
               <>
                 <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Создание...
+                Отправка...
               </>
             ) : (
               <>
                 <Check className="h-5 w-5 mr-2" />
-                Создать профиль
+                Отправить заявку
               </>
             )}
           </Button>

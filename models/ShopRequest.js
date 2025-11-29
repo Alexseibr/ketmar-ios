@@ -39,8 +39,9 @@ const ContactsSchema = new mongoose.Schema(
   {
     phone: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
+      default: null,
     },
     telegram: {
       type: String,

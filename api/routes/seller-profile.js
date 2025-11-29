@@ -295,6 +295,7 @@ router.post('/shop-request', authMiddleware, async (req, res) => {
     const {
       name,
       shopType,
+      shopRole,
       description,
       city,
       region,
@@ -313,23 +314,32 @@ router.post('/shop-request', authMiddleware, async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'invalid_name',
-        message: 'Название магазина должно содержать минимум 2 символа',
+        message: 'Название должно содержать минимум 2 символа',
       });
     }
     
-    if (!shopType || !['farmer', 'shop', 'service'].includes(shopType)) {
+    // Support both old shopType and new shopRole
+    const validShopTypes = ['farmer', 'shop', 'service', 'blogger', 'artisan'];
+    const validShopRoles = ['SHOP', 'FARMER', 'BLOGGER', 'ARTISAN'];
+    
+    const finalShopRole = shopRole || (shopType === 'farmer' ? 'FARMER' : 'SHOP');
+    const finalShopType = shopType || (shopRole === 'FARMER' ? 'farmer' : 'shop');
+    
+    if (!validShopRoles.includes(finalShopRole)) {
       return res.status(400).json({
         success: false,
         error: 'invalid_type',
-        message: 'Укажите тип магазина',
+        message: 'Укажите тип деятельности',
       });
     }
     
-    if (!contacts?.phone) {
+    // Phone is optional now, but at least one contact method required
+    const hasContact = contacts?.phone || contacts?.telegram || contacts?.instagram;
+    if (!hasContact) {
       return res.status(400).json({
         success: false,
-        error: 'invalid_phone',
-        message: 'Укажите телефон для связи',
+        error: 'invalid_contacts',
+        message: 'Укажите хотя бы один способ связи',
       });
     }
     
@@ -337,7 +347,8 @@ router.post('/shop-request', authMiddleware, async (req, res) => {
       userId: user._id,
       telegramId: user.telegramId,
       name: name.trim(),
-      shopType,
+      shopType: finalShopType,
+      shopRole: finalShopRole,
       description: description?.trim(),
       city,
       region,
