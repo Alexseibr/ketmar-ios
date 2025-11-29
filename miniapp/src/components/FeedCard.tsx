@@ -247,94 +247,97 @@ export default function FeedCard({
         style={{
           position: 'absolute',
           right: 12,
-          bottom: 280,
+          bottom: 320,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 16,
+          gap: 14,
         }}
       >
         {/* Like button */}
-        <motion.div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        <motion.div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.92 }}
             onClick={handleLike}
             data-testid="button-like"
             style={{
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               borderRadius: '50%',
               border: 'none',
               background: isLiked
                 ? 'rgba(255,255,255,0.95)'
-                : 'rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)',
+                : 'rgba(255,255,255,0.15)',
+              backdropFilter: 'blur(8px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
           >
             <Heart
-              size={24}
+              size={22}
               fill={isLiked ? '#EF4444' : 'none'}
               color={isLiked ? '#EF4444' : '#fff'}
-              strokeWidth={2}
+              strokeWidth={1.8}
             />
           </motion.button>
-          <span style={{ color: '#fff', fontSize: 12, fontWeight: 500 }}>
+          <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: 500 }}>
             {item.favoritesCount || 0}
           </span>
         </motion.div>
 
         {/* Chat button */}
-        <motion.div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        <motion.div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.92 }}
             onClick={handleChat}
             data-testid="button-chat"
             style={{
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               borderRadius: '50%',
               border: 'none',
-              background: 'rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)',
+              background: 'rgba(255,255,255,0.15)',
+              backdropFilter: 'blur(8px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
           >
-            <MessageCircle size={22} color="#fff" />
+            <MessageCircle size={20} color="#fff" strokeWidth={1.8} />
           </motion.button>
-          <span style={{ color: '#fff', fontSize: 12, fontWeight: 500 }}>
+          <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: 500 }}>
             {item.messagesCount || 0}
           </span>
         </motion.div>
 
         {/* Share button */}
-        <motion.div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+        <motion.div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.92 }}
             onClick={handleShare}
             data-testid="button-share"
             style={{
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               borderRadius: '50%',
               border: 'none',
-              background: 'rgba(255,255,255,0.2)',
-              backdropFilter: 'blur(10px)',
+              background: 'rgba(255,255,255,0.15)',
+              backdropFilter: 'blur(8px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
           >
-            <Share2 size={22} color="#fff" />
+            <Share2 size={20} color="#fff" strokeWidth={1.8} />
           </motion.button>
-          <span style={{ color: '#fff', fontSize: 12, fontWeight: 500 }}>
+          <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: 500 }}>
             {item.sharesCount || 0}
           </span>
         </motion.div>
@@ -358,7 +361,7 @@ export default function FeedCard({
         style={{
           position: 'absolute',
           left: 16,
-          bottom: 255,
+          bottom: 295,
           display: 'flex',
           alignItems: 'center',
           gap: 10,
@@ -367,8 +370,8 @@ export default function FeedCard({
         {/* Seller avatar */}
         <div
           style={{
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             borderRadius: '50%',
             background: isFarmerAd 
               ? 'linear-gradient(135deg, #FCD34D, #F59E0B)'
@@ -376,8 +379,9 @@ export default function FeedCard({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: '2px solid rgba(255,255,255,0.3)',
+            border: '2px solid rgba(255,255,255,0.25)',
             overflow: 'hidden',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}
         >
           {sellerAvatar ? (
@@ -420,81 +424,89 @@ export default function FeedCard({
         style={{
           position: 'absolute',
           left: 16,
-          bottom: 210,
+          bottom: 250,
           display: 'flex',
           flexWrap: 'wrap',
-          gap: 8,
+          gap: 6,
         }}
       >
         {isNew && !isFreeGiveaway && (
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              padding: '5px 12px',
-              background: 'linear-gradient(135deg, #8B5CF6, #7C3AED)',
-              borderRadius: 16,
+              padding: '4px 10px',
+              background: 'rgba(139, 92, 246, 0.85)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: 12,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
             }}
           >
-            <Sparkles size={12} color="#fff" />
-            <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>Свежее</span>
+            <Sparkles size={11} color="#fff" />
+            <span style={{ color: '#fff', fontSize: 11, fontWeight: 500 }}>Свежее</span>
           </motion.div>
         )}
         
         {isFarmerAd && (
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              padding: '5px 12px',
-              background: 'linear-gradient(135deg, #10B981, #059669)',
-              borderRadius: 16,
+              padding: '4px 10px',
+              background: 'rgba(16, 185, 129, 0.85)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: 12,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
             }}
           >
-            <Leaf size={12} color="#fff" />
-            <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>Фермер</span>
+            <Leaf size={11} color="#fff" />
+            <span style={{ color: '#fff', fontSize: 11, fontWeight: 500 }}>Фермер</span>
           </motion.div>
         )}
 
         {isFreeGiveaway && (
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              padding: '5px 12px',
-              background: 'linear-gradient(135deg, #EC4899, #DB2777)',
-              borderRadius: 16,
+              padding: '4px 10px',
+              background: 'rgba(236, 72, 153, 0.85)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: 12,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
             }}
           >
-            <Gift size={12} color="#fff" />
-            <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>Даром</span>
+            <Gift size={11} color="#fff" />
+            <span style={{ color: '#fff', fontSize: 11, fontWeight: 500 }}>Даром</span>
           </motion.div>
         )}
         
         {hasDiscount && !isFreeGiveaway && (
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              padding: '5px 12px',
-              background: 'linear-gradient(135deg, #F59E0B, #D97706)',
-              borderRadius: 16,
+              padding: '4px 10px',
+              background: 'rgba(245, 158, 11, 0.85)',
+              backdropFilter: 'blur(4px)',
+              borderRadius: 12,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
             }}
           >
-            <TrendingDown size={12} color="#fff" />
-            <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>Скидка</span>
+            <TrendingDown size={11} color="#fff" />
+            <span style={{ color: '#fff', fontSize: 11, fontWeight: 500 }}>Скидка</span>
           </motion.div>
         )}
       </div>
@@ -504,15 +516,15 @@ export default function FeedCard({
         style={{
           position: 'absolute',
           left: 16,
-          bottom: 165,
+          bottom: 210,
         }}
       >
         <span
           style={{
-            fontSize: 32,
+            fontSize: 28,
             fontWeight: 700,
             color: isFreeGiveaway ? '#EC4899' : '#fff',
-            textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            textShadow: '0 1px 3px rgba(0,0,0,0.25)',
           }}
           data-testid="text-price"
         >
@@ -526,17 +538,17 @@ export default function FeedCard({
           position: 'absolute',
           left: 16,
           right: 70,
-          bottom: 120,
+          bottom: 180,
           margin: 0,
-          fontSize: 18,
+          fontSize: 16,
           fontWeight: 600,
           color: '#fff',
-          lineHeight: 1.3,
+          lineHeight: 1.35,
           display: '-webkit-box',
           WebkitLineClamp: 1,
           WebkitBoxOrient: 'vertical',
           overflow: 'hidden',
-          textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+          textShadow: '0 1px 2px rgba(0,0,0,0.2)',
         }}
         data-testid="text-title"
       >
@@ -550,11 +562,11 @@ export default function FeedCard({
             position: 'absolute',
             left: 16,
             right: 70,
-            bottom: 80,
+            bottom: 140,
             margin: 0,
-            fontSize: 14,
-            lineHeight: 1.4,
-            color: 'rgba(255,255,255,0.8)',
+            fontSize: 13,
+            lineHeight: 1.45,
+            color: 'rgba(255,255,255,0.75)',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
@@ -572,10 +584,10 @@ export default function FeedCard({
           position: 'absolute',
           left: 16,
           right: 16,
-          bottom: 20,
+          bottom: 95,
           display: 'flex',
           alignItems: 'center',
-          gap: 12,
+          gap: 10,
         }}
       >
         {/* View details button */}
@@ -585,12 +597,13 @@ export default function FeedCard({
           data-testid="button-view-details"
           style={{
             flex: 1,
-            padding: '14px 24px',
-            background: '#3B82F6',
+            padding: '12px 20px',
+            background: 'rgba(59, 130, 246, 0.9)',
+            backdropFilter: 'blur(8px)',
             border: 'none',
-            borderRadius: 24,
+            borderRadius: 20,
             color: '#fff',
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: 600,
             cursor: 'pointer',
             display: 'flex',
@@ -608,12 +621,12 @@ export default function FeedCard({
           onClick={handleLike}
           data-testid="button-bookmark"
           style={{
-            width: 48,
-            height: 48,
+            width: 44,
+            height: 44,
             borderRadius: '50%',
             border: 'none',
-            background: isLiked ? '#fff' : 'rgba(255,255,255,0.2)',
-            backdropFilter: 'blur(10px)',
+            background: isLiked ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.15)',
+            backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -621,7 +634,7 @@ export default function FeedCard({
           }}
         >
           <Bookmark
-            size={22}
+            size={20}
             fill={isLiked ? '#3B82F6' : 'none'}
             color={isLiked ? '#3B82F6' : '#fff'}
           />
