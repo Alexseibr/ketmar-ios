@@ -60,6 +60,7 @@ const AdminSellersPage = lazy(() => import('@/pages/AdminSellersPage'));
 const AdminShopRequestsPage = lazy(() => import('@/pages/AdminShopRequestsPage'));
 const AdminModerationPage = lazy(() => import('@/pages/AdminModerationPage'));
 const AdminCategoryProposalsPage = lazy(() => import('@/pages/AdminCategoryProposalsPage'));
+const AdminAnalyticsPage = lazy(() => import('@/pages/AdminAnalyticsPage'));
 const ShopCreationWizardPage = lazy(() => import('@/pages/ShopCreationWizardPage'));
 const MyShopPage = lazy(() => import('@/pages/MyShopPage'));
 const StoryCreatorPage = lazy(() => import('@/pages/StoryCreatorPage'));
@@ -372,6 +373,11 @@ export default function App() {
               <Route path="/admin/category-proposals" element={
                 <PrivateRoute>
                   <AdminCategoryProposalsPage />
+                </PrivateRoute>
+              } />
+              <Route path="/admin/analytics" element={
+                <PrivateRoute>
+                  <AdminAnalyticsPage />
                 </PrivateRoute>
               } />
               

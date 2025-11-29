@@ -780,6 +780,125 @@ router.get('/counts', authMiddleware, requireAdmin, async (req, res) => {
   }
 });
 
+router.get('/analytics', authMiddleware, requireAdmin, async (req, res) => {
+  try {
+    console.log(`[Admin] GET /analytics called by user ${req.currentUser?.telegramId}`);
+    const { period = 'week' } = req.query;
+    
+    let dateFilter = {};
+    const now = new Date();
+    
+    if (period === 'today') {
+      const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+      dateFilter = { createdAt: { $gte: startOfDay } };
+    } else if (period === 'week') {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      dateFilter = { createdAt: { $gte: weekAgo } };
+    } else if (period === 'month') {
+      const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      dateFilter = { createdAt: { $gte: monthAgo } };
+    }
+    
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    
+    const [
+      totalUsers,
+      newUsersToday,
+      newUsersWeek,
+      totalAds,
+      activeAds,
+      pendingAds,
+      newAdsToday,
+      newAdsWeek,
+      totalSellers,
+      shopCount,
+      farmerCount,
+      bloggerCount,
+      artisanCount,
+      topCategories,
+      topCities,
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ createdAt: { $gte: todayStart } }),
+      User.countDocuments({ createdAt: { $gte: weekAgo } }),
+      Ad.countDocuments(),
+      Ad.countDocuments({ status: 'active' }),
+      Ad.countDocuments({ moderationStatus: 'pending' }),
+      Ad.countDocuments({ createdAt: { $gte: todayStart } }),
+      Ad.countDocuments({ createdAt: { $gte: weekAgo } }),
+      SellerProfile.countDocuments({ isVerified: true }),
+      SellerProfile.countDocuments({ role: 'SHOP', isVerified: true }),
+      SellerProfile.countDocuments({ $or: [{ role: 'FARMER' }, { isFarmer: true }], isVerified: true }),
+      SellerProfile.countDocuments({ role: 'BLOGGER', isVerified: true }),
+      SellerProfile.countDocuments({ role: 'ARTISAN', isVerified: true }),
+      Ad.aggregate([
+        { $match: { status: 'active' } },
+        { $group: { _id: '$categoryLabel', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 },
+        { $project: { name: '$_id', count: 1, _id: 0 } },
+      ]),
+      Ad.aggregate([
+        { $match: { status: 'active', 'location.city': { $exists: true, $ne: null } } },
+        { $group: { _id: '$location.city', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 5 },
+        { $project: { name: '$_id', count: 1, _id: 0 } },
+      ]),
+    ]);
+    
+    const viewsAggregation = await Ad.aggregate([
+      { $group: { _id: null, totalViews: { $sum: '$views' }, totalFavorites: { $sum: '$favoritesCount' } } },
+    ]);
+    
+    const totalViews = viewsAggregation[0]?.totalViews || 0;
+    const totalFavorites = viewsAggregation[0]?.totalFavorites || 0;
+    
+    let totalContacts = 0;
+    try {
+      const ContactEvent = (await import('../../models/ContactEvent.js')).default;
+      totalContacts = await ContactEvent.countDocuments(dateFilter.createdAt ? dateFilter : {});
+    } catch (e) {
+      console.log('[Admin] ContactEvent not available');
+    }
+    
+    res.json({
+      users: {
+        total: totalUsers,
+        newToday: newUsersToday,
+        newWeek: newUsersWeek,
+        active: totalUsers,
+      },
+      ads: {
+        total: totalAds,
+        active: activeAds,
+        pending: pendingAds,
+        newToday: newAdsToday,
+        newWeek: newAdsWeek,
+      },
+      sellers: {
+        total: totalSellers,
+        shops: shopCount,
+        farmers: farmerCount,
+        bloggers: bloggerCount,
+        artisans: artisanCount,
+      },
+      engagement: {
+        views: totalViews,
+        favorites: totalFavorites,
+        contacts: totalContacts,
+      },
+      topCategories,
+      topCities,
+    });
+  } catch (error) {
+    console.error('[Admin] Get analytics error:', error);
+    res.status(500).json({ success: false, error: 'server_error' });
+  }
+});
+
 router.get('/shop-requests', authMiddleware, requireAdmin, async (req, res) => {
   try {
     console.log(`[Admin] GET /shop-requests called by user ${req.currentUser?.telegramId}`);
