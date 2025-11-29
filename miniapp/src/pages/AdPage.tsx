@@ -550,7 +550,7 @@ export default function AdPage() {
               <h3 style={{ fontSize: 17, fontWeight: 600, color: '#111827', margin: '0 0 14px' }}>
                 Продавец
               </h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: hasContacts ? 16 : 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{
                   width: 52,
                   height: 52,
@@ -575,86 +575,6 @@ export default function AdPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Contact buttons */}
-              {hasContacts && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {ad.contactPhone && (
-                    <button
-                      onClick={handleShowPhone}
-                      style={{
-                        width: '100%',
-                        padding: '14px 16px',
-                        background: showPhone ? '#3B73FC' : '#fff',
-                        color: showPhone ? '#fff' : '#111827',
-                        border: showPhone ? 'none' : '1px solid #E5E7EB',
-                        borderRadius: 14,
-                        fontSize: 15,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 10,
-                      }}
-                      data-testid="button-show-phone"
-                    >
-                      <Phone size={18} />
-                      {showPhone ? ad.contactPhone : 'Показать телефон'}
-                    </button>
-                  )}
-
-                  {ad.contactUsername && (
-                    <button
-                      onClick={handleOpenTelegram}
-                      style={{
-                        width: '100%',
-                        padding: '14px 16px',
-                        background: '#fff',
-                        color: '#0088cc',
-                        border: '1px solid #0088cc',
-                        borderRadius: 14,
-                        fontSize: 15,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 10,
-                      }}
-                      data-testid="button-telegram"
-                    >
-                      <SiTelegram size={18} />
-                      Написать в Telegram
-                    </button>
-                  )}
-
-                  {ad.contactInstagram && (
-                    <button
-                      onClick={handleOpenInstagram}
-                      style={{
-                        width: '100%',
-                        padding: '14px 16px',
-                        background: '#fff',
-                        color: '#E4405F',
-                        border: '1px solid #E4405F',
-                        borderRadius: 14,
-                        fontSize: 15,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 10,
-                      }}
-                      data-testid="button-instagram"
-                    >
-                      <SiInstagram size={18} />
-                      {ad.contactInstagram}
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Similar ads - horizontal scroll */}
