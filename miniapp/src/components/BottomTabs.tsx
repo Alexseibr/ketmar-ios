@@ -159,7 +159,7 @@ export default function BottomTabs() {
   }
 
   // Hide bottom tabs on ad detail page (has its own action buttons)
-  if (location.pathname.startsWith('/ad/')) {
+  if (location.pathname.startsWith('/ads/') && !location.pathname.includes('/create')) {
     return null;
   }
 
