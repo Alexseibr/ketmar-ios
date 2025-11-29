@@ -42,7 +42,7 @@ const userNavItems: NavItem[] = [
 ];
 
 const sellerNavItems: NavItem[] = [
-  { path: '/seller/cabinet', label: 'Мой магазин', icon: Store, requiresAuth: true },
+  { path: '/my-shop', label: 'Мой магазин', icon: Store, requiresAuth: true },
   { path: '/twin', label: 'AI-ассистент', icon: Bot, requiresAuth: true },
 ];
 

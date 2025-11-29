@@ -343,8 +343,12 @@ export default function ShopCabinetPage() {
   const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | 'new' | 'confirmed' | 'delivering'>('all');
 
   useEffect(() => {
+    if (isSuperAdmin && !adminViewRole) {
+      navigate('/my-shop', { replace: true });
+      return;
+    }
     loadSellerProfile();
-  }, [user]);
+  }, [user, isSuperAdmin, adminViewRole, navigate]);
 
   useEffect(() => {
     if (user?.telegramId && !profileLoading) {

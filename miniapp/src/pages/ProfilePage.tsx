@@ -111,7 +111,7 @@ export default function ProfilePage() {
     { icon: ShoppingBag, label: 'Мои объявления', path: '/my-ads', color: '#3A7BFF' },
     { icon: Heart, label: 'Избранное', path: '/favorites', color: '#EC4899' },
     { icon: MessageCircle, label: 'Сообщения', path: '/chats', color: '#22C55E' },
-    { icon: Store, label: 'Мой магазин', path: '/seller/cabinet', color: '#7C3AED' },
+    { icon: Store, label: 'Мой магазин', path: '/my-shop', color: '#7C3AED' },
     // { icon: Camera, label: 'Истории', path: '/seller/stories', color: '#F97316' }, // temporarily hidden
     { icon: Star, label: 'AI Ассистент', path: '/twin', color: '#06B6D4' },
   ];
