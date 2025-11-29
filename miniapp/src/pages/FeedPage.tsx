@@ -291,28 +291,6 @@ export default function FeedPage() {
     prevFilteredLengthRef.current = currentLength;
   }, [filteredItems.length, items.length, trackEvent, filteredItems]);
   
-  // Auto-request location when page opens if not available
-  useEffect(() => {
-    if (!coords && geoStatus === 'idle') {
-      console.log('[FeedPage] Auto-requesting location...');
-      requestLocation();
-    }
-  }, [coords, geoStatus, requestLocation]);
-
-  // Background refresh of location after feed loads (update cached location)
-  const hasRefreshedLocation = useRef(false);
-  useEffect(() => {
-    if (coords && geoStatus === 'ready' && !hasRefreshedLocation.current) {
-      hasRefreshedLocation.current = true;
-      // Refresh location in background after 5 seconds
-      const timer = setTimeout(() => {
-        console.log('[FeedPage] Background refresh of location...');
-        requestLocation();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [coords, geoStatus, requestLocation]);
-  
   const containerRef = useRef<HTMLDivElement>(null);
   const hasShownHint = useRef(false);
   const lastFetchTime = useRef<number>(Date.now());

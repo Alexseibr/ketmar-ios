@@ -1,6 +1,18 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { getTelegramWebApp } from '@/utils/telegram';
+import useRegionStore, { type CountryCode } from '@/store/useRegionStore';
+
+// Маппинг кода страны на наш CountryCode
+const COUNTRY_CODE_MAP: Record<string, CountryCode> = {
+  'BY': 'BY',
+  'RU': 'RU', 
+  'UA': 'UA',
+  'KZ': 'KZ',
+  'PL': 'PL',
+  'DE': 'DE',
+  'US': 'US',
+};
 
 interface GeoCoords {
   lat: number;
@@ -41,7 +53,12 @@ const SMART_RADIUS_STEPS = [0.3, 0.5, 1, 2, 3, 5, 10, 20];
 const MIN_ADS_TARGET = 10;
 const MAX_ADS_TARGET = 30;
 
-async function resolveCity(lat: number, lng: number): Promise<string | null> {
+interface GeoResolveResult {
+  label: string | null;
+  countryCode: string | null;
+}
+
+async function resolveLocationDetails(lat: number, lng: number): Promise<GeoResolveResult> {
   try {
     const response = await fetch('/api/geo/resolve', {
       method: 'POST',
@@ -50,12 +67,15 @@ async function resolveCity(lat: number, lng: number): Promise<string | null> {
     });
     if (response.ok) {
       const data = await response.json();
-      return data.label || data.city || null;
+      return {
+        label: data.label || data.city || null,
+        countryCode: data.countryCode || null,
+      };
     }
   } catch (e) {
-    console.warn('Failed to resolve city name:', e);
+    console.warn('Failed to resolve location:', e);
   }
-  return null;
+  return { label: null, countryCode: null };
 }
 
 async function requestTelegramLocation(): Promise<{ lat: number; lng: number } | null> {
@@ -157,12 +177,26 @@ const useGeoStore = create<GeoState>()(
             lastLocationUpdate: Date.now(),
           });
           
-          const cityName = await resolveCity(location.lat, location.lng);
-          if (cityName) {
-            set({ cityName });
+          // Определяем город и страну по координатам
+          const { label, countryCode } = await resolveLocationDetails(location.lat, location.lng);
+          
+          if (label) {
+            set({ cityName: label });
           }
           
-          console.log('✅ Геолокация обновлена:', location, cityName);
+          // Автоматически устанавливаем регион по стране
+          if (countryCode && COUNTRY_CODE_MAP[countryCode]) {
+            const mappedCountry = COUNTRY_CODE_MAP[countryCode];
+            const regionStore = useRegionStore.getState();
+            
+            // Устанавливаем страну только если регион ещё не был настроен пользователем
+            if (!regionStore.isInitialized) {
+              regionStore.setCountry(mappedCountry);
+              console.log('🌍 Регион определён по координатам:', mappedCountry);
+            }
+          }
+          
+          console.log('✅ Геолокация обновлена:', location, label, countryCode);
         } else {
           set({ status: 'error', error: 'Не удалось получить местоположение' });
         }

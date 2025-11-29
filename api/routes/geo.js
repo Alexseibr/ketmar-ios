@@ -519,6 +519,9 @@ router.post('/resolve', async (req, res) => {
       label = addr.state || addr.country || 'Неизвестное место';
     }
 
+    // Определяем код страны из адреса
+    const countryCode = addr.country_code?.toUpperCase() || null;
+    
     const result = {
       lat: latNum,
       lng: lngNum,
@@ -526,6 +529,7 @@ router.post('/resolve', async (req, res) => {
       area,
       village: village && !city ? village : null,
       label,
+      countryCode,
       raw: {
         display_name: data.display_name,
         address: addr,

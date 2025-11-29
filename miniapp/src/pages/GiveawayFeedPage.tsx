@@ -248,12 +248,6 @@ export default function GiveawayFeedPage() {
   
   const tabsContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!coords && geoStatus === 'idle') {
-      requestLocation();
-    }
-  }, [coords, geoStatus, requestLocation]);
-
   const loadGiveaways = useCallback(async (subcategoryId: string, currentOffset: number, append: boolean = false) => {
     try {
       if (!append) {

@@ -146,10 +146,6 @@ export default function GeoFeedScreen() {
     }
   }, [lat, lng, radiusKm, debouncedQuery]);
 
-  useEffect(() => {
-    requestLocation();
-  }, []);
-
   // Immediate search on Enter (skip debounce)
   const handleSearch = useCallback(() => {
     if (lat && lng) {

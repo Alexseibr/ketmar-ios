@@ -133,7 +133,8 @@ interface FormatPriceOptions {
 }
 
 function detectLanguageFromTelegram(): LanguageCode {
-  const tgLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
+  const user = window.Telegram?.WebApp?.initDataUnsafe?.user as any;
+  const tgLang = user?.language_code;
   if (tgLang) {
     const lang = tgLang.split('-')[0].toLowerCase();
     if (['ru', 'en', 'pl'].includes(lang)) {
@@ -144,7 +145,8 @@ function detectLanguageFromTelegram(): LanguageCode {
 }
 
 function detectCountryFromTelegram(): CountryCode {
-  const tgLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
+  const user = window.Telegram?.WebApp?.initDataUnsafe?.user as any;
+  const tgLang = user?.language_code;
   if (tgLang) {
     const countryMap: Record<string, CountryCode> = {
       'ru': 'RU',
