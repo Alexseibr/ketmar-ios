@@ -1730,6 +1730,245 @@ export default function ShopCabinetPage() {
     );
   };
 
+  const renderPostsTab = () => (
+    <div style={{ padding: 16 }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+        borderRadius: 20,
+        padding: 20,
+        color: '#fff',
+        marginBottom: 20,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: 14,
+            background: 'rgba(255,255,255,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <FileText size={24} color="#fff" />
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>Публикации</div>
+            <div style={{ fontSize: 13, opacity: 0.9 }}>Управление контентом</div>
+          </div>
+        </div>
+        <p style={{ fontSize: 14, opacity: 0.9, marginBottom: 16 }}>
+          Создавайте публикации о ваших товарах, делитесь историями бренда и увеличивайте охват аудитории.
+        </p>
+        <button
+          onClick={() => navigate('/create-post')}
+          style={{
+            width: '100%',
+            background: '#fff',
+            color: '#7C3AED',
+            border: 'none',
+            borderRadius: 12,
+            padding: '12px 20px',
+            fontSize: 15,
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+          data-testid="button-create-post"
+        >
+          <PlusCircle size={18} />
+          Создать публикацию
+        </button>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 12 }}>
+          Ваши публикации
+        </div>
+        <div style={{
+          textAlign: 'center',
+          padding: 40,
+          color: '#6B7280',
+          background: '#F9FAFB',
+          borderRadius: 16,
+        }}>
+          <FileText size={48} style={{ marginBottom: 12, opacity: 0.4 }} />
+          <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>Публикаций пока нет</div>
+          <div style={{ fontSize: 13 }}>Создайте свою первую публикацию, чтобы привлечь покупателей</div>
+        </div>
+      </div>
+
+      <div style={{
+        background: '#FEF3C7',
+        borderRadius: 12,
+        padding: 14,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 10,
+      }}>
+        <Zap size={20} color="#D97706" style={{ flexShrink: 0, marginTop: 2 }} />
+        <div style={{ fontSize: 13, color: '#92400E' }}>
+          <strong>Совет:</strong> Регулярные публикации увеличивают видимость вашего бренда и привлекают больше покупателей.
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderRequestsTab = () => (
+    <div style={{ padding: 16 }}>
+      <div style={{
+        background: 'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)',
+        borderRadius: 20,
+        padding: 20,
+        color: '#fff',
+        marginBottom: 20,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: 14,
+            background: 'rgba(255,255,255,0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <ClipboardList size={24} color="#fff" />
+          </div>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>Заявки на рекламу</div>
+            <div style={{ fontSize: 13, opacity: 0.9 }}>Сотрудничество с брендами</div>
+          </div>
+        </div>
+        <p style={{ fontSize: 14, opacity: 0.9, marginBottom: 0 }}>
+          Получайте заявки от брендов на рекламное сотрудничество. Выбирайте интересные предложения и зарабатывайте.
+        </p>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 12 }}>
+          Входящие заявки
+        </div>
+        <div style={{
+          textAlign: 'center',
+          padding: 40,
+          color: '#6B7280',
+          background: '#F9FAFB',
+          borderRadius: 16,
+        }}>
+          <ClipboardList size={48} style={{ marginBottom: 12, opacity: 0.4 }} />
+          <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>Заявок пока нет</div>
+          <div style={{ fontSize: 13 }}>Добавьте больше товаров, чтобы бренды могли вас найти</div>
+        </div>
+      </div>
+
+      <div style={{
+        background: '#F0FDF4',
+        borderRadius: 12,
+        padding: 14,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 10,
+      }}>
+        <Star size={20} color="#15803D" style={{ flexShrink: 0, marginTop: 2 }} />
+        <div style={{ fontSize: 13, color: '#166534' }}>
+          <strong>Подсказка:</strong> Качественное описание профиля и активность в социальных сетях увеличивают шансы получить заявки.
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 12 }}>
+          Ваши социальные сети
+        </div>
+        <div style={{
+          background: '#fff',
+          border: '1px solid #E5E7EB',
+          borderRadius: 16,
+          padding: 16,
+        }}>
+          {sellerProfile ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, #E4405F 0%, #FD1D1D 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Instagram size={20} color="#fff" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>Instagram</div>
+                  <div style={{ fontSize: 12, color: '#6B7280' }}>
+                    {(sellerProfile as any).socials?.instagram || 'Не указан'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/my-shop?edit=socials')}
+                  style={{
+                    background: '#F3F4F6',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '6px 12px',
+                    fontSize: 12,
+                    color: '#6B7280',
+                    cursor: 'pointer',
+                  }}
+                  data-testid="button-edit-instagram"
+                >
+                  Изменить
+                </button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, #0088cc 0%, #229ED9 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Send size={20} color="#fff" />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>Telegram</div>
+                  <div style={{ fontSize: 12, color: '#6B7280' }}>
+                    {(sellerProfile as any).socials?.telegram || 'Не указан'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigate('/my-shop?edit=socials')}
+                  style={{
+                    background: '#F3F4F6',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '6px 12px',
+                    fontSize: 12,
+                    color: '#6B7280',
+                    cursor: 'pointer',
+                  }}
+                  data-testid="button-edit-telegram"
+                >
+                  Изменить
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: 20, color: '#6B7280' }}>
+              Загрузка...
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   const renderFairsTab = () => (
     <div style={{ padding: 16 }}>
       {seasonEvents.active.length > 0 && (
@@ -2043,6 +2282,8 @@ export default function ShopCabinetPage() {
         {activeTab === 'demand' && renderDemandTab()}
         {activeTab === 'subscription' && renderSubscriptionTab()}
         {activeTab === 'fairs' && renderFairsTab()}
+        {activeTab === 'posts' && renderPostsTab()}
+        {activeTab === 'requests' && renderRequestsTab()}
       </div>
       
       <style>{`
