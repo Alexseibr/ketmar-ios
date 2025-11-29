@@ -22,6 +22,20 @@ const translations: Record<LanguageCode, Translations> = {
 let currentLanguage: LanguageCode = 'ru';
 let isInitialized = false;
 
+// Синхронизируем язык с сохранённым в localStorage при старте
+try {
+  const stored = localStorage.getItem('region-storage');
+  if (stored) {
+    const parsed = JSON.parse(stored);
+    if (parsed?.state?.language && ['ru', 'en', 'pl'].includes(parsed.state.language)) {
+      currentLanguage = parsed.state.language as LanguageCode;
+      console.log('🌍 [i18n] Loaded language from storage:', currentLanguage);
+    }
+  }
+} catch (e) {
+  // Ignore errors
+}
+
 const COMMON_RU: TranslationNamespace = {
   'app.name': 'KETMAR Market',
   'common.loading': 'Загрузка...',

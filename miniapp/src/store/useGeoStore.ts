@@ -186,15 +186,20 @@ const useGeoStore = create<GeoState>()(
           
           // Автоматически устанавливаем регион по стране (GPS имеет приоритет)
           // Небольшая задержка для завершения rehydration Zustand persist
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 200));
           
           if (countryCode && COUNTRY_CODE_MAP[countryCode]) {
             const mappedCountry = COUNTRY_CODE_MAP[countryCode];
-            console.log('📍 [GeoStore] GPS detected country:', mappedCountry);
+            const currentCountry = useRegionStore.getState().countryCode;
+            console.log('📍 [GeoStore] GPS detected country:', mappedCountry, 'Current:', currentCountry);
             
-            // Принудительно обновляем регион по GPS
-            useRegionStore.getState().setCountry(mappedCountry);
-            console.log('🌍 [GeoStore] Region updated to:', mappedCountry);
+            // Если страна изменилась по GPS — обновляем и перезагружаем
+            if (currentCountry !== mappedCountry) {
+              useRegionStore.getState().setCountry(mappedCountry);
+              console.log('🌍 [GeoStore] Region updated to:', mappedCountry, '- reloading page');
+              window.location.reload();
+              return;
+            }
           }
           
           console.log('✅ Геолокация обновлена:', location, label, countryCode);
@@ -221,18 +226,24 @@ const useGeoStore = create<GeoState>()(
           }
           
           // Обновляем регион по GPS если нужно
-          // Ждём завершения rehydration Zustand persist (100ms таймаут)
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Ждём завершения rehydration Zustand persist (200ms таймаут)
+          await new Promise(resolve => setTimeout(resolve, 200));
           
           if (countryCode && COUNTRY_CODE_MAP[countryCode]) {
             const mappedCountry = COUNTRY_CODE_MAP[countryCode];
             const regionStore = useRegionStore.getState();
+            const currentCountry = regionStore.countryCode;
             
-            console.log('📍 [GeoStore] GPS detected country:', mappedCountry, 'Current:', regionStore.countryCode);
+            console.log('📍 [GeoStore] GPS detected country:', mappedCountry, 'Current:', currentCountry);
             
-            // Принудительно обновляем регион по GPS
-            regionStore.setCountry(mappedCountry);
-            console.log('🌍 [GeoStore] Region updated to:', mappedCountry);
+            // Если страна изменилась по GPS — обновляем и перезагружаем
+            if (currentCountry !== mappedCountry) {
+              regionStore.setCountry(mappedCountry);
+              console.log('🌍 [GeoStore] Region updated to:', mappedCountry, '- reloading page');
+              // Перезагрузка страницы чтобы применить новый язык
+              window.location.reload();
+              return;
+            }
           }
           return;
         }
