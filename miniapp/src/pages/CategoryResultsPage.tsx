@@ -7,6 +7,7 @@ import { fetchCategories } from '@/api/categories';
 import { CategoryNode } from '@/types';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
 import { DistanceBadge } from '@/components/DistanceBadge';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 const RADIUS_OPTIONS = [
   { value: 0.3, label: '300м' },
@@ -40,6 +41,7 @@ function flattenCategories(tree: CategoryNode[]): CategoryNode[] {
 export default function CategoryResultsPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { formatCard } = useFormatPrice();
   
   const { coords, radiusKm, setRadius } = useGeo();
   
@@ -119,7 +121,7 @@ export default function CategoryResultsPage() {
 
   const formatPrice = (price?: number) => {
     if (price === undefined || price === null) return 'Цена не указана';
-    return `${price.toLocaleString('ru-RU')} руб.`;
+    return formatCard(price, price === 0);
   };
 
   const isNew = (createdAt?: string) => {

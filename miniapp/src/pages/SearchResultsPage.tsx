@@ -4,6 +4,7 @@ import { ArrowLeft, Search, X, SlidersHorizontal, ChevronDown } from 'lucide-rea
 import { useGeo } from '@/utils/geo';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
 import { DistanceBadge } from '@/components/DistanceBadge';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface Ad {
   _id: string;
@@ -44,6 +45,7 @@ export default function SearchResultsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
+  const { formatCard } = useFormatPrice();
   
   const { coords, radiusKm, status: geoStatus, requestLocation, cityName } = useGeo();
   
@@ -153,7 +155,7 @@ export default function SearchResultsPage() {
 
   const formatPrice = (price?: number) => {
     if (price === undefined || price === null) return 'Цена не указана';
-    return `${price.toLocaleString('ru-RU')} руб.`;
+    return formatCard(price, price === 0);
   };
 
   const isNew = (createdAt: string) => {
