@@ -92,6 +92,9 @@ router.get('/', async (req, res) => {
           sellerTelegramId: 1,
           sellerName: 1,
           sellerUsername: 1,
+          isFreeGiveaway: 1,
+          farmerData: 1,
+          priceHistory: 1,
         },
       },
     ];
@@ -126,6 +129,9 @@ router.get('/', async (req, res) => {
       distanceMeters: Math.round(ad.distanceMeters || 0),
       sellerName: ad.sellerName,
       sellerUsername: ad.sellerUsername,
+      isFreeGiveaway: ad.isFreeGiveaway || ad.price === 0,
+      isFarmerAd: !!ad.farmerData,
+      priceHistory: ad.priceHistory || [],
     }));
 
     return res.json({
