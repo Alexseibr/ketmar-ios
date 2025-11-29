@@ -1,12 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'leaflet.markercluster/dist/MarkerCluster.css';
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-import 'leaflet.markercluster';
-
-type AdType = 'farmer' | 'service' | 'goods' | 'free' | 'pro-shop' | 'unknown';
 
 interface Ad {
   _id: string;
@@ -37,59 +32,81 @@ interface GeoMapProps {
   onMapMove: (lat: number, lng: number) => void;
 }
 
-const PIN_COLORS: Record<AdType, { from: string; to: string; shadow: string; cluster: string }> = {
-  farmer: { from: '#22C55E', to: '#16A34A', shadow: 'rgba(34, 197, 94, 0.4)', cluster: '#22C55E' },
-  service: { from: '#8B5CF6', to: '#7C3AED', shadow: 'rgba(139, 92, 246, 0.4)', cluster: '#8B5CF6' },
-  goods: { from: '#3B82F6', to: '#2563EB', shadow: 'rgba(59, 130, 246, 0.4)', cluster: '#3B82F6' },
-  free: { from: '#F97316', to: '#EA580C', shadow: 'rgba(249, 115, 22, 0.4)', cluster: '#F97316' },
-  'pro-shop': { from: '#06B6D4', to: '#0891B2', shadow: 'rgba(6, 182, 212, 0.4)', cluster: '#06B6D4' },
-  unknown: { from: '#6B7280', to: '#4B5563', shadow: 'rgba(107, 114, 128, 0.4)', cluster: '#6B7280' },
+interface HeatZone {
+  id: string;
+  lat: number;
+  lng: number;
+  count: number;
+  ads: Ad[];
+  radius: number;
+  dominantType: 'farmer' | 'free' | 'goods' | 'service';
+}
+
+const ZONE_COLORS = {
+  farmer: { fill: '#22C55E', border: '#16A34A' },
+  free: { fill: '#F97316', border: '#EA580C' },
+  goods: { fill: '#3B82F6', border: '#2563EB' },
+  service: { fill: '#8B5CF6', border: '#7C3AED' },
 };
 
-const PIN_ICONS: Record<AdType, string> = {
-  farmer: `<path d="M16 9c-2.5 0-4.5 2-4.5 5s2 5.5 4.5 5.5 4.5-2.5 4.5-5.5-2-5-4.5-5z" fill="white" opacity="0.95"/>`,
-  service: `<path d="M11 12h10M16 9v9" stroke="white" stroke-width="2.5" stroke-linecap="round"/>`,
-  goods: `<rect x="10" y="11" width="12" height="8" rx="1.5" fill="white"/>`,
-  free: `<path d="M12 11h8M12 15h8M12 19h5" stroke="white" stroke-width="2" stroke-linecap="round"/>`,
-  'pro-shop': `<path d="M10 14h12M13 11v8M19 11v8" stroke="white" stroke-width="2" stroke-linecap="round"/>`,
-  unknown: `<circle cx="16" cy="15" r="4" fill="white"/>`,
-};
-
-const getAdType = (ad: Ad): AdType => {
+const getAdType = (ad: Ad): 'farmer' | 'free' | 'goods' | 'service' => {
   if (ad.isFreeGiveaway || ad.categoryId === 'darom') return 'free';
-  if (ad.isFarmerAd || ad.categoryId?.includes('farmer') || ad.categoryName?.toLowerCase().includes('фермер')) return 'farmer';
-  if (ad.isProSeller || ad.isShopAd || ad.categoryId?.includes('shop') || ad.categoryId?.includes('store')) return 'pro-shop';
-  if (ad.type === 'service' || ad.categoryId?.includes('service') || ad.categoryName?.toLowerCase().includes('услуг')) return 'service';
-  if (ad.type === 'goods' || ad.categoryId?.includes('goods')) return 'goods';
+  if (ad.isFarmerAd || ad.categoryId?.includes('farmer')) return 'farmer';
+  if (ad.type === 'service' || ad.categoryId?.includes('service')) return 'service';
   return 'goods';
 };
 
-const createMarkerIcon = (type: AdType, isSelected: boolean = false) => {
-  const c = PIN_COLORS[type];
-  const scale = isSelected ? 1.2 : 1;
-  const size = isSelected ? 38 : 32;
-  const height = isSelected ? 48 : 40;
+function groupAdsIntoZones(ads: Ad[]): HeatZone[] {
+  const zones: Map<string, HeatZone> = new Map();
+  const gridSize = 0.006;
   
-  return L.divIcon({
-    className: 'ketmar-marker',
-    html: `
-      <div style="transform: scale(${scale}); transition: transform 150ms ease; filter: drop-shadow(0 3px 6px ${c.shadow});">
-        <svg width="${size}" height="${height}" viewBox="0 0 32 40" fill="none">
-          <defs>
-            <linearGradient id="pin-${type}-${isSelected}" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="${c.from}"/>
-              <stop offset="100%" stop-color="${c.to}"/>
-            </linearGradient>
-          </defs>
-          <path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 24 16 24s16-12 16-24C32 7.16 24.84 0 16 0z" fill="url(#pin-${type}-${isSelected})"/>
-          ${PIN_ICONS[type]}
-        </svg>
-      </div>
-    `,
-    iconSize: [size, height],
-    iconAnchor: [size / 2, height]
+  ads.forEach(ad => {
+    if (!ad.location?.lat || !ad.location?.lng) return;
+    
+    const gridLat = Math.floor(ad.location.lat / gridSize) * gridSize;
+    const gridLng = Math.floor(ad.location.lng / gridSize) * gridSize;
+    const key = `${gridLat.toFixed(4)}_${gridLng.toFixed(4)}`;
+    
+    if (zones.has(key)) {
+      const zone = zones.get(key)!;
+      zone.count++;
+      zone.ads.push(ad);
+    } else {
+      const offsetLat = (Math.random() - 0.5) * 0.003;
+      const offsetLng = (Math.random() - 0.5) * 0.003;
+      
+      zones.set(key, {
+        id: key,
+        lat: gridLat + gridSize / 2 + offsetLat,
+        lng: gridLng + gridSize / 2 + offsetLng,
+        count: 1,
+        ads: [ad],
+        radius: 180 + Math.random() * 120,
+        dominantType: getAdType(ad)
+      });
+    }
   });
-};
+  
+  zones.forEach(zone => {
+    const typeCounts: Record<string, number> = {};
+    zone.ads.forEach(ad => {
+      const type = getAdType(ad);
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
+    });
+    
+    let maxType = 'goods';
+    let maxCount = 0;
+    Object.entries(typeCounts).forEach(([type, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        maxType = type;
+      }
+    });
+    zone.dominantType = maxType as 'farmer' | 'free' | 'goods' | 'service';
+  });
+  
+  return Array.from(zones.values());
+}
 
 const userIcon = L.divIcon({
   className: 'ketmar-user-marker',
@@ -103,61 +120,6 @@ const userIcon = L.divIcon({
   iconSize: [24, 24],
   iconAnchor: [12, 12]
 });
-
-const createClusterIcon = (cluster: L.MarkerCluster) => {
-  const markers = cluster.getAllChildMarkers();
-  const count = markers.length;
-  
-  const typeCounts: Record<AdType, number> = {
-    farmer: 0, service: 0, goods: 0, free: 0, 'pro-shop': 0, unknown: 0
-  };
-  
-  markers.forEach(marker => {
-    const type = (marker.options as { adType?: AdType }).adType || 'unknown';
-    typeCounts[type]++;
-  });
-  
-  let dominantType: AdType = 'goods';
-  let maxCount = 0;
-  
-  (Object.keys(typeCounts) as AdType[]).forEach(type => {
-    if (typeCounts[type] > maxCount) {
-      maxCount = typeCounts[type];
-      dominantType = type;
-    }
-  });
-  
-  const dominantRatio = maxCount / count;
-  const clusterColor = dominantRatio > 0.5 ? PIN_COLORS[dominantType].cluster : '#6B7280';
-  
-  const size = count < 10 ? 36 : count < 100 ? 42 : 50;
-  const fontSize = count < 10 ? 14 : count < 100 ? 15 : 16;
-  
-  return L.divIcon({
-    html: `
-      <div class="ketmar-cluster" style="
-        width: ${size}px;
-        height: ${size}px;
-        background: ${clusterColor};
-        border: 3px solid white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: ${fontSize}px;
-        font-weight: 600;
-        color: white;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.25);
-        transition: transform 150ms ease;
-      ">
-        ${count}
-      </div>
-    `,
-    className: 'ketmar-cluster-wrapper',
-    iconSize: L.point(size, size),
-    iconAnchor: L.point(size / 2, size / 2)
-  });
-};
 
 const RADIUS_ZOOM_MAP: Array<{ radius: number; zoom: number }> = [
   { radius: 0.3, zoom: 17 },
@@ -229,68 +191,112 @@ function MapController({
   return null;
 }
 
-function MarkerClusterLayer({ 
-  feed, 
-  lat, 
-  lng, 
-  selectedAdId, 
-  onMarkerClick 
+function HeatZonesLayer({ 
+  zones, 
+  onZoneClick,
+  selectedAdId
 }: { 
-  feed: Ad[]; 
-  lat: number; 
-  lng: number; 
+  zones: HeatZone[]; 
+  onZoneClick: (ads: Ad[]) => void;
   selectedAdId: string | null;
-  onMarkerClick: (adId: string) => void;
 }) {
   const map = useMap();
-  const clusterGroupRef = useRef<L.MarkerClusterGroup | null>(null);
+  const layerRef = useRef<L.LayerGroup | null>(null);
   
   useEffect(() => {
-    if (clusterGroupRef.current) {
-      map.removeLayer(clusterGroupRef.current);
+    if (layerRef.current) {
+      map.removeLayer(layerRef.current);
     }
     
-    const clusterGroup = L.markerClusterGroup({
-      chunkedLoading: true,
-      spiderfyOnMaxZoom: true,
-      showCoverageOnHover: false,
-      disableClusteringAtZoom: 16,
-      maxClusterRadius: 60,
-      iconCreateFunction: createClusterIcon,
-      animate: true,
-      animateAddingMarkers: false,
+    const layer = L.layerGroup();
+    
+    zones.forEach(zone => {
+      const colors = ZONE_COLORS[zone.dominantType] || ZONE_COLORS.goods;
+      const intensity = Math.min(zone.count / 8, 1);
+      
+      const circleRadius = zone.radius + Math.min(zone.count * 25, 300);
+      
+      const hasSelectedAd = zone.ads.some(ad => ad._id === selectedAdId);
+      
+      const circle = L.circle([zone.lat, zone.lng], {
+        radius: circleRadius,
+        color: hasSelectedAd ? '#1D4ED8' : colors.border,
+        fillColor: colors.fill,
+        fillOpacity: 0.35 + intensity * 0.25,
+        weight: hasSelectedAd ? 4 : 2,
+        opacity: 0.8
+      });
+      
+      circle.on('click', () => onZoneClick(zone.ads));
+      circle.addTo(layer);
+      
+      if (zone.count > 0) {
+        const iconHtml = zone.dominantType === 'farmer' 
+          ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${colors.border}" stroke-width="2.5"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5" fill="${colors.border}"/></svg>`
+          : zone.dominantType === 'free'
+          ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${colors.border}" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`
+          : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${colors.border}" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`;
+        
+        const countLabel = L.divIcon({
+          className: 'heat-zone-label',
+          html: `
+            <div style="
+              background: white;
+              border-radius: 16px;
+              padding: 6px 12px;
+              font-size: 13px;
+              font-weight: 600;
+              color: #1F2937;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              white-space: nowrap;
+              cursor: pointer;
+              border: 2px solid ${hasSelectedAd ? '#1D4ED8' : 'transparent'};
+            ">
+              ${iconHtml}
+              <span>${zone.count}</span>
+            </div>
+          `,
+          iconSize: [80, 32],
+          iconAnchor: [40, 16]
+        });
+        
+        const marker = L.marker([zone.lat, zone.lng], { 
+          icon: countLabel,
+          interactive: true
+        });
+        marker.on('click', () => onZoneClick(zone.ads));
+        marker.addTo(layer);
+      }
     });
     
-    feed.forEach((ad) => {
-      const adLat = ad.location?.lat || lat + (Math.random() - 0.5) * 0.02;
-      const adLng = ad.location?.lng || lng + (Math.random() - 0.5) * 0.02;
-      const type = getAdType(ad);
-      const isSelected = ad._id === selectedAdId;
-      
-      const marker = L.marker([adLat, adLng], {
-        icon: createMarkerIcon(type, isSelected),
-        adType: type,
-      } as L.MarkerOptions & { adType: AdType });
-      
-      marker.on('click', () => onMarkerClick(ad._id));
-      clusterGroup.addLayer(marker);
-    });
-    
-    map.addLayer(clusterGroup);
-    clusterGroupRef.current = clusterGroup;
+    layer.addTo(map);
+    layerRef.current = layer;
     
     return () => {
-      if (clusterGroupRef.current) {
-        map.removeLayer(clusterGroupRef.current);
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
       }
     };
-  }, [feed, lat, lng, selectedAdId, onMarkerClick, map]);
+  }, [zones, map, onZoneClick, selectedAdId]);
   
   return null;
 }
 
 export default function GeoMap({ lat, lng, radiusKm, feed, selectedAdId, onMarkerClick, onMapClick, onMapMove }: GeoMapProps) {
   const center: [number, number] = [lat, lng];
+  
+  const heatZones = useMemo(() => groupAdsIntoZones(feed), [feed]);
+  
+  const handleZoneClick = (ads: Ad[]) => {
+    if (ads.length === 1) {
+      onMarkerClick(ads[0]._id);
+    } else if (ads.length > 1) {
+      onMarkerClick(ads[0]._id);
+    }
+  };
   
   return (
     <>
@@ -309,27 +315,9 @@ export default function GeoMap({ lat, lng, radiusKm, feed, selectedAdId, onMarke
           background: rgba(255,255,255,0.8) !important;
           padding: 2px 6px !important;
         }
-        .ketmar-cluster-wrapper {
+        .heat-zone-label {
           background: transparent !important;
-        }
-        .ketmar-cluster:hover {
-          transform: scale(1.1);
-        }
-        .marker-cluster {
-          background: transparent !important;
-        }
-        .marker-cluster div {
-          background: transparent !important;
-        }
-        .marker-cluster-small,
-        .marker-cluster-medium,
-        .marker-cluster-large {
-          background: transparent !important;
-        }
-        .marker-cluster-small div,
-        .marker-cluster-medium div,
-        .marker-cluster-large div {
-          background: transparent !important;
+          border: none !important;
         }
       `}</style>
       
@@ -360,14 +348,39 @@ export default function GeoMap({ lat, lng, radiusKm, feed, selectedAdId, onMarke
           }}
         />
         
-        <MarkerClusterLayer
-          feed={feed}
-          lat={lat}
-          lng={lng}
+        <HeatZonesLayer
+          zones={heatZones}
+          onZoneClick={handleZoneClick}
           selectedAdId={selectedAdId}
-          onMarkerClick={onMarkerClick}
         />
       </MapContainer>
+      
+      {feed.length > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 16,
+            left: 16,
+            background: 'white',
+            borderRadius: 12,
+            padding: '8px 14px',
+            fontSize: 13,
+            fontWeight: 600,
+            color: '#1F2937',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            zIndex: 1000,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          <span>{feed.length} {feed.length === 1 ? 'товар' : feed.length < 5 ? 'товара' : 'товаров'}</span>
+        </div>
+      )}
     </>
   );
 }
