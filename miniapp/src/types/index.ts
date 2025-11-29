@@ -172,6 +172,9 @@ export interface FeedItem {
   distanceMeters: number;
   sellerName?: string;
   sellerUsername?: string;
+  isFreeGiveaway?: boolean;
+  isFarmerAd?: boolean;
+  priceHistory?: PriceHistoryEntry[];
 }
 
 export interface FeedResponse {

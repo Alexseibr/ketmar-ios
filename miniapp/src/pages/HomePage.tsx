@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Search, MapPin, ChevronRight, Gift, Tractor, Flame, Tag, Sparkles, Navigation } from 'lucide-react';
+import { Loader2, Search, MapPin, ChevronRight, Gift, Tractor, Flame, Tag, Sparkles, Navigation, Play, Map } from 'lucide-react';
 import GeoOnboarding from '@/components/GeoOnboarding';
 import LocationSettingsModal from '@/components/LocationSettingsModal';
 import { useGeo, getLocationDisplayText } from '@/utils/geo';
@@ -351,6 +351,108 @@ export default function HomePage() {
                 </span>
               </button>
             ))}
+          </div>
+        </section>
+
+        {/* Quick Action Buttons - TikTok Feed & Map */}
+        <section style={{ padding: '0 16px 20px' }}>
+          <div style={{
+            display: 'flex',
+            gap: 12,
+          }}>
+            {/* Swipe Feed Button */}
+            <button
+              onClick={() => navigate('/feed')}
+              data-testid="button-swipe-feed"
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                padding: '16px 20px',
+                background: 'linear-gradient(135deg, #1F2937 0%, #374151 100%)',
+                border: 'none',
+                borderRadius: 16,
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+              }}
+            >
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: 'rgba(255, 255, 255, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Play size={20} color="#fff" fill="#fff" />
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: '#fff',
+                  marginBottom: 2,
+                }}>
+                  Свайпай товары
+                </div>
+                <div style={{
+                  fontSize: 12,
+                  color: 'rgba(255, 255, 255, 0.7)',
+                }}>
+                  Как в TikTok
+                </div>
+              </div>
+            </button>
+
+            {/* Map Button */}
+            <button
+              onClick={handleMapClick}
+              data-testid="button-view-map"
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                padding: '16px 20px',
+                background: 'linear-gradient(135deg, #3A7BFF 0%, #2563EB 100%)',
+                border: 'none',
+                borderRadius: 16,
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(58, 123, 255, 0.3)',
+              }}
+            >
+              <div style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                background: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Map size={20} color="#fff" />
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: '#fff',
+                  marginBottom: 2,
+                }}>
+                  На карте
+                </div>
+                <div style={{
+                  fontSize: 12,
+                  color: 'rgba(255, 255, 255, 0.7)',
+                }}>
+                  Рядом с вами
+                </div>
+              </div>
+            </button>
           </div>
         </section>
 
