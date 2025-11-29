@@ -392,19 +392,25 @@ export default function HomePage() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
-                padding: '10px 16px',
-                background: '#FFFFFF',
-                border: '1px solid #E5E7EB',
-                borderRadius: 20,
+                gap: 8,
+                padding: '10px 18px',
+                background: 'linear-gradient(135deg, #4A8CFF 0%, #3A7BFF 100%)',
+                border: 'none',
+                borderRadius: 24,
                 cursor: 'pointer',
                 fontSize: 14,
-                fontWeight: 500,
-                color: '#1F2937',
+                fontWeight: 600,
+                color: '#FFFFFF',
+                boxShadow: '0 4px 12px rgba(58, 123, 255, 0.3)',
+                transition: 'transform 0.2s, box-shadow 0.2s',
               }}
               data-testid="button-map"
             >
-              <Map size={18} color="#3A7BFF" />
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                <line x1="8" y1="2" x2="8" y2="18"></line>
+                <line x1="16" y1="6" x2="16" y2="22"></line>
+              </svg>
               Карта
             </button>
           </div>

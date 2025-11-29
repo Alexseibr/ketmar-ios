@@ -228,8 +228,8 @@ export default function GeoFeedScreen() {
       className="fixed inset-0 flex flex-col bg-gray-50 overflow-hidden"
       style={{ paddingBottom: 'calc(72px + env(safe-area-inset-bottom))' }}
     >
-      {/* TOP AREA */}
-      <div className="flex-shrink-0 bg-white shadow-sm z-20">
+      {/* TOP AREA - Fixed Header */}
+      <div className="flex-shrink-0 bg-white z-20" style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}>
         {/* Search Input */}
         <div className="px-4 pt-3 pb-2">
           <div className="relative">
@@ -358,15 +358,19 @@ export default function GeoFeedScreen() {
           )}
         </div>
         
-        {/* Floating Locate Button */}
+        {/* Floating Locate Button - Modern Style */}
         {lat && lng && (
           <button
-            className="absolute top-4 right-4 w-11 h-11 rounded-full shadow-lg bg-white flex items-center justify-center active:scale-95 transition-transform z-10"
+            className="absolute top-4 right-4 w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-all z-10"
+            style={{
+              background: 'linear-gradient(135deg, #4A8CFF 0%, #3A7BFF 100%)',
+              boxShadow: '0 4px 14px rgba(58, 123, 255, 0.35)',
+            }}
             onClick={handleLocate}
             disabled={isLocating}
             data-testid="button-locate"
           >
-            <Locate className={`w-5 h-5 ${isLocating ? 'animate-pulse text-blue-500' : 'text-gray-700'}`} />
+            <Locate className={`w-5 h-5 text-white ${isLocating ? 'animate-pulse' : ''}`} />
           </button>
         )}
 
