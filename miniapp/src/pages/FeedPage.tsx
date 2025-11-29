@@ -166,8 +166,38 @@ export default function FeedPage() {
     return { filteredItems: filtered, idToBaseIndex: idMap };
   }, [items, activeFilter]);
 
+  // Refs moved up to be available for callbacks
+  const currentStartTime = useRef<number | null>(null);
+  const pendingEvents = useRef<FeedEvent[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const lastScrollIndex = useRef<number>(0);
+  const prevFilteredLengthRef = useRef<number>(0);
+  const isScrollSnapPendingRef = useRef<boolean>(false);
+
+  const sendEvents = useCallback(async (events: FeedEvent[]) => {
+    if (events.length === 0) return;
+    try {
+      await http.post('/api/feed/events', { events });
+    } catch (error) {
+      console.error('Failed to send feed events:', error);
+    }
+  }, []);
+
+  const flushPendingEvents = useCallback(() => {
+    if (pendingEvents.current.length > 0) {
+      sendEvents([...pendingEvents.current]);
+      pendingEvents.current = [];
+    }
+  }, [sendEvents]);
+
+  const trackEvent = useCallback((event: FeedEvent) => {
+    pendingEvents.current.push(event);
+    if (pendingEvents.current.length >= 5) {
+      flushPendingEvents();
+    }
+  }, [flushPendingEvents]);
+
   const handleFilterChange = useCallback(async (filter: FilterType) => {
-    // Emit dwell event for the currently in-view card BEFORE clearing timers
     if (currentStartTime.current && filteredItems.length > 0) {
       const currentItem = filteredItems[currentIndex];
       if (currentItem) {
@@ -183,18 +213,15 @@ export default function FeedPage() {
       }
     }
     
-    // Flush all pending analytics before switching filters - only clear on success
     if (pendingEvents.current.length > 0) {
       const eventsToSend = [...pendingEvents.current];
       try {
         await sendEvents(eventsToSend);
-        // Only clear after successful send
         pendingEvents.current = pendingEvents.current.filter(
           e => !eventsToSend.includes(e)
         );
       } catch (error) {
         console.error('Failed to flush events on filter change:', error);
-        // Keep events in queue for retry
       }
     }
     
@@ -216,28 +243,23 @@ export default function FeedPage() {
     prevFilterRef.current = activeFilter;
   }, [activeFilter, filteredItems.length]);
 
-  // Handle empty filtered state and repopulation
   useEffect(() => {
     const prevLength = prevFilteredLengthRef.current;
     const currentLength = filteredItems.length;
     
-    // When filteredItems becomes empty (but items exist), reset refs and scroll
     if (currentLength === 0 && items.length > 0) {
       setCurrentIndex(0);
       lastScrollIndex.current = 0;
       currentStartTime.current = null;
       
-      // Explicitly reset scroll container to top position
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop = 0;
       }
     }
-    // When filteredItems repopulate from empty, restart analytics after scroll snap
     else if (prevLength === 0 && currentLength > 0 && items.length > 0) {
       setCurrentIndex(0);
       isScrollSnapPendingRef.current = true;
       
-      // Reset scroll position to middle set first
       if (scrollContainerRef.current) {
         const container = scrollContainerRef.current;
         const cardHeight = container.clientHeight;
@@ -247,13 +269,11 @@ export default function FeedPage() {
         }
       }
       
-      // Use requestAnimationFrame to ensure scroll snap completes before emitting impression
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           isScrollSnapPendingRef.current = false;
           currentStartTime.current = Date.now();
           
-          // Track initial impression for first item AFTER scroll is complete
           const firstItem = filteredItems[0];
           if (firstItem) {
             trackEvent({
@@ -293,19 +313,12 @@ export default function FeedPage() {
     }
   }, [coords, geoStatus, requestLocation]);
   
-  const currentStartTime = useRef<number | null>(null);
-  const pendingEvents = useRef<FeedEvent[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const hasShownHint = useRef(false);
   const lastFetchTime = useRef<number>(Date.now());
-  const lastScrollIndex = useRef<number>(0);
   const isFetchingRef = useRef<boolean>(false);
   const loadMoreDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const prevFilteredLengthRef = useRef<number>(0);
-  const isScrollSnapPendingRef = useRef<boolean>(false);
 
-  // Calculate card height based on scroll container size
   useEffect(() => {
     const updateCardHeight = () => {
       if (scrollContainerRef.current) {
@@ -316,10 +329,7 @@ export default function FeedPage() {
       }
     };
 
-    // Initial calculation after layout
     const timer = setTimeout(updateCardHeight, 100);
-    
-    // Also update on resize
     window.addEventListener('resize', updateCardHeight);
     
     return () => {
@@ -328,7 +338,6 @@ export default function FeedPage() {
     };
   }, [cardHeight, isLoading]);
 
-  // Check if hint was shown before
   useEffect(() => {
     const hintShown = localStorage.getItem('ketmar_feed_hint_shown');
     if (!hintShown) {
@@ -339,7 +348,6 @@ export default function FeedPage() {
     }
   }, []);
 
-  // Auto-hide hint after 3 seconds
   useEffect(() => {
     if (showSwipeHint) {
       const timer = setTimeout(() => {
@@ -358,29 +366,6 @@ export default function FeedPage() {
       hasShownHint.current = true;
     }
   }, [showSwipeHint]);
-
-  const sendEvents = useCallback(async (events: FeedEvent[]) => {
-    if (events.length === 0) return;
-    try {
-      await http.post('/api/feed/events', { events });
-    } catch (error) {
-      console.error('Failed to send feed events:', error);
-    }
-  }, []);
-
-  const flushPendingEvents = useCallback(() => {
-    if (pendingEvents.current.length > 0) {
-      sendEvents([...pendingEvents.current]);
-      pendingEvents.current = [];
-    }
-  }, [sendEvents]);
-
-  const trackEvent = useCallback((event: FeedEvent) => {
-    pendingEvents.current.push(event);
-    if (pendingEvents.current.length >= 5) {
-      flushPendingEvents();
-    }
-  }, [flushPendingEvents]);
 
   const filterWithPhotos = (items: FeedItem[]): FeedItem[] => {
     if (!items || !Array.isArray(items)) return [];
