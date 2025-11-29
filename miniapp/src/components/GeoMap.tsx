@@ -202,6 +202,22 @@ function HeatZonesLayer({
 }) {
   const map = useMap();
   const layerRef = useRef<L.LayerGroup | null>(null);
+  const panesCreatedRef = useRef(false);
+  
+  useEffect(() => {
+    if (!panesCreatedRef.current) {
+      if (!map.getPane('heatCircles')) {
+        const circlePane = map.createPane('heatCircles');
+        circlePane.style.zIndex = '350';
+        circlePane.style.pointerEvents = 'none';
+      }
+      if (!map.getPane('heatLabels')) {
+        const labelPane = map.createPane('heatLabels');
+        labelPane.style.zIndex = '650';
+      }
+      panesCreatedRef.current = true;
+    }
+  }, [map]);
   
   useEffect(() => {
     if (layerRef.current) {
@@ -224,10 +240,11 @@ function HeatZonesLayer({
         fillColor: colors.fill,
         fillOpacity: 0.35 + intensity * 0.25,
         weight: hasSelectedAd ? 4 : 2,
-        opacity: 0.8
+        opacity: 0.8,
+        interactive: false,
+        pane: 'heatCircles'
       });
       
-      circle.on('click', () => onZoneClick(zone.ads));
       circle.addTo(layer);
       
       if (zone.count > 0) {
@@ -241,6 +258,10 @@ function HeatZonesLayer({
           className: 'heat-zone-label',
           html: `
             <div style="
+              position: absolute;
+              left: 50%;
+              top: 50%;
+              transform: translate(-50%, -50%);
               background: white;
               border-radius: 16px;
               padding: 6px 12px;
@@ -259,13 +280,14 @@ function HeatZonesLayer({
               <span>${zone.count}</span>
             </div>
           `,
-          iconSize: [80, 32],
-          iconAnchor: [40, 16]
+          iconSize: [0, 0],
+          iconAnchor: [0, 0]
         });
         
         const marker = L.marker([zone.lat, zone.lng], { 
           icon: countLabel,
-          interactive: true
+          interactive: true,
+          pane: 'heatLabels'
         });
         marker.on('click', () => onZoneClick(zone.ads));
         marker.addTo(layer);
