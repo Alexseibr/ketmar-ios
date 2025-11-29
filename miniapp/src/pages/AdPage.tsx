@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, MessageCircle, ArrowLeft, Phone, Share2, Eye, Calendar, X, ExternalLink, Heart, Truck, ShoppingCart, Minus, Plus, Check } from 'lucide-react';
 import { SiInstagram, SiTelegram } from 'react-icons/si';
-import { getAd, getSimilarAds, trackView, trackContact, trackContactReveal } from '@/api/ads';
+import { getAd, getSimilarAds, trackView, trackContactReveal } from '@/api/ads';
+import { logContact } from '@/api/rating';
 import { createShopOrder, CreateShopOrderPayload } from '@/api/orders';
 import EmptyState from '@/widgets/EmptyState';
 import { Ad, AdPreview } from '@/types';
@@ -21,6 +22,7 @@ import 'swiper/css/zoom';
 import { getFullImageUrl, getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
 import ScreenLayout from '@/components/layout/ScreenLayout';
 import { useFormatPrice } from '@/hooks/useFormatPrice';
+import RatingModal from '@/components/RatingModal';
 
 export default function AdPage() {
   const { id } = useParams();
@@ -48,6 +50,9 @@ export default function AdPage() {
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
+  
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [currentContactId, setCurrentContactId] = useState<string | null>(null);
 
   const viewTrackedRef = useRef(false);
 
@@ -112,28 +117,50 @@ export default function AdPage() {
     }
   }, [id, ad]);
 
+  const handleContactWithRating = useCallback(async (
+    channel: 'telegram' | 'phone' | 'instagram' | 'whatsapp' | 'chat',
+    action: () => void
+  ) => {
+    if (!ad) return;
+    
+    try {
+      const response = await logContact(ad._id, channel);
+      setCurrentContactId(response.contactId);
+      action();
+      setTimeout(() => {
+        setShowRatingModal(true);
+      }, 10000);
+    } catch (error) {
+      console.warn('[handleContactWithRating] Error logging contact:', error);
+      action();
+    }
+  }, [ad]);
+
   const handleCallPhone = useCallback(() => {
     if (ad?.contactPhone) {
-      trackContact(ad._id);
-      window.location.href = `tel:${ad.contactPhone}`;
+      handleContactWithRating('phone', () => {
+        window.location.href = `tel:${ad.contactPhone}`;
+      });
     }
-  }, [ad?.contactPhone, ad?._id]);
+  }, [ad?.contactPhone, ad?._id, handleContactWithRating]);
 
   const handleOpenTelegram = useCallback(() => {
     if (ad?.contactUsername) {
-      trackContact(ad._id);
-      const username = ad.contactUsername.replace('@', '');
-      window.open(`https://t.me/${username}`, '_blank');
+      handleContactWithRating('telegram', () => {
+        const username = ad.contactUsername!.replace('@', '');
+        window.open(`https://t.me/${username}`, '_blank');
+      });
     }
-  }, [ad?.contactUsername, ad?._id]);
+  }, [ad?.contactUsername, ad?._id, handleContactWithRating]);
 
   const handleOpenInstagram = useCallback(() => {
     if (ad?.contactInstagram) {
-      trackContact(ad._id);
-      const username = ad.contactInstagram.replace('@', '');
-      window.open(`https://instagram.com/${username}`, '_blank');
+      handleContactWithRating('instagram', () => {
+        const username = ad.contactInstagram!.replace('@', '');
+        window.open(`https://instagram.com/${username}`, '_blank');
+      });
     }
-  }, [ad?.contactInstagram, ad?._id]);
+  }, [ad?.contactInstagram, ad?._id, handleContactWithRating]);
 
   const handleShowPhone = useCallback(() => {
     if (!showPhone && ad) {
@@ -146,31 +173,33 @@ export default function AdPage() {
 
   const handlePhoneActionCall = useCallback(() => {
     if (ad?.contactPhone) {
-      trackContact(ad._id);
-      const normalizedPhone = ad.contactPhone.replace(/[\s\-\(\)]/g, '');
-      window.location.href = `tel:${normalizedPhone}`;
+      handleContactWithRating('phone', () => {
+        const normalizedPhone = ad.contactPhone!.replace(/[\s\-\(\)]/g, '');
+        window.location.href = `tel:${normalizedPhone}`;
+      });
     }
     setShowPhoneActionSheet(false);
-  }, [ad?.contactPhone, ad?._id]);
+  }, [ad?.contactPhone, ad?._id, handleContactWithRating]);
 
   const handlePhoneActionTelegram = useCallback(() => {
     if (ad?.contactPhone) {
-      trackContact(ad._id);
-      const normalizedPhone = ad.contactPhone.replace(/[\s\-\(\)]/g, '').replace('+', '');
-      const tgUrl = `tg://resolve?phone=${normalizedPhone}`;
-      const fallbackUrl = `https://t.me/+${normalizedPhone}`;
-      
-      try {
-        window.location.href = tgUrl;
-        setTimeout(() => {
+      handleContactWithRating('telegram', () => {
+        const normalizedPhone = ad.contactPhone!.replace(/[\s\-\(\)]/g, '').replace('+', '');
+        const tgUrl = `tg://resolve?phone=${normalizedPhone}`;
+        const fallbackUrl = `https://t.me/+${normalizedPhone}`;
+        
+        try {
+          window.location.href = tgUrl;
+          setTimeout(() => {
+            window.open(fallbackUrl, '_blank');
+          }, 500);
+        } catch {
           window.open(fallbackUrl, '_blank');
-        }, 500);
-      } catch {
-        window.open(fallbackUrl, '_blank');
-      }
+        }
+      });
     }
     setShowPhoneActionSheet(false);
-  }, [ad?.contactPhone, ad?._id]);
+  }, [ad?.contactPhone, ad?._id, handleContactWithRating]);
 
   const hasDeliveryOption = ad?.deliveryType === 'delivery_only' || ad?.deliveryType === 'delivery_and_pickup';
   
@@ -1277,6 +1306,23 @@ export default function AdPage() {
             )}
           </div>
         </div>
+      )}
+      
+      {ad && currentContactId && (
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => {
+            setShowRatingModal(false);
+            setCurrentContactId(null);
+          }}
+          adId={ad._id}
+          adTitle={ad.title}
+          adImage={ad.photos?.[0]}
+          contactId={currentContactId}
+          onSuccess={() => {
+            setCurrentContactId(null);
+          }}
+        />
       )}
     </>
   );
