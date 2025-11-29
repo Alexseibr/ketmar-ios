@@ -17,20 +17,44 @@ import {
   RefreshCw
 } from 'lucide-react';
 
+interface ContactStats {
+  total: number;
+  byChannel?: {
+    telegram?: number;
+    phone?: number;
+    instagram?: number;
+    whatsapp?: number;
+    chat?: number;
+  };
+}
+
+interface Recommendation {
+  type: string;
+  priority: string;
+  icon: string;
+  title: string;
+  message: string;
+  action?: string;
+}
+
 interface AdStats {
   adId: string;
   title: string;
-  status: string;
+  status?: string;
   views: number;
   viewsTotal: number;
   viewsToday: number;
-  contacts: number;
-  favorites: number;
+  impressions?: number;
+  impressionsToday?: number;
+  contactClicks?: number;
+  contacts: ContactStats | number;
+  favorites?: number;
+  favoritesCount?: number;
   daysActive: number;
-  daysLeft: number;
+  daysLeft: number | null;
   expiresAt: string | null;
-  lifetimeType: string;
-  recommendations: string[];
+  lifetimeType?: string;
+  recommendations: Recommendation[];
 }
 
 export default function AdStatsPage() {
@@ -53,10 +77,20 @@ export default function AdStatsPage() {
       setLoading(true);
       setError('');
       const response = await http.get(`/api/ads/stats/${id}`);
-      setStats(response.data.data);
+      const data = response.data;
+      if (data.stats) {
+        setStats({
+          ...data.stats,
+          recommendations: data.recommendations || [],
+        });
+      } else if (data.data) {
+        setStats(data.data);
+      } else {
+        throw new Error('Неверный формат ответа');
+      }
     } catch (err: any) {
       console.error('Error loading stats:', err);
-      setError(err.response?.data?.message || 'Не удалось загрузить статистику');
+      setError(err.response?.data?.error || err.response?.data?.message || 'Не удалось загрузить статистику');
     } finally {
       setLoading(false);
     }
@@ -228,7 +262,7 @@ export default function AdStatsPage() {
               gap: 4,
             }}>
               <Clock size={14} />
-              Срок жизни: {getLifetimeLabel(stats.lifetimeType)}
+              Срок жизни: {getLifetimeLabel(stats.lifetimeType || 'medium')}
             </span>
           </div>
         </div>
@@ -255,13 +289,13 @@ export default function AdStatsPage() {
           <StatCard
             icon={<MessageCircle size={24} color="#F59E0B" />}
             label="Контактов"
-            value={stats.contacts}
+            value={typeof stats.contacts === 'number' ? stats.contacts : stats.contacts?.total || 0}
             bg="#FEF3C7"
           />
           <StatCard
             icon={<Heart size={24} color="#EC4899" />}
             label="В избранном"
-            value={stats.favorites}
+            value={stats.favorites || stats.favoritesCount || 0}
             bg="#FCE7F3"
           />
         </div>
@@ -293,10 +327,10 @@ export default function AdStatsPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
               <span style={{ color: '#6B7280' }}>Осталось дней</span>
               <span style={{ 
-                color: stats.daysLeft <= 1 ? '#DC2626' : stats.daysLeft <= 3 ? '#F59E0B' : '#22C55E', 
+                color: (stats.daysLeft ?? 0) <= 1 ? '#DC2626' : (stats.daysLeft ?? 0) <= 3 ? '#F59E0B' : '#22C55E', 
                 fontWeight: 500 
               }}>
-                {stats.daysLeft}
+                {stats.daysLeft ?? 0}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
@@ -336,7 +370,7 @@ export default function AdStatsPage() {
             }}>
               {stats.recommendations.map((rec, idx) => (
                 <li key={idx} style={{ fontSize: 14, color: '#78350F', lineHeight: 1.5 }}>
-                  {rec}
+                  {typeof rec === 'string' ? rec : `${rec.icon || ''} ${rec.title}: ${rec.message}`}
                 </li>
               ))}
             </ul>
@@ -344,7 +378,7 @@ export default function AdStatsPage() {
         )}
 
         {/* Extend Button */}
-        {stats.status === 'active' && stats.daysLeft <= 3 && (
+        {stats.status === 'active' && (stats.daysLeft ?? 0) <= 3 && (
           <button
             onClick={handleExtend}
             disabled={extending}
