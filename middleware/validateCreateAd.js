@@ -1,6 +1,7 @@
 import Season from '../models/Season.js';
 import SellerProfile from '../models/SellerProfile.js';
 import reverseGeocodingService from '../services/ReverseGeocodingService.js';
+import AdLimitService from '../services/AdLimitService.js';
 
 const ALLOWED_DELIVERY_TYPES = ['pickup_only', 'delivery_only', 'delivery_and_pickup'];
 const CATEGORY_DEFAULT_LIFETIME = {
@@ -262,6 +263,22 @@ async function validateCreateAd(req, res, next) {
       }
     }
 
+    const isFreeGiveaway = Boolean(payload.isFreeGiveaway) || categoryId === 'darom';
+    const isScheduled = publishAt != null;
+    
+    const limitCheck = await AdLimitService.checkLimit(sellerTelegramId, categoryId, isFreeGiveaway, isScheduled);
+    
+    let moderationStatus = publishAt ? 'scheduled' : 'approved';
+    let status = publishAt ? 'scheduled' : 'active';
+    let limitExceeded = false;
+    
+    if (!limitCheck.allowed && limitCheck.requiresModeration) {
+      moderationStatus = 'pending';
+      status = 'pending';
+      limitExceeded = true;
+      console.log(`[AdLimit] User ${sellerTelegramId} exceeded daily limit. Ad sent to moderation.`);
+    }
+
     const sanitized = {
       title,
       description: normalizeString(payload.description),
@@ -295,13 +312,16 @@ async function validateCreateAd(req, res, next) {
       seasonCode,
       lifetimeDays,
       validUntil: adjustedValidUntil,
-      moderationStatus: publishAt ? 'scheduled' : 'approved',
-      status: publishAt ? 'scheduled' : 'active',
+      moderationStatus,
+      status,
       publishAt,
       deliveryOptions: Array.isArray(payload.deliveryOptions)
         ? payload.deliveryOptions.filter((option) => typeof option === 'string' && option.trim())
         : undefined,
       isLiveSpot: Boolean(payload.isLiveSpot),
+      isFreeGiveaway,
+      _limitExceeded: limitExceeded,
+      _limitInfo: limitCheck,
     };
 
     // Remove undefined optional fields

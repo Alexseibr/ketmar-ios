@@ -17,6 +17,7 @@ import SearchAlertService from '../../services/SearchAlertService.js';
 import DigitalTwinNotificationService from '../../services/DigitalTwinNotificationService.js';
 import FastMarketScoringService from '../../services/FastMarketScoringService.js';
 import eventBus, { Events } from '../../shared/events/eventBus.js';
+import AdLimitService from '../../services/AdLimitService.js';
 
 const router = Router();
 
@@ -1536,6 +1537,33 @@ router.post('/:id/debug-notify-favorites', requireInternalAuth, async (req, res)
   }
 });
 
+router.get('/limits/stats', async (req, res) => {
+  try {
+    const { telegramId } = req.query;
+    
+    if (!telegramId) {
+      return res.status(400).json({ error: 'telegramId is required' });
+    }
+
+    const stats = await AdLimitService.getTodayStats(Number(telegramId));
+    const giveawayStats = await AdLimitService.getGiveawayStats(Number(telegramId));
+
+    res.json({
+      success: true,
+      data: {
+        regular: stats,
+        giveaway: giveawayStats,
+        message: stats.remaining > 0
+          ? `Осталось ${stats.remaining} из ${stats.limit} объявлений сегодня`
+          : 'Дневной лимит исчерпан. Новые объявления пойдут на модерацию.',
+      },
+    });
+  } catch (error) {
+    console.error('[AdLimits] Error:', error.message);
+    res.status(500).json({ error: 'Ошибка получения статистики' });
+  }
+});
+
 router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -1609,6 +1637,11 @@ router.post('/', validateCreateAd, async (req, res, next) => {
       return res.status(400).json({ error: 'Некорректные данные объявления' });
     }
 
+    const limitExceeded = payload._limitExceeded;
+    const limitInfo = payload._limitInfo;
+    delete payload._limitExceeded;
+    delete payload._limitInfo;
+
     const ad = await Ad.create(payload);
     
     setImmediate(async () => {
@@ -1666,7 +1699,23 @@ router.post('/', validateCreateAd, async (req, res, next) => {
       });
     }
 
-    res.status(201).json(ad);
+    const response = {
+      ...ad.toObject(),
+      _meta: {
+        limitExceeded,
+        limitInfo: limitInfo ? {
+          used: limitInfo.used,
+          limit: limitInfo.limit,
+          remaining: limitInfo.remaining,
+          unlimited: limitInfo.unlimited,
+        } : null,
+        message: limitExceeded
+          ? 'Превышен дневной лимит. Объявление отправлено на модерацию.'
+          : null,
+      },
+    };
+
+    res.status(201).json(response);
   } catch (error) {
     next(error);
   }
