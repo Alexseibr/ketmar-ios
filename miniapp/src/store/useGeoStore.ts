@@ -215,20 +215,29 @@ const useGeoStore = create<GeoState>()(
           
           // Но всё равно определяем страну по координатам (на случай если регион устарел)
           const { label, countryCode } = await resolveLocationDetails(currentCoords.lat, currentCoords.lng);
+          console.log('📍 [GeoStore] Resolved location:', { label, countryCode });
           
           if (label && !get().cityName) {
             set({ cityName: label });
           }
           
           // Обновляем регион по GPS если нужно
+          console.log('📍 [GeoStore] COUNTRY_CODE_MAP[countryCode]:', countryCode, COUNTRY_CODE_MAP[countryCode || '']);
           if (countryCode && COUNTRY_CODE_MAP[countryCode]) {
             const mappedCountry = COUNTRY_CODE_MAP[countryCode];
             const regionStore = useRegionStore.getState();
             
+            console.log('📍 [GeoStore] Current region:', regionStore.countryCode, 'Detected:', mappedCountry);
+            
             if (regionStore.countryCode !== mappedCountry) {
+              console.log('🌍 [GeoStore] Calling setCountry:', mappedCountry);
               regionStore.setCountry(mappedCountry);
-              console.log('🌍 Регион обновлён по кэшированным GPS:', mappedCountry);
+              console.log('🌍 [GeoStore] After setCountry, new state:', useRegionStore.getState());
+            } else {
+              console.log('🌍 [GeoStore] Region already matches:', mappedCountry);
             }
+          } else {
+            console.log('📍 [GeoStore] No valid countryCode or not in map:', countryCode);
           }
           return;
         }
