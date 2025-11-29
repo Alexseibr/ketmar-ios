@@ -11,6 +11,7 @@ import { StoryCarousel } from '@/components/stories';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
+import { t } from '@/lib/i18n';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
@@ -27,19 +28,19 @@ import servicesIcon from '@assets/generated_images/services_wrench_tool_icon.png
 import toolsIcon from '@assets/generated_images/tool_rental_repair_icon.png';
 import giftIcon from '@assets/generated_images/free_giveaway_gift_icon.png';
 
-const QUICK_CATEGORIES = [
-  { slug: 'farmer-market', label: 'Фермеры', icon: farmerMarketIcon, bgColor: '#E8F5E9' },
-  { slug: 'vypechka', label: 'Выпечка', icon: bakeryIcon, bgColor: '#FFF8E1' },
-  { slug: 'ovoschi-frukty', label: 'Еда', icon: vegetablesIcon, bgColor: '#FFEBEE' },
-  { slug: 'darom', label: 'Даром', icon: giftIcon, bgColor: '#FCE4EC', isHot: true },
-  { slug: 'odezhda', label: 'Одежда', icon: clothesIcon, bgColor: '#E0F7FA' },
-  { slug: 'obuv', label: 'Обувь', icon: shoesIcon, bgColor: '#E3F2FD' },
-  { slug: 'bytovye-melochi', label: 'Дом', icon: householdIcon, bgColor: '#FFF3E0' },
-  { slug: 'elektronika', label: 'Техника', icon: electronicsIcon, bgColor: '#ECEFF1' },
-  { slug: 'selhoztekhnika', label: 'Сельхоз', icon: tractorIcon, bgColor: '#FFF8E1' },
-  { slug: 'uslugi', label: 'Услуги', icon: servicesIcon, bgColor: '#E8EAF6' },
-  { slug: 'arenda', label: 'Аренда', icon: toolsIcon, bgColor: '#ECEFF1' },
-  { slug: 'lichnye-veshchi', label: 'Вещи', icon: personalItemsIcon, bgColor: '#F3E5F5' },
+const QUICK_CATEGORIES_CONFIG = [
+  { slug: 'farmer-market', labelKey: 'cat.farmers', icon: farmerMarketIcon, bgColor: '#E8F5E9' },
+  { slug: 'vypechka', labelKey: 'cat.bakery', icon: bakeryIcon, bgColor: '#FFF8E1' },
+  { slug: 'ovoschi-frukty', labelKey: 'cat.food', icon: vegetablesIcon, bgColor: '#FFEBEE' },
+  { slug: 'darom', labelKey: 'cat.free', icon: giftIcon, bgColor: '#FCE4EC', isHot: true },
+  { slug: 'odezhda', labelKey: 'cat.clothes', icon: clothesIcon, bgColor: '#E0F7FA' },
+  { slug: 'obuv', labelKey: 'cat.shoes', icon: shoesIcon, bgColor: '#E3F2FD' },
+  { slug: 'bytovye-melochi', labelKey: 'cat.home', icon: householdIcon, bgColor: '#FFF3E0' },
+  { slug: 'elektronika', labelKey: 'cat.tech', icon: electronicsIcon, bgColor: '#ECEFF1' },
+  { slug: 'selhoztekhnika', labelKey: 'cat.agro', icon: tractorIcon, bgColor: '#FFF8E1' },
+  { slug: 'uslugi', labelKey: 'cat.services', icon: servicesIcon, bgColor: '#E8EAF6' },
+  { slug: 'arenda', labelKey: 'cat.rental', icon: toolsIcon, bgColor: '#ECEFF1' },
+  { slug: 'lichnye-veshchi', labelKey: 'cat.items', icon: personalItemsIcon, bgColor: '#F3E5F5' },
 ];
 
 interface HomeFeedBlock {
@@ -83,7 +84,7 @@ export default function HomePage() {
   const [showLocationSettings, setShowLocationSettings] = useState(false);
   const [feedData, setFeedData] = useState<HomeFeedResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [locationName, setLocationName] = useState('Ваш район');
+  const [locationName, setLocationName] = useState(() => t('location.your_area'));
 
   useEffect(() => {
     if (!hasCompletedOnboarding && !coords) {
@@ -106,7 +107,7 @@ export default function HomePage() {
         const data = await response.json();
         if (data.success) {
           setFeedData(data);
-          setLocationName(data.location || cityName || 'Ваш район');
+          setLocationName(data.location || cityName || t('location.your_area'));
         }
       }
     } catch (error) {
@@ -197,7 +198,7 @@ export default function HomePage() {
               <MapPin size={18} color="#FFFFFF" />
             </div>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 11, color: '#9CA3AF' }}>Ваш район</div>
+              <div style={{ fontSize: 11, color: '#9CA3AF' }}>{t('location.your_area')}</div>
               <div style={{ 
                 fontSize: 15, 
                 fontWeight: 600, 
@@ -259,7 +260,7 @@ export default function HomePage() {
               fontSize: 16, 
               color: '#9CA3AF',
             }}>
-              Что ищете?
+              {t('search.placeholder')}
             </span>
           </button>
         </div>
@@ -282,7 +283,7 @@ export default function HomePage() {
             gridTemplateColumns: 'repeat(4, 1fr)',
             gap: 10,
           }}>
-            {QUICK_CATEGORIES.map((cat) => (
+            {QUICK_CATEGORIES_CONFIG.map((cat) => (
               <button
                 key={cat.slug}
                 onClick={() => handleCategoryClick(cat.slug)}
@@ -330,7 +331,7 @@ export default function HomePage() {
                 }}>
                   <img 
                     src={cat.icon} 
-                    alt={cat.label}
+                    alt={t(cat.labelKey)}
                     style={{
                       width: 38,
                       height: 38,
@@ -347,7 +348,7 @@ export default function HomePage() {
                   textAlign: 'center',
                   lineHeight: 1.2,
                 }}>
-                  {cat.label}
+                  {t(cat.labelKey)}
                 </span>
               </button>
             ))}
@@ -396,13 +397,13 @@ export default function HomePage() {
                   color: '#fff',
                   marginBottom: 2,
                 }}>
-                  Свайпай товары
+                  {t('home.swipe_feed')}
                 </div>
                 <div style={{
                   fontSize: 12,
                   color: 'rgba(255, 255, 255, 0.7)',
                 }}>
-                  Как в TikTok
+                  {t('home.like_tiktok')}
                 </div>
               </div>
             </button>
@@ -443,13 +444,13 @@ export default function HomePage() {
                   color: '#fff',
                   marginBottom: 2,
                 }}>
-                  На карте
+                  {t('home.on_map')}
                 </div>
                 <div style={{
                   fontSize: 12,
                   color: 'rgba(255, 255, 255, 0.7)',
                 }}>
-                  Рядом с вами
+                  {t('home.near_you')}
                 </div>
               </div>
             </button>

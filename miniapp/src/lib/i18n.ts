@@ -24,12 +24,20 @@ let isInitialized = false;
 
 // Синхронизируем язык с сохранённым в localStorage при старте
 try {
-  const stored = localStorage.getItem('region-storage');
-  if (stored) {
-    const parsed = JSON.parse(stored);
-    if (parsed?.state?.language && ['ru', 'en', 'pl'].includes(parsed.state.language)) {
-      currentLanguage = parsed.state.language as LanguageCode;
-      console.log('🌍 [i18n] Loaded language from storage:', currentLanguage);
+  // Сначала проверяем напрямую сохранённый язык (устанавливается при GPS-определении)
+  const directLang = localStorage.getItem('ketmar-language');
+  if (directLang && ['ru', 'en', 'pl'].includes(directLang)) {
+    currentLanguage = directLang as LanguageCode;
+    console.log('🌍 [i18n] Loaded language from ketmar-language:', currentLanguage);
+  } else {
+    // Fallback на regionStore
+    const stored = localStorage.getItem('ketmar-region-store');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (parsed?.state?.language && ['ru', 'en', 'pl'].includes(parsed.state.language)) {
+        currentLanguage = parsed.state.language as LanguageCode;
+        console.log('🌍 [i18n] Loaded language from region store:', currentLanguage);
+      }
     }
   }
 } catch (e) {
@@ -65,6 +73,9 @@ const COMMON_RU: TranslationNamespace = {
   'common.cta.call': 'Позвонить',
   'common.cta.message': 'Написать',
   'common.banner.give_away': 'Есть что отдать?',
+  'common.all': 'Все',
+  'common.no_ads': 'Нет объявлений',
+  'common.create_first': 'Создайте первое объявление, нажав кнопку выше',
   'feed.title': 'Объявления',
   'feed.empty': 'Объявлений пока нет',
   'feed.nearby': 'Рядом с вами',
@@ -107,9 +118,37 @@ const COMMON_RU: TranslationNamespace = {
   'location.detecting': 'Определяем местоположение...',
   'location.change': 'Изменить',
   'location.radius': 'Радиус поиска',
+  'location.your_area': 'Ваш район',
   'region.select': 'Выбор региона',
   'region.currency': 'Валюта',
   'region.language': 'Язык',
+  'nav.home': 'Главная',
+  'nav.feed': 'Лента',
+  'nav.my_ads': 'Мои',
+  'nav.favorites': 'Избранное',
+  'nav.profile': 'Профиль',
+  'my_ads.title': 'Мои объявления',
+  'my_ads.create': 'Создать',
+  'my_ads.active': 'Активные',
+  'my_ads.archive': 'Архив',
+  'cat.farmers': 'Фермеры',
+  'cat.bakery': 'Выпечка',
+  'cat.food': 'Еда',
+  'cat.free': 'Даром',
+  'cat.clothes': 'Одежда',
+  'cat.shoes': 'Обувь',
+  'cat.home': 'Дом',
+  'cat.tech': 'Техника',
+  'cat.agro': 'Сельхоз',
+  'cat.services': 'Услуги',
+  'cat.rental': 'Аренда',
+  'cat.items': 'Вещи',
+  'home.swipe_feed': 'Свайпай товары',
+  'home.like_tiktok': 'Как в TikTok',
+  'home.on_map': 'На карте',
+  'home.near_you': 'Рядом с вами',
+  'home.farmer_goods': 'Фермерские товары',
+  'home.fresh_nearby': 'Свежее с фермы рядом',
 };
 
 const COMMON_EN: TranslationNamespace = {
@@ -141,6 +180,9 @@ const COMMON_EN: TranslationNamespace = {
   'common.cta.call': 'Call',
   'common.cta.message': 'Message',
   'common.banner.give_away': 'Have something to give away?',
+  'common.all': 'All',
+  'common.no_ads': 'No ads',
+  'common.create_first': 'Create your first ad using the button above',
   'feed.title': 'Listings',
   'feed.empty': 'No listings yet',
   'feed.nearby': 'Nearby',
@@ -183,9 +225,37 @@ const COMMON_EN: TranslationNamespace = {
   'location.detecting': 'Detecting location...',
   'location.change': 'Change',
   'location.radius': 'Search radius',
+  'location.your_area': 'Your area',
   'region.select': 'Select region',
   'region.currency': 'Currency',
   'region.language': 'Language',
+  'nav.home': 'Home',
+  'nav.feed': 'Feed',
+  'nav.my_ads': 'My Ads',
+  'nav.favorites': 'Favorites',
+  'nav.profile': 'Profile',
+  'my_ads.title': 'My ads',
+  'my_ads.create': 'Create',
+  'my_ads.active': 'Active',
+  'my_ads.archive': 'Archive',
+  'cat.farmers': 'Farmers',
+  'cat.bakery': 'Bakery',
+  'cat.food': 'Food',
+  'cat.free': 'Free',
+  'cat.clothes': 'Clothes',
+  'cat.shoes': 'Shoes',
+  'cat.home': 'Home',
+  'cat.tech': 'Tech',
+  'cat.agro': 'Agro',
+  'cat.services': 'Services',
+  'cat.rental': 'Rental',
+  'cat.items': 'Items',
+  'home.swipe_feed': 'Swipe products',
+  'home.like_tiktok': 'Like TikTok',
+  'home.on_map': 'On map',
+  'home.near_you': 'Near you',
+  'home.farmer_goods': 'Farmer goods',
+  'home.fresh_nearby': 'Fresh from farm nearby',
 };
 
 const COMMON_PL: TranslationNamespace = {
@@ -217,6 +287,9 @@ const COMMON_PL: TranslationNamespace = {
   'common.cta.call': 'Zadzwoń',
   'common.cta.message': 'Napisz',
   'common.banner.give_away': 'Masz coś do oddania?',
+  'common.all': 'Wszystkie',
+  'common.no_ads': 'Brak ogłoszeń',
+  'common.create_first': 'Utwórz pierwsze ogłoszenie klikając przycisk powyżej',
   'feed.title': 'Ogłoszenia',
   'feed.empty': 'Brak ogłoszeń',
   'feed.nearby': 'W pobliżu',
@@ -259,9 +332,37 @@ const COMMON_PL: TranslationNamespace = {
   'location.detecting': 'Wykrywanie lokalizacji...',
   'location.change': 'Zmień',
   'location.radius': 'Promień wyszukiwania',
+  'location.your_area': 'Twoja okolica',
   'region.select': 'Wybór regionu',
   'region.currency': 'Waluta',
   'region.language': 'Język',
+  'nav.home': 'Główna',
+  'nav.feed': 'Lista',
+  'nav.my_ads': 'Moje',
+  'nav.favorites': 'Ulubione',
+  'nav.profile': 'Profil',
+  'my_ads.title': 'Moje ogłoszenia',
+  'my_ads.create': 'Utwórz',
+  'my_ads.active': 'Aktywne',
+  'my_ads.archive': 'Archiwum',
+  'cat.farmers': 'Rolnicy',
+  'cat.bakery': 'Pieczywo',
+  'cat.food': 'Jedzenie',
+  'cat.free': 'Za darmo',
+  'cat.clothes': 'Ubrania',
+  'cat.shoes': 'Buty',
+  'cat.home': 'Dom',
+  'cat.tech': 'Technika',
+  'cat.agro': 'Rolnictwo',
+  'cat.services': 'Usługi',
+  'cat.rental': 'Wynajem',
+  'cat.items': 'Rzeczy',
+  'home.swipe_feed': 'Przeglądaj',
+  'home.like_tiktok': 'Jak w TikTok',
+  'home.on_map': 'Na mapie',
+  'home.near_you': 'W pobliżu',
+  'home.farmer_goods': 'Produkty rolników',
+  'home.fresh_nearby': 'Świeże z farmy w pobliżu',
 };
 
 function initializeTranslations() {

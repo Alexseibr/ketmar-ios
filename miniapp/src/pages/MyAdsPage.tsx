@@ -8,6 +8,7 @@ import { ScheduledAdChip } from '@/components/schedule/ScheduledAdBadge';
 import { getThumbnailUrl } from '@/constants/placeholders';
 import http from '@/api/http';
 import ScreenLayout from '@/components/layout/ScreenLayout';
+import { t } from '@/lib/i18n';
 
 export default function MyAdsPage() {
   const navigate = useNavigate();
@@ -200,7 +201,7 @@ export default function MyAdsPage() {
           gap: 10,
         }}>
           <ShoppingBag size={22} color="#3A7BFF" />
-          Мои объявления
+          {t('my_ads.title')}
         </h1>
         
         <Link
@@ -221,7 +222,7 @@ export default function MyAdsPage() {
           data-testid="button-create-ad"
         >
           <Plus size={18} />
-          Создать
+          {t('my_ads.create')}
         </Link>
       </div>
     </div>
@@ -238,11 +239,11 @@ export default function MyAdsPage() {
         scrollbarWidth: 'none',
       }}>
         {[
-          { key: 'all', label: 'Все', count: ads.length },
-          { key: 'active', label: 'Активные', count: activeAds.length },
-          { key: 'scheduled', label: 'Запланированные', count: scheduledAds.length, icon: Clock },
-          { key: 'rejected', label: 'На доработку', count: rejectedAds.length, icon: XCircle, isWarning: true },
-          { key: 'archived', label: 'Архив', count: archivedAds.length },
+          { key: 'all', label: t('common.all'), count: ads.length },
+          { key: 'active', label: t('my_ads.active'), count: activeAds.length },
+          { key: 'scheduled', label: 'Scheduled', count: scheduledAds.length, icon: Clock },
+          { key: 'rejected', label: 'Rejected', count: rejectedAds.length, icon: XCircle, isWarning: true },
+          { key: 'archived', label: t('my_ads.archive'), count: archivedAds.length },
         ].filter(tab => (tab.key !== 'scheduled' || scheduledAds.length > 0) && (tab.key !== 'rejected' || rejectedAds.length > 0)).map((tab) => (
           <button
             key={tab.key}
@@ -299,7 +300,7 @@ export default function MyAdsPage() {
               color: '#6B7280',
               margin: '0 0 8px',
             }}>
-              {filter === 'all' ? 'Нет объявлений' : `Нет ${filter === 'active' ? 'активных' : filter === 'scheduled' ? 'запланированных' : 'архивных'} объявлений`}
+              {t('common.no_ads')}
             </p>
             {filter === 'all' && (
               <p style={{
@@ -307,7 +308,7 @@ export default function MyAdsPage() {
                 color: '#9CA3AF',
                 margin: 0,
               }}>
-                Создайте первое объявление, нажав кнопку выше
+                {t('common.create_first')}
               </p>
             )}
           </div>

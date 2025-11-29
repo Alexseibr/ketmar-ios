@@ -2,13 +2,16 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, Compass, ShoppingBag, Heart, User } from 'lucide-react';
 import { getTelegramWebApp } from '@/utils/telegram';
+import { t } from '@/lib/i18n';
 
-const tabs = [
-  { path: '/', label: 'Главная', Icon: Home },
-  { path: '/feed', label: 'Лента', Icon: Compass },
-  { path: '/my-ads', label: 'Мои', Icon: ShoppingBag },
-  { path: '/favorites', label: 'Избранное', Icon: Heart },
-  { path: '/profile', label: 'Профиль', Icon: User },
+const getTabLabel = (key: string) => t(key);
+
+const tabsConfig = [
+  { path: '/', labelKey: 'nav.home', Icon: Home },
+  { path: '/feed', labelKey: 'nav.feed', Icon: Compass },
+  { path: '/my-ads', labelKey: 'nav.my_ads', Icon: ShoppingBag },
+  { path: '/favorites', labelKey: 'nav.favorites', Icon: Heart },
+  { path: '/profile', labelKey: 'nav.profile', Icon: User },
 ];
 
 export default function BottomTabs() {
@@ -179,7 +182,7 @@ export default function BottomTabs() {
           margin: '0 auto',
         }}
       >
-        {tabs.map((tab) => {
+        {tabsConfig.map((tab) => {
           const isActive = location.pathname === tab.path || 
             (tab.path === '/' && location.pathname === '/home');
           
@@ -236,7 +239,7 @@ export default function BottomTabs() {
                   textAlign: 'center',
                 }}
               >
-                {tab.label}
+                {getTabLabel(tab.labelKey)}
               </span>
             </NavLink>
           );

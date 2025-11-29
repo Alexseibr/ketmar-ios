@@ -174,24 +174,29 @@ const useRegionStore = create<RegionState>()(
 
       setCountry(countryCode: CountryCode) {
         const config = COUNTRY_CONFIGS[countryCode];
-        // Определяем язык по стране
         const languageMap: Record<CountryCode, LanguageCode> = {
           'BY': 'ru',
           'RU': 'ru',
-          'UA': 'ru', // Можно добавить 'uk' когда будет поддержка
+          'UA': 'ru',
           'KZ': 'ru',
           'PL': 'pl',
           'DE': 'en',
           'US': 'en',
         };
+        const newLanguage = languageMap[countryCode];
         set({
           countryCode,
           currency: config.defaultCurrency,
-          language: languageMap[countryCode],
+          language: newLanguage,
           locale: config.defaultLocale,
           isInitialized: true,
         });
-        console.log('🌍 [RegionStore] Country set:', countryCode, 'Currency:', config.defaultCurrency, 'Language:', languageMap[countryCode]);
+        try {
+          localStorage.setItem('ketmar-language', newLanguage);
+        } catch (e) {
+          // Ignore
+        }
+        console.log('🌍 [RegionStore] Country set:', countryCode, 'Currency:', config.defaultCurrency, 'Language:', newLanguage);
       },
 
       setCurrency(currency: CurrencyCode) {
