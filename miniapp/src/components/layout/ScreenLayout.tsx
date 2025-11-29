@@ -7,6 +7,7 @@ interface ScreenLayoutProps {
   showBottomNav?: boolean;
   contentClassName?: string;
   noPadding?: boolean;
+  fullScreen?: boolean;
 }
 
 export default function ScreenLayout({
@@ -15,9 +16,10 @@ export default function ScreenLayout({
   showBottomNav = true,
   contentClassName = '',
   noPadding = false,
+  fullScreen = false,
 }: ScreenLayoutProps) {
   const isTelegramWebApp = !!getTelegramWebApp();
-  const needsBottomPadding = showBottomNav && isTelegramWebApp;
+  const needsBottomPadding = showBottomNav && isTelegramWebApp && !fullScreen;
 
   useEffect(() => {
     document.body.classList.add('screen-layout-active');
@@ -28,7 +30,7 @@ export default function ScreenLayout({
 
   return (
     <div 
-      className="screen-layout-root"
+      className={`screen-layout-root ${fullScreen ? 'screen-fullscreen' : ''}`}
       data-testid="screen-layout"
       style={{
         display: 'flex',
@@ -36,7 +38,7 @@ export default function ScreenLayout({
         height: '100%',
         minHeight: 0,
         overflow: 'hidden',
-        background: '#FFFFFF',
+        background: fullScreen ? '#000' : '#FFFFFF',
       }}
     >
       {header && (
@@ -59,13 +61,13 @@ export default function ScreenLayout({
         style={{
           flex: 1,
           minHeight: 0,
-          overflowY: 'auto',
+          overflowY: fullScreen ? 'hidden' : 'auto',
           overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
           paddingBottom: needsBottomPadding 
             ? 'calc(var(--bottom-nav-height, 80px) + env(safe-area-inset-bottom, 0px))' 
-            : noPadding ? '0' : '16px',
+            : noPadding || fullScreen ? '0' : '16px',
         }}
       >
         {children}

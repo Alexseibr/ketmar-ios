@@ -1001,9 +1001,10 @@ export default function FeedPage() {
   }
 
   return (
-    <ScreenLayout showBottomNav={true} noPadding={true}>
+    <ScreenLayout showBottomNav={true} noPadding={true} fullScreen={true}>
       <div
         ref={containerRef}
+        className="feed-fullscreen"
         data-testid="feed-container"
         style={{
           display: 'flex',

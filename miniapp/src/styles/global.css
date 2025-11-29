@@ -564,6 +564,12 @@ body.screen-layout-active {
   padding-bottom: calc(var(--bottom-nav-height) + var(--safe-area-bottom));
 }
 
+/* Full-screen feed mode - no bottom padding */
+.mobile-layout .mobile-content:has(.feed-fullscreen) {
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
 /* Desktop layout */
 .desktop-layout {
   display: flex;
