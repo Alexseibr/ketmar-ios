@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Compass, ShoppingBag, Heart, User } from 'lucide-react';
+import { Home, Compass, MessageCircle, Heart, User } from 'lucide-react';
 import { getTelegramWebApp } from '@/utils/telegram';
 import { t } from '@/lib/i18n';
 
@@ -9,7 +9,7 @@ const getTabLabel = (key: string) => t(key);
 const tabsConfig = [
   { path: '/', labelKey: 'nav.home', Icon: Home },
   { path: '/feed', labelKey: 'nav.feed', Icon: Compass },
-  { path: '/my-ads', labelKey: 'nav.my_ads', Icon: ShoppingBag },
+  { path: '/chats', labelKey: 'nav.chats', Icon: MessageCircle },
   { path: '/favorites', labelKey: 'nav.favorites', Icon: Heart },
   { path: '/profile', labelKey: 'nav.profile', Icon: User },
 ];
