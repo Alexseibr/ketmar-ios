@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePlatform } from '@/platform/PlatformProvider';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface AnalyticsOverview {
   period: { days: number; startDate: string; endDate: string };
@@ -327,6 +328,7 @@ function PricesTab({
   isLoading: boolean;
 }) {
   const navigate = useNavigate();
+  const { formatCard } = useFormatPrice();
 
   if (isLoading) {
     return (
@@ -393,13 +395,13 @@ function PricesTab({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{item.title}</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="font-bold">{item.price.toLocaleString()} руб.</span>
+                  <span className="font-bold">{formatCard(item.price, false)}</span>
                   <Badge className={statusConfig[item.status].color}>
                     {statusConfig[item.status].label}
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Рынок: {item.marketMin.toLocaleString()} — {item.marketAvg.toLocaleString()} руб.
+                  Рынок: {formatCard(item.marketMin, false)} — {formatCard(item.marketAvg, false)}
                 </p>
                 {item.recommendation && (
                   <p className="text-xs text-primary mt-1">{item.recommendation}</p>
@@ -425,6 +427,7 @@ function CategoriesTab({
   categories?: CategoryPerformance[]; 
   isLoading: boolean;
 }) {
+  const { formatCard } = useFormatPrice();
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -477,11 +480,11 @@ function CategoriesTab({
             <div className="flex items-center justify-between text-sm border-t pt-3">
               <div>
                 <p className="text-muted-foreground">Ваша цена</p>
-                <p className="font-medium">{cat.sellerAvgPrice.toLocaleString()} руб.</p>
+                <p className="font-medium">{formatCard(cat.sellerAvgPrice, false)}</p>
               </div>
               <div className="text-right">
                 <p className="text-muted-foreground">Рынок</p>
-                <p className="font-medium">{cat.marketAvgPrice.toLocaleString()} руб.</p>
+                <p className="font-medium">{formatCard(cat.marketAvgPrice, false)}</p>
               </div>
               <Badge className={
                 cat.pricePosition > 10 ? 'bg-red-500/10 text-red-700' :

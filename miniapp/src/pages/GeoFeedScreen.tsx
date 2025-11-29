@@ -6,6 +6,7 @@ import {
   Sparkles, X, AlertCircle, Loader2
 } from 'lucide-react';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 const RADIUS_OPTIONS = [
   { value: 0.3, label: '300м' },
@@ -30,9 +31,6 @@ interface Ad {
   location?: { lat: number; lng: number };
 }
 
-const formatPrice = (price: number) => {
-  return `${price.toLocaleString()} руб.`;
-};
 
 const formatDistance = (km?: number) => {
   if (!km) return '';
@@ -55,6 +53,7 @@ function MapFallback() {
 
 export default function GeoFeedScreen() {
   const navigate = useNavigate();
+  const { formatCard } = useFormatPrice();
   const { 
     coords, radiusKm, setRadius, requestLocation, 
     smartRadiusEnabled, toggleSmartRadius,
@@ -610,7 +609,7 @@ export default function GeoFeedScreen() {
                 color: '#3A7BFF',
                 margin: '0 0 4px',
               }}>
-                {formatPrice(selectedAd.price)}
+                {formatCard(selectedAd.price, selectedAd.price === 0)}
               </p>
               <h3 style={{ 
                 fontSize: 15, 

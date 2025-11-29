@@ -13,6 +13,7 @@ import { useUserStore } from '@/store/useUserStore';
 import FavoriteButton from '@/components/FavoriteButton';
 import LazyImage from '@/components/LazyImage';
 import { getFeedImageUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface Ad {
   _id: string;
@@ -53,6 +54,7 @@ export default function ForYouFeedPage() {
   const [searchParams] = useSearchParams();
   const user = useUserStore((state) => state.user);
   const telegramId = user?.telegramId;
+  const { formatCard } = useFormatPrice();
 
   const [items, setItems] = useState<Ad[]>([]);
   const [scores, setScores] = useState<AdScore[]>([]);
@@ -313,7 +315,7 @@ export default function ForYouFeedPage() {
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-3">
-                <p className="text-white font-bold text-lg">{ad.price} руб.</p>
+                <p className="text-white font-bold text-lg">{formatCard(ad.price, ad.price === 0)}</p>
                 <p className="text-white/80 text-xs truncate">{ad.title}</p>
               </div>
             </motion.div>
@@ -420,7 +422,7 @@ export default function ForYouFeedPage() {
                   <h2 className="text-white text-xl font-bold mb-2">{currentAd.title}</h2>
                   
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="text-white text-2xl font-bold">{currentAd.price} руб.</span>
+                    <span className="text-white text-2xl font-bold">{formatCard(currentAd.price, currentAd.price === 0)}</span>
                     {currentScore && currentScore.reasons.length > 0 && (
                       <Badge className="bg-violet-500/80 text-white border-0">
                         {currentScore.reasons[0]}

@@ -1,4 +1,5 @@
 import PriceBadgeChip, { PriceBadge } from './PriceBadgeChip';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface PriceMarketBlockProps {
   badge: PriceBadge | null | undefined;
@@ -23,6 +24,8 @@ export default function PriceMarketBlock({
   price, 
   pricePerSqm 
 }: PriceMarketBlockProps) {
+  const { formatCard } = useFormatPrice();
+  
   if (!badge || !badge.hasMarketData) {
     return null;
   }
@@ -74,11 +77,11 @@ export default function PriceMarketBlock({
           Текущая цена
         </div>
         <div style={{ fontSize: 26, fontWeight: 700, color: '#111827' }}>
-          {price.toLocaleString('ru-RU')} руб.
+          {formatCard(price, price === 0)}
         </div>
         {pricePerSqm && pricePerSqm > 0 && (
           <div style={{ fontSize: 17, color: '#6B7280', marginTop: 6 }}>
-            Это {pricePerSqm.toLocaleString('ru-RU')} руб./м²
+            Это {formatCard(pricePerSqm, false)}/м²
           </div>
         )}
       </div>
@@ -94,7 +97,7 @@ export default function PriceMarketBlock({
             Средняя цена по похожим объявлениям
           </div>
           <div style={{ fontSize: 24, fontWeight: 600, color: '#374151' }}>
-            {avgPrice.toLocaleString('ru-RU')} руб.
+            {formatCard(avgPrice, false)}
           </div>
           {windowDays && (
             <div style={{ fontSize: 17, color: '#9CA3AF', marginTop: 8 }}>

@@ -8,6 +8,7 @@ import {
 import http from '@/api/http';
 import { useUserStore } from '@/store/useUserStore';
 import useGeoStore from '@/store/useGeoStore';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface DashboardAd {
   _id: string;
@@ -175,6 +176,7 @@ export default function FarmerCabinetPage() {
   const coords = useGeoStore((state) => state.coords);
   const requestLocation = useGeoStore((state) => state.requestLocation);
   const geoStatus = useGeoStore((state) => state.status);
+  const { formatCard } = useFormatPrice();
   const [activeTab, setActiveTab] = useState<TabType>('products');
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -461,7 +463,7 @@ export default function FarmerCabinetPage() {
                   {ad.title}
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: '#3B73FC', marginBottom: 6 }}>
-                  {ad.price} руб. / {UNIT_LABELS[ad.unitType] || ad.unitType}
+                  {formatCard(ad.price, ad.price === 0)} / {UNIT_LABELS[ad.unitType] || ad.unitType}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{
@@ -707,7 +709,7 @@ export default function FarmerCabinetPage() {
               }}>
                 <div style={{ fontSize: 14, opacity: 0.8, marginBottom: 4 }}>Средняя цена на рынке</div>
                 <div style={{ fontSize: 32, fontWeight: 700 }}>
-                  {seasonStats.averagePrice.toFixed(2)} руб.
+                  {formatCard(seasonStats.averagePrice, false)}
                 </div>
                 {seasonStats.trend.priceChangePercent !== 0 && (
                   <div style={{ 
@@ -735,7 +737,7 @@ export default function FarmerCabinetPage() {
                 }}>
                   <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Мин. цена</div>
                   <div style={{ fontSize: 20, fontWeight: 700, color: '#10B981' }}>
-                    {seasonStats.minPrice.toFixed(2)} руб.
+                    {formatCard(seasonStats.minPrice, false)}
                   </div>
                 </div>
                 <div style={{
@@ -746,7 +748,7 @@ export default function FarmerCabinetPage() {
                 }}>
                   <div style={{ fontSize: 12, color: '#6B7280', marginBottom: 4 }}>Макс. цена</div>
                   <div style={{ fontSize: 20, fontWeight: 700, color: '#EF4444' }}>
-                    {seasonStats.maxPrice.toFixed(2)} руб.
+                    {formatCard(seasonStats.maxPrice, false)}
                   </div>
                 </div>
               </div>
@@ -1035,7 +1037,7 @@ export default function FarmerCabinetPage() {
                   <div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{info.name}</div>
                     <div style={{ fontSize: 14, color: info.color, fontWeight: 600 }}>
-                      {typeof info.price === 'number' ? `${info.price} руб./мес` : info.price}
+                      {typeof info.price === 'number' ? `${formatCard(info.price, false)}/мес` : info.price}
                     </div>
                   </div>
                 </div>

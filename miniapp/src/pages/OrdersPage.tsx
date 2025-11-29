@@ -5,6 +5,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { OrderSummary } from '@/types';
 import { formatDistanceToNow } from '@/utils/time';
 import ScreenLayout from '@/components/layout/ScreenLayout';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 const fallbackOrders: OrderSummary[] = [
   {
@@ -51,6 +52,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { formatCard } = useFormatPrice();
 
   useEffect(() => {
     async function load() {
@@ -132,7 +134,7 @@ export default function OrdersPage() {
                     )}
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <p style={{ margin: 0, color: '#111827', fontWeight: 700 }}>{total.toFixed(2)} руб.</p>
+                    <p style={{ margin: 0, color: '#111827', fontWeight: 700 }}>{formatCard(total, false)}</p>
                     <p style={{ margin: 0, color: '#475467', fontSize: '0.9rem' }}>
                       {order.items.length} поз.
                     </p>
@@ -152,7 +154,7 @@ export default function OrdersPage() {
                       )}
                       {typeof item.price === 'number' && (
                         <span style={{ marginLeft: 6, color: '#111827', fontWeight: 600 }}>
-                          {(item.price * (item.quantity || 1)).toFixed(2)} руб.
+                          {formatCard(item.price * (item.quantity || 1), false)}
                         </span>
                       )}
                     </li>

@@ -2,6 +2,7 @@ import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { AdPreview } from '@/types';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface AdsMapProps {
   ads: AdPreview[];
@@ -37,6 +38,7 @@ export function AdsMap({
   zoom = 12,
   height = '400px',
 }: AdsMapProps) {
+  const { formatCard } = useFormatPrice();
   // Filter ads that have valid location data
   const adsWithLocation = ads.filter(
     (ad: AdPreview) => ad.location?.lat != null && ad.location?.lng != null
@@ -123,7 +125,7 @@ export function AdsMap({
                         marginBottom: '4px',
                       }}
                     >
-                      {ad.price.toLocaleString('ru-RU')} руб.
+                      {formatCard(ad.price, ad.price === 0)}
                     </div>
                   )}
                   {ad.city && (

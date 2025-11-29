@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { usePlatform } from '@/platform/PlatformProvider';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface CategoryProposal {
   _id: string;
@@ -51,6 +52,7 @@ export default function AdminCategoryProposalsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { getAuthToken } = usePlatform();
+  const { formatCard } = useFormatPrice();
   
   const [selectedProposal, setSelectedProposal] = useState<ProposalWithAds | null>(null);
   const [approveModalOpen, setApproveModalOpen] = useState(false);
@@ -566,7 +568,7 @@ export default function AdminCategoryProposalsPage() {
                           </div>
                           {ad.price && (
                             <div style={{ fontSize: 13, color: '#3B73FC', fontWeight: 600 }}>
-                              {ad.price} руб.
+                              {formatCard(ad.price, false)}
                             </div>
                           )}
                         </div>

@@ -4,6 +4,7 @@ import http from '@/api/http';
 import { useUserStore } from '@/store/useUserStore';
 import { MessageCircle, Loader2, ChevronRight } from 'lucide-react';
 import ScreenLayout from '@/components/layout/ScreenLayout';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface Conversation {
   _id: string;
@@ -35,6 +36,7 @@ export default function ConversationsPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { formatCard } = useFormatPrice();
 
   useEffect(() => {
     const load = async () => {
@@ -184,7 +186,7 @@ export default function ConversationsPage() {
                   : conversation.interlocutor.username || conversation.interlocutor.telegramUsername || 'Пользователь'
                 : 'Пользователь';
 
-              const isMyMessage = conversation.lastMessage?.sender === user._id;
+              const isMyMessage = conversation.lastMessage?.sender === user.id;
 
               return (
                 <div
@@ -281,7 +283,7 @@ export default function ConversationsPage() {
                         {conversation.ad.title}
                         {conversation.ad.price && (
                           <span style={{ fontWeight: 600, marginLeft: '8px' }}>
-                            {conversation.ad.price.toLocaleString('ru-RU')} руб.
+                            {formatCard(conversation.ad.price ?? 0, conversation.ad.price === 0)}
                           </span>
                         )}
                       </div>

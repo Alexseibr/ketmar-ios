@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useUserStore } from '@/store/useUserStore';
 import AuthScreen from '@/components/AuthScreen';
 import PageLoader from '@/components/PageLoader';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -56,6 +57,7 @@ export default function DynamicPricingPage() {
   const user = useUserStore((state) => state.user);
   const navigate = useNavigate();
   const { adId } = useParams<{ adId?: string }>();
+  const { formatCard } = useFormatPrice();
   const [recommendation, setRecommendation] = useState<PriceRecommendation | null>(null);
   const [ads, setAds] = useState<AdInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -236,7 +238,7 @@ export default function DynamicPricingPage() {
               >
                 {ads.map(ad => (
                   <option key={ad._id} value={ad._id}>
-                    {ad.title} — {ad.price?.toLocaleString()} руб.
+                    {ad.title} — {formatCard(ad.price ?? 0, false)}
                   </option>
                 ))}
               </select>
@@ -278,21 +280,21 @@ export default function DynamicPricingPage() {
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex-1">
                       <p className="text-xs opacity-70">Текущая цена</p>
-                      <p className="text-xl font-bold">{recommendation.currentPrice.toLocaleString()} руб.</p>
+                      <p className="text-xl font-bold">{formatCard(recommendation.currentPrice, false)}</p>
                     </div>
                     <div className={`flex items-center ${getActionColor(recommendation.action)}`}>
                       {getActionIcon(recommendation.action)}
                     </div>
                     <div className="flex-1 text-right">
                       <p className="text-xs opacity-70">Рекомендуемая</p>
-                      <p className="text-2xl font-bold">{recommendation.recommendedPrice.toLocaleString()} руб.</p>
+                      <p className="text-2xl font-bold">{formatCard(recommendation.recommendedPrice, false)}</p>
                     </div>
                   </div>
 
                   {recommendation.action !== 'keep' && (
                     <div className="flex items-center justify-center gap-2 text-sm mb-4">
                       <span className={recommendation.priceChange > 0 ? 'text-green-200' : 'text-orange-200'}>
-                        {recommendation.priceChange > 0 ? '+' : ''}{recommendation.priceChange.toLocaleString()} руб.
+                        {recommendation.priceChange > 0 ? '+' : ''}{formatCard(Math.abs(recommendation.priceChange), false)}
                       </span>
                       <span className="opacity-70">
                         ({recommendation.percentChange > 0 ? '+' : ''}{recommendation.percentChange.toFixed(1)}%)

@@ -1,5 +1,6 @@
 import { Star, Zap, Crown, Eye, MessageCircle, Heart } from 'lucide-react';
 import { getThumbnailUrl } from '@/constants/placeholders';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface Ad {
   _id: string;
@@ -62,6 +63,7 @@ const BOOST_BORDERS: Record<number, string> = {
 };
 
 export default function FarmerPremiumCard({ ad, onClick }: FarmerPremiumCardProps) {
+  const { formatCard } = useFormatPrice();
   const isPremium = ad.isPremiumCard;
   const boostLevel = ad.boostLevel || 0;
   const badge = ad.premiumBadge ? BADGE_STYLES[ad.premiumBadge] : null;
@@ -200,7 +202,7 @@ export default function FarmerPremiumCard({ ad, onClick }: FarmerPremiumCardProp
             color: isPremium || boostLevel > 0 ? '#8B5CF6' : '#059669',
             marginBottom: 8,
           }}>
-            {ad.price} руб.
+            {formatCard(ad.price, ad.price === 0)}
             {ad.unitType && (
               <span style={{ fontSize: 12, fontWeight: 500, color: '#6B7280' }}>
                 /{UNIT_LABELS[ad.unitType] || ad.unitType}

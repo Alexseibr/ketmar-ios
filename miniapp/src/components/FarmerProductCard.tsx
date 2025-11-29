@@ -3,6 +3,7 @@ import { MapPin } from 'lucide-react';
 import { AdPreview } from '@/types';
 import FavoriteButton from '@/components/FavoriteButton';
 import { getThumbnailUrl } from '@/constants/placeholders';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface FarmerProductCardProps {
   ad: AdPreview & {
@@ -85,14 +86,14 @@ function formatFreshness(
   }
 }
 
-function formatPriceHint(price: number, unitType?: string): string | null {
-  if (!unitType) return null;
+function formatPriceHint(price: number, unitType?: string, formatPrice?: (val: number, isFree: boolean) => string): string | null {
+  if (!unitType || !formatPrice) return null;
   
   switch (unitType) {
     case 'kg':
-      return `${(price / 10).toFixed(2)} руб. за 100 г`;
+      return `${formatPrice(price / 10, false)} за 100 г`;
     case 'liter':
-      return `${(price / 10).toFixed(2)} руб. за 100 мл`;
+      return `${formatPrice(price / 10, false)} за 100 мл`;
     default:
       return null;
   }
@@ -110,10 +111,11 @@ function getCategoryIcon(categorySlug?: string): string {
 
 export default function FarmerProductCard({ ad, compact = false }: FarmerProductCardProps) {
   const navigate = useNavigate();
+  const { formatCard } = useFormatPrice();
   
   const unitLabel = ad.unitType ? UNIT_LABELS[ad.unitType] || ad.unitType : '';
-  const priceLabel = `${ad.price.toLocaleString('ru-RU')} руб.${unitLabel ? ` / ${unitLabel}` : ''}`;
-  const priceHint = formatPriceHint(ad.price, ad.unitType);
+  const priceLabel = `${formatCard(ad.price, ad.price === 0)}${unitLabel ? ` / ${unitLabel}` : ''}`;
+  const priceHint = formatPriceHint(ad.price, ad.unitType, formatCard);
   const freshness = formatFreshness(ad.freshAt, ad.harvestDate, ad.productionDate);
   const distance = formatDistance(ad.distanceKm);
   const categoryIcon = getCategoryIcon(ad.categoryName || ad.subcategoryId);

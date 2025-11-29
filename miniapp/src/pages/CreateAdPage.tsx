@@ -11,6 +11,7 @@ import PriceHint from '@/components/PriceHint';
 import { SchedulePublishBlock } from '@/components/schedule/SchedulePublishBlock';
 import { showPublishNotification } from '@/utils/showPublishNotification';
 import ScreenLayout from '@/components/layout/ScreenLayout';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 const BRAND_BLUE = '#2B5CFF';
 const BRAND_BLUE_LIGHT = 'rgba(43, 92, 255, 0.12)';
@@ -215,6 +216,7 @@ function draftReducer(state: DraftAd, action: WizardAction): DraftAd {
 export default function CreateAdPage() {
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
+  const { formatCard } = useFormatPrice();
   const [currentStep, setCurrentStep] = useState(1);
   const [draft, dispatch] = useReducer(draftReducer, initialState);
   const [submitting, setSubmitting] = useState(false);
@@ -1592,7 +1594,7 @@ function Step5Confirm({
         <Row label="Название" value={draft.info.title} />
         <Row label="Категория" value={selectedCategory?.name || draft.info.categoryId} />
         {selectedSubcategory && <Row label="Подкатегория" value={selectedSubcategory.name} />}
-        <Row label="Цена" value={`${parseFloat(draft.info.price).toLocaleString('ru-RU')} руб.`} />
+        <Row label="Цена" value={formatCard(parseFloat(draft.info.price), false)} />
         {draft.info.description && (
           <div style={{ marginTop: 8 }}>
             <span style={{ fontSize: 14, color: '#6B7280', display: 'block', marginBottom: 4 }}>Описание</span>

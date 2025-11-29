@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserStore } from '@/store/useUserStore';
 import PageLoader from '@/components/PageLoader';
 import AuthScreen from '@/components/AuthScreen';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface Issue {
   _id: string;
@@ -123,6 +124,7 @@ export default function SellerTwinPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { formatCard } = useFormatPrice();
   const [activeTab, setActiveTab] = useState('overview');
   const [showSettings, setShowSettings] = useState(false);
 
@@ -627,7 +629,7 @@ export default function SellerTwinPage() {
                     {pred.optimalPrice && (
                       <div className="flex items-center justify-between text-sm bg-green-50 dark:bg-green-950/20 p-2 rounded-lg mb-2">
                         <span className="text-muted-foreground">Рекомендуемая цена</span>
-                        <span className="font-bold text-green-600">{pred.optimalPrice} руб.</span>
+                        <span className="font-bold text-green-600">{formatCard(pred.optimalPrice, false)}</span>
                       </div>
                     )}
 

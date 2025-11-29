@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useState, useRef} from 'react';
 import { getThumbnailUrl } from '@/constants/placeholders';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface AdCarouselProps {
   title?: string;
@@ -24,6 +25,7 @@ interface AdCarouselProps {
 
 export default function AdCarousel(props: AdCarouselProps) {
   const navigate = useNavigate();
+  const { formatCard } = useFormatPrice();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -203,7 +205,7 @@ export default function AdCarousel(props: AdCarouselProps) {
                 color: 'var(--color-primary)',
               }}
             >
-              {ad.price ? `${ad.price} руб.` : 'Цена не указана'}
+              {ad.price ? formatCard(ad.price, false) : 'Цена не указана'}
             </div>
             {ad.city && (
               <div

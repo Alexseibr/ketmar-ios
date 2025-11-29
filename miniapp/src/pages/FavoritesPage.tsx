@@ -313,7 +313,8 @@ function FavoriteCard({ favorite, index, onRemove, removing, onClick }: Favorite
 }
 
 function RecommendationCard({ ad, onClick }: { ad: SimilarAd; onClick: () => void }) {
-  const price = `${ad.price.toLocaleString('ru-RU')} руб.`;
+  const { formatCard } = useFormatPrice();
+  const price = formatCard(ad.price, ad.price === 0);
   const distanceText = ad.distanceKm != null 
     ? ad.distanceKm < 0.1 
       ? '< 100 м' 
@@ -382,6 +383,7 @@ function RecommendationCard({ ad, onClick }: { ad: SimilarAd; onClick: () => voi
 }
 
 function BuyerProfileCard({ profile }: { profile: BuyerProfile }) {
+  const { formatCard } = useFormatPrice();
   const segmentLabels = { A: 'Активный', B: 'Периодический', C: 'Редкий' };
   const sellerLabels = { private: 'частники', farmer: 'фермеры', shop: 'магазины', any: 'все' };
 
@@ -400,7 +402,7 @@ function BuyerProfileCard({ profile }: { profile: BuyerProfile }) {
         <span style={{ fontSize: 15, fontWeight: 600, color: '#1A1A1A' }}>Ваш профиль покупателя</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13, color: '#424242' }}>
-        <div>• Средний бюджет: ~{profile.averageBudget.toLocaleString('ru-RU')} руб.</div>
+        <div>• Средний бюджет: ~{formatCard(profile.averageBudget, false)}</div>
         {profile.preferredCategories.length > 0 && (
           <div>• Интересы: {profile.preferredCategories.slice(0, 3).join(', ')}</div>
         )}

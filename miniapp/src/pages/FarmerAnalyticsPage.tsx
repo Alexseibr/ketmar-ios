@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, TrendingDown, Eye, MessageCircle, BarChart3, Calendar } from 'lucide-react';
 import http from '@/api/http';
 import { useUserStore } from '@/store/useUserStore';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface SeasonAnalytics {
   categoryId: string;
@@ -70,6 +71,7 @@ const CATEGORY_NAMES: Record<string, string> = {
 export default function FarmerAnalyticsPage() {
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
+  const { formatCard } = useFormatPrice();
   const [period, setPeriod] = useState('month');
   const [seasonData, setSeasonData] = useState<SeasonAnalytics | null>(null);
   const [myData, setMyData] = useState<MyAnalytics | null>(null);
@@ -104,7 +106,7 @@ export default function FarmerAnalyticsPage() {
   };
 
   const formatPrice = (price: number) => {
-    return `${price.toFixed(2)} руб.`;
+    return formatCard(price, false);
   };
 
   const formatPercent = (value: number) => {

@@ -5,6 +5,7 @@ import { Ad } from '@/types';
 import { useCartStore } from '@/store/cart';
 import FavoriteButton from './FavoriteButton';
 import { getThumbnailUrl } from '@/constants/placeholders';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface Props {
   adId: string | null;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function AdDetailsModal({ adId, onClose }: Props) {
+  const { formatCard } = useFormatPrice();
   const [ad, setAd] = useState<Ad | null>(null);
   const [loading, setLoading] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
@@ -57,7 +59,7 @@ export default function AdDetailsModal({ adId, onClose }: Props) {
             ) : null}
 
             <p style={{ fontSize: '1.6rem', fontWeight: 700, margin: '12px 0' }}>
-              {ad.price.toLocaleString('ru-RU')} руб.
+              {formatCard(ad.price, ad.price === 0)}
             </p>
 
             {ad.attributes && Object.keys(ad.attributes).length > 0 && (

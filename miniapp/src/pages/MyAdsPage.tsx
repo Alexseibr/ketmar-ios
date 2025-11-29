@@ -9,10 +9,12 @@ import { getThumbnailUrl } from '@/constants/placeholders';
 import http from '@/api/http';
 import ScreenLayout from '@/components/layout/ScreenLayout';
 import { t } from '@/lib/i18n';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 export default function MyAdsPage() {
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
+  const { formatCard: formatCardHook } = useFormatPrice();
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -513,9 +515,9 @@ interface MyAdListCardProps {
 }
 
 function MyAdListCard({ ad, onClick, onDelete, onToggleStatus, showActions, onToggleActions }: MyAdListCardProps) {
+  const { formatCard } = useFormatPrice();
   const formatPrice = (price: number) => {
-    if (price === 0) return 'Даром';
-    return `${price.toLocaleString('ru-RU')} руб.`;
+    return formatCard(price, price === 0);
   };
 
   const photoUrl = ad.photos?.[0] 

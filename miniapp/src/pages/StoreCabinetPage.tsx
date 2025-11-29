@@ -10,6 +10,7 @@ import {
 import http from '@/api/http';
 import { useUserStore } from '@/store/useUserStore';
 import { usePlatform } from '@/platform/PlatformProvider';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface DashboardAd {
   _id: string;
@@ -66,6 +67,7 @@ export default function StoreCabinetPage() {
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
   const { getAuthToken } = usePlatform();
+  const { formatCard } = useFormatPrice();
   
   const [activeTab, setActiveTab] = useState<TabType>('products');
   const [loading, setLoading] = useState(true);
@@ -661,7 +663,7 @@ export default function StoreCabinetPage() {
                     {ad.title}
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: '#3B73FC', marginBottom: 6 }}>
-                    {ad.price} {ad.currency || 'руб.'}
+                    {ad.currency ? `${ad.price} ${ad.currency}` : formatCard(ad.price, ad.price === 0)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span style={{

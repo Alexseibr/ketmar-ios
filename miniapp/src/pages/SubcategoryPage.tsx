@@ -8,6 +8,7 @@ import { AdPreview, CategoryNode } from '@/types';
 import FavoriteButton from '@/components/FavoriteButton';
 import { useUserStore } from '@/store/useUserStore';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 const RADIUS_PRESETS = [
   { value: 0.3, label: '300м' },
@@ -697,10 +698,10 @@ export default function SubcategoryPage() {
 function CategoryAdCard({ ad }: { ad: AdPreview }) {
   const navigate = useNavigate();
   const user = useUserStore(state => state.user);
+  const { formatCard } = useFormatPrice();
   
   const formatPrice = (price: number) => {
-    if (price === 0) return 'Даром';
-    return `${price.toLocaleString('ru-RU')} руб.`;
+    return formatCard(price, price === 0);
   };
 
   const formatDistance = (km?: number) => {

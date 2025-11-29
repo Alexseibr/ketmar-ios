@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { estimatePrice, PriceEstimateResponse } from '@/api/pricing';
 import { Loader2, TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface PriceHintProps {
   categoryId: string;
@@ -10,6 +11,7 @@ interface PriceHintProps {
 }
 
 export default function PriceHint({ categoryId, subcategoryId, price, city }: PriceHintProps) {
+  const { formatCard } = useFormatPrice();
   const [data, setData] = useState<PriceEstimateResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,13 +149,13 @@ export default function PriceHint({ categoryId, subcategoryId, price, city }: Pr
         <div>
           <div style={{ fontSize: 15, color: '#6B7280', marginBottom: 6 }}>Средняя цена</div>
           <div style={{ fontSize: 20, fontWeight: 600, color: '#111827' }} data-testid="price-hint-avg">
-            {avgPrice?.toLocaleString('ru-RU')} руб.
+            {formatCard(avgPrice ?? 0, false)}
           </div>
         </div>
         <div>
           <div style={{ fontSize: 15, color: '#6B7280', marginBottom: 6 }}>Диапазон</div>
           <div style={{ fontSize: 17, fontWeight: 500, color: '#374151' }} data-testid="price-hint-range">
-            {minPrice?.toLocaleString('ru-RU')} – {maxPrice?.toLocaleString('ru-RU')} руб.
+            {minPrice?.toLocaleString('ru-RU')} – {formatCard(maxPrice ?? 0, false)}
           </div>
         </div>
       </div>
@@ -167,7 +169,7 @@ export default function PriceHint({ categoryId, subcategoryId, price, city }: Pr
         }}>
           <div style={{ fontSize: 15, color: '#6B7280', marginBottom: 6 }}>Рекомендуемая цена</div>
           <div style={{ fontSize: 18, fontWeight: 600, color: '#3B73FC' }} data-testid="price-hint-recommended">
-            {labels.recommendedPriceRange.from.toLocaleString('ru-RU')} – {labels.recommendedPriceRange.to.toLocaleString('ru-RU')} руб.
+            {labels.recommendedPriceRange.from.toLocaleString('ru-RU')} – {formatCard(labels.recommendedPriceRange.to, false)}
           </div>
         </div>
       )}

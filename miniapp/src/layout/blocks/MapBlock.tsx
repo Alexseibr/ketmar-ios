@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getThumbnailUrl } from '@/constants/placeholders';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface MapBlockProps {
   title?: string;
@@ -23,6 +24,7 @@ interface MapBlockProps {
 
 export default function MapBlock(props: MapBlockProps) {
   const navigate = useNavigate();
+  const { formatCard } = useFormatPrice();
   const title = props.title || props.config?.title;
   const center = props.center || props.config?.center;
   const geoRadius = props.geoRadius || props.config?.geoRadius;
@@ -162,7 +164,7 @@ export default function MapBlock(props: MapBlockProps) {
                       color: 'var(--color-accent-highlight)',
                     }}
                   >
-                    {ad.price} руб.
+                    {formatCard(ad.price ?? 0, ad.price === 0)}
                   </p>
                 </div>
               </div>

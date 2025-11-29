@@ -4,6 +4,7 @@ import { MapPin, Truck } from 'lucide-react';
 import { listAds, getNearbyAds } from '@/api/ads';
 import { useFavorites } from '@/features/favorites/useFavorites';
 import { AdPreview, AdsResponse } from '@/types';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 type RequestState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -40,6 +41,7 @@ export default function AdsPage() {
   const [searchParams] = useSearchParams();
   const category = searchParams.get('category');
   const subcategory = searchParams.get('subcategory');
+  const { formatCard } = useFormatPrice();
 
   const [ads, setAds] = useState<AdPreview[]>([]);
   const [state, setState] = useState<RequestState>('idle');
@@ -202,7 +204,7 @@ export default function AdsPage() {
                   <div className="ad-card__header" style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                     <h3 className="card__title" style={{ marginRight: 12 }}>{ad.title}</h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="badge">{ad.price.toLocaleString('ru-RU')} руб.</span>
+                      <span className="badge">{formatCard(ad.price ?? 0, ad.price === 0)}</span>
                       <button
                         type="button"
                         onClick={(event) => {
@@ -251,7 +253,7 @@ export default function AdsPage() {
                 Закрыть
               </button>
             </div>
-            <p className="muted">Цена: {selected.price.toLocaleString('ru-RU')} руб.</p>
+            <p className="muted">Цена: {formatCard(selected.price ?? 0, selected.price === 0)}</p>
             {selected.description && <p className="ad-card__description">{selected.description}</p>}
             <div className="card card--sub" style={{ marginTop: 12 }}>
               <p className="eyebrow">Дополнительные поля</p>

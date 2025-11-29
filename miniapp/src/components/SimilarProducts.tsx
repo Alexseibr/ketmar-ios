@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Sparkles, ChevronRight, Loader2, MapPin } from 'lucide-react';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface SimilarAd {
   _id: string;
@@ -28,6 +29,7 @@ export default function SimilarProducts({
   const [isLoading, setIsLoading] = useState(false);
   const [similarAds, setSimilarAds] = useState<SimilarAd[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const { formatCard } = useFormatPrice();
 
   useEffect(() => {
     const fetchSimilar = async () => {
@@ -63,7 +65,7 @@ export default function SimilarProducts({
   }
 
   const formatPrice = (price: number) => {
-    return `${price.toLocaleString('ru-RU')} руб.`;
+    return formatCard(price, price === 0);
   };
 
   const getPhotoUrlForAd = (photos?: string[]) => {
