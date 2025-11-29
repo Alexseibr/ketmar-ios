@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
@@ -20,6 +20,11 @@ import {
   CheckCircle,
   Info,
   X,
+  Globe,
+  Send,
+  Instagram,
+  Video,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -183,12 +188,25 @@ interface RegistrationFormData {
   role: ShopRole;
 }
 
+interface SocialsFormData {
+  instagram: string;
+  telegram: string;
+  tiktok: string;
+  youtube: string;
+  website: string;
+  viber: string;
+  whatsapp: string;
+}
+
 export default function MyShopPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const user = useUserStore((state) => state.user);
   const { getAuthToken } = usePlatform();
+  
+  const editMode = searchParams.get('edit');
   
   const [selectedRole, setSelectedRole] = useState<ShopRole | null>(null);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
@@ -200,6 +218,16 @@ export default function MyShopPage() {
     instagram: '',
     address: '',
     role: 'SHOP',
+  });
+  
+  const [socialsForm, setSocialsForm] = useState<SocialsFormData>({
+    instagram: '',
+    telegram: '',
+    tiktok: '',
+    youtube: '',
+    website: '',
+    viber: '',
+    whatsapp: '',
   });
 
   const isSuperAdmin = user?.role === 'super_admin';
@@ -266,16 +294,66 @@ export default function MyShopPage() {
     },
   });
 
+  const updateSocialsMutation = useMutation({
+    mutationFn: async (data: SocialsFormData) => {
+      const token = await getAuthToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const payload = {
+        instagram: data.instagram || profile?.instagram,
+        socials: {
+          instagram: data.instagram || undefined,
+          tiktok: data.tiktok || undefined,
+          youtube: data.youtube || undefined,
+          website: data.website || undefined,
+          telegram: data.telegram || undefined,
+        },
+        messengers: {
+          telegram: data.telegram || undefined,
+          viber: data.viber || undefined,
+          whatsapp: data.whatsapp || undefined,
+        },
+      };
+      const res = await http.patch('/api/seller-profile/update', payload, { headers });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['seller-profile-my'] });
+      toast({ title: 'Данные сохранены!' });
+      navigate('/my-shop', { replace: true });
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || 'Ошибка сохранения';
+      toast({ title: message, variant: 'destructive' });
+    },
+  });
+
   const profile = profileQuery.data?.profile as SellerProfile | undefined;
   const hasProfile = !!profile && profile.name !== 'Мой магазин' && profile.isVerified;
   const pendingRequest = shopRequestQuery.data?.request;
   const hasPendingRequest = pendingRequest?.status === 'pending';
 
   useEffect(() => {
-    if (hasProfile && !isSuperAdmin) {
+    if (profile && editMode === 'socials') {
+      setSocialsForm({
+        instagram: profile.instagram || profile.socials?.instagram || '',
+        telegram: profile.messengers?.telegram || profile.socials?.telegram || '',
+        tiktok: profile.socials?.tiktok || '',
+        youtube: profile.socials?.youtube || '',
+        website: profile.socials?.website || '',
+        viber: profile.messengers?.viber || '',
+        whatsapp: profile.messengers?.whatsapp || '',
+      });
+    }
+  }, [profile, editMode]);
+
+  useEffect(() => {
+    if (hasProfile && !isSuperAdmin && editMode !== 'socials') {
       navigate('/seller/cabinet', { replace: true });
     }
-  }, [hasProfile, isSuperAdmin, navigate]);
+  }, [hasProfile, isSuperAdmin, navigate, editMode]);
 
   const handleRoleSelect = useCallback((role: ShopRole) => {
     if (isSuperAdmin) {
@@ -341,6 +419,263 @@ export default function MyShopPage() {
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
           <p className="text-muted-foreground">Загрузка...</p>
+        </div>
+      </ScreenLayout>
+    );
+  }
+
+  if (editMode === 'socials' && profile) {
+    const editHeader = (
+      <div className="flex items-center gap-3 px-4 py-3 border-b bg-white">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/seller/cabinet')}
+          aria-label="Назад"
+          data-testid="button-back-socials"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="flex flex-col">
+          <h1 className="text-lg font-semibold">Социальные сети</h1>
+          <p className="text-xs text-muted-foreground">Редактирование контактов</p>
+        </div>
+      </div>
+    );
+
+    return (
+      <ScreenLayout header={editHeader}>
+        <div style={{ padding: 16 }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)',
+            borderRadius: 16,
+            padding: '16px 20px',
+            marginBottom: 20,
+            color: '#fff',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: 'rgba(255,255,255,0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Globe size={24} color="#fff" />
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>Ваши ссылки</div>
+                <div style={{ fontSize: 13, opacity: 0.9 }}>Укажите каналы связи для клиентов</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#111827', marginBottom: 12 }}>
+              Социальные сети
+            </div>
+            <div style={{
+              background: '#fff',
+              border: '1px solid #E5E7EB',
+              borderRadius: 16,
+              overflow: 'hidden',
+            }}>
+              <div style={{ padding: 16, borderBottom: '1px solid #F3F4F6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: 'linear-gradient(135deg, #E4405F 0%, #FD1D1D 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Instagram size={18} color="#fff" />
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>Instagram</div>
+                </div>
+                <Input
+                  placeholder="@username"
+                  value={socialsForm.instagram}
+                  onChange={(e) => setSocialsForm(prev => ({ ...prev, instagram: e.target.value }))}
+                  data-testid="input-instagram"
+                />
+              </div>
+              
+              <div style={{ padding: 16, borderBottom: '1px solid #F3F4F6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: '#000',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Video size={18} color="#fff" />
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>TikTok</div>
+                </div>
+                <Input
+                  placeholder="@username или ссылка"
+                  value={socialsForm.tiktok}
+                  onChange={(e) => setSocialsForm(prev => ({ ...prev, tiktok: e.target.value }))}
+                  data-testid="input-tiktok"
+                />
+              </div>
+              
+              <div style={{ padding: 16, borderBottom: '1px solid #F3F4F6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: '#FF0000',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Video size={18} color="#fff" />
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>YouTube</div>
+                </div>
+                <Input
+                  placeholder="Ссылка на канал"
+                  value={socialsForm.youtube}
+                  onChange={(e) => setSocialsForm(prev => ({ ...prev, youtube: e.target.value }))}
+                  data-testid="input-youtube"
+                />
+              </div>
+              
+              <div style={{ padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: '#3B82F6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Globe size={18} color="#fff" />
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>Сайт</div>
+                </div>
+                <Input
+                  placeholder="https://example.com"
+                  value={socialsForm.website}
+                  onChange={(e) => setSocialsForm(prev => ({ ...prev, website: e.target.value }))}
+                  data-testid="input-website"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#111827', marginBottom: 12 }}>
+              Мессенджеры
+            </div>
+            <div style={{
+              background: '#fff',
+              border: '1px solid #E5E7EB',
+              borderRadius: 16,
+              overflow: 'hidden',
+            }}>
+              <div style={{ padding: 16, borderBottom: '1px solid #F3F4F6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: 'linear-gradient(135deg, #0088cc 0%, #229ED9 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Send size={18} color="#fff" />
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>Telegram</div>
+                </div>
+                <Input
+                  placeholder="@username"
+                  value={socialsForm.telegram}
+                  onChange={(e) => setSocialsForm(prev => ({ ...prev, telegram: e.target.value }))}
+                  data-testid="input-telegram"
+                />
+              </div>
+              
+              <div style={{ padding: 16, borderBottom: '1px solid #F3F4F6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: '#7C3AED',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <MessageCircle size={18} color="#fff" />
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>Viber</div>
+                </div>
+                <Input
+                  placeholder="+375XXXXXXXXX"
+                  value={socialsForm.viber}
+                  onChange={(e) => setSocialsForm(prev => ({ ...prev, viber: e.target.value }))}
+                  data-testid="input-viber"
+                />
+              </div>
+              
+              <div style={{ padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    background: '#25D366',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <MessageCircle size={18} color="#fff" />
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>WhatsApp</div>
+                </div>
+                <Input
+                  placeholder="+375XXXXXXXXX"
+                  value={socialsForm.whatsapp}
+                  onChange={(e) => setSocialsForm(prev => ({ ...prev, whatsapp: e.target.value }))}
+                  data-testid="input-whatsapp"
+                />
+              </div>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => updateSocialsMutation.mutate(socialsForm)}
+            disabled={updateSocialsMutation.isPending}
+            className="w-full h-12 text-base"
+            style={{ background: 'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)' }}
+            data-testid="button-save-socials"
+          >
+            {updateSocialsMutation.isPending ? (
+              <>
+                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                Сохранение...
+              </>
+            ) : (
+              <>
+                <Check className="h-5 w-5 mr-2" />
+                Сохранить изменения
+              </>
+            )}
+          </Button>
         </div>
       </ScreenLayout>
     );

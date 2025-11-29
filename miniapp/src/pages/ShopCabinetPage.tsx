@@ -133,6 +133,19 @@ interface RoleConfig {
   iconBgColor: string;
 }
 
+interface SocialTrafficStats {
+  summary: {
+    totalClicks: number;
+    totalUnique: number;
+    period: string;
+  };
+  bySocial: Array<{
+    social: string;
+    clicks: number;
+    uniqueClicks: number;
+  }>;
+}
+
 interface ShopOrder {
   _id: string;
   adId: string;
@@ -322,6 +335,9 @@ export default function ShopCabinetPage() {
   const [routePlan, setRoutePlan] = useState<RoutePlanResult | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | 'new' | 'confirmed' | 'delivering'>('all');
+  
+  const [socialTrafficStats, setSocialTrafficStats] = useState<SocialTrafficStats | null>(null);
+  const [socialTrafficLoading, setSocialTrafficLoading] = useState(false);
 
   useEffect(() => {
     if (isSuperAdmin && !adminViewRole) {
@@ -344,6 +360,27 @@ export default function ShopCabinetPage() {
       setAds(allAds.filter(ad => ad.displayStatus === statusFilter));
     }
   }, [statusFilter, allAds]);
+
+  useEffect(() => {
+    if (shopRole === 'BLOGGER' && user?.telegramId && activeTab === 'requests') {
+      loadSocialTrafficStats();
+    }
+  }, [shopRole, user?.telegramId, activeTab]);
+
+  const loadSocialTrafficStats = async () => {
+    if (!user?.telegramId) return;
+    setSocialTrafficLoading(true);
+    try {
+      const res = await http.get(`/api/social-traffic/stats?sellerTelegramId=${user.telegramId}&period=week`);
+      if (res.data?.success) {
+        setSocialTrafficStats(res.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to load social traffic stats:', error);
+    } finally {
+      setSocialTrafficLoading(false);
+    }
+  };
 
   const loadSellerProfile = async () => {
     if (!user) {
@@ -1965,6 +2002,120 @@ export default function ShopCabinetPage() {
             </div>
           )}
         </div>
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 12 }}>
+          Аналитика переходов
+        </div>
+        {socialTrafficLoading ? (
+          <div style={{
+            background: '#fff',
+            border: '1px solid #E5E7EB',
+            borderRadius: 16,
+            padding: 40,
+            textAlign: 'center',
+            color: '#6B7280',
+          }}>
+            Загрузка статистики...
+          </div>
+        ) : socialTrafficStats && socialTrafficStats.summary.totalClicks > 0 ? (
+          <div style={{
+            background: '#fff',
+            border: '1px solid #E5E7EB',
+            borderRadius: 16,
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #EC4899 0%, #DB2777 100%)',
+              padding: 16,
+              color: '#fff',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+                <div>
+                  <div style={{ fontSize: 24, fontWeight: 700 }}>{socialTrafficStats.summary.totalClicks}</div>
+                  <div style={{ fontSize: 12, opacity: 0.9 }}>Переходов</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 24, fontWeight: 700 }}>{socialTrafficStats.summary.totalUnique}</div>
+                  <div style={{ fontSize: 12, opacity: 0.9 }}>Уникальных</div>
+                </div>
+              </div>
+            </div>
+            <div style={{ padding: 16 }}>
+              {socialTrafficStats.bySocial.map((item) => {
+                const socialColors: Record<string, string> = {
+                  instagram: 'linear-gradient(135deg, #E4405F 0%, #FD1D1D 100%)',
+                  telegram: 'linear-gradient(135deg, #0088cc 0%, #229ED9 100%)',
+                  tiktok: '#000000',
+                  youtube: '#FF0000',
+                  whatsapp: '#25D366',
+                  viber: '#7C3AED',
+                  website: '#3B82F6',
+                };
+                const socialNames: Record<string, string> = {
+                  instagram: 'Instagram',
+                  telegram: 'Telegram',
+                  tiktok: 'TikTok',
+                  youtube: 'YouTube',
+                  whatsapp: 'WhatsApp',
+                  viber: 'Viber',
+                  website: 'Сайт',
+                };
+                return (
+                  <div
+                    key={item.social}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '10px 0',
+                      borderBottom: '1px solid #F3F4F6',
+                    }}
+                    data-testid={`traffic-stat-${item.social}`}
+                  >
+                    <div style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 8,
+                      background: socialColors[item.social] || '#6B7280',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      {item.social === 'instagram' && <Instagram size={18} color="#fff" />}
+                      {item.social === 'telegram' && <Send size={18} color="#fff" />}
+                      {(item.social !== 'instagram' && item.social !== 'telegram') && (
+                        <MessageCircle size={18} color="#fff" />
+                      )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: '#111827' }}>
+                        {socialNames[item.social] || item.social}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{item.clicks}</div>
+                      <div style={{ fontSize: 11, color: '#6B7280' }}>{item.uniqueClicks} уник.</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div style={{
+            textAlign: 'center',
+            padding: 40,
+            color: '#6B7280',
+            background: '#F9FAFB',
+            borderRadius: 16,
+          }}>
+            <BarChart3 size={48} style={{ marginBottom: 12, opacity: 0.4 }} />
+            <div style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>Переходов пока нет</div>
+            <div style={{ fontSize: 13 }}>Статистика появится, когда клиенты начнут переходить в ваши соцсети</div>
+          </div>
+        )}
       </div>
     </div>
   );
