@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Package, PlusCircle, BarChart3, TrendingUp, ArrowLeft, 
   Eye, MessageCircle, Heart, Clock, AlertCircle, ChevronRight,
   Leaf, MapPin, Bell, Crown, Calendar, Star, Zap, Check, Gift,
-  Store, Camera, Palette, Tractor, ClipboardList, Truck, Navigation, Phone
+  Store, Camera, Palette, Tractor, ClipboardList, Truck, Navigation, Phone,
+  Shield
 } from 'lucide-react';
 import http from '@/api/http';
 import { fetchShopOrders, fetchDeliveryRoutePlan } from '@/api/orders';
@@ -292,8 +293,14 @@ interface QuickFormData {
   unitType: string;
 }
 
+interface LocationState {
+  adminViewRole?: ShopRole;
+}
+
 export default function ShopCabinetPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as LocationState | null;
   const user = useUserStore((state) => state.user);
   const coords = useGeoStore((state) => state.coords);
   const requestLocation = useGeoStore((state) => state.requestLocation);
@@ -301,7 +308,10 @@ export default function ShopCabinetPage() {
   const { getAuthToken } = usePlatform();
   const { formatCard } = useFormatPrice();
   
-  const [shopRole, setShopRole] = useState<ShopRole>('SHOP');
+  const isSuperAdmin = user?.role === 'super_admin';
+  const adminViewRole = locationState?.adminViewRole;
+  
+  const [shopRole, setShopRole] = useState<ShopRole>(adminViewRole || 'SHOP');
   const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   
@@ -356,6 +366,12 @@ export default function ShopCabinetPage() {
       return;
     }
 
+    if (isSuperAdmin && adminViewRole) {
+      setShopRole(adminViewRole);
+      setProfileLoading(false);
+      return;
+    }
+
     try {
       const token = await getAuthToken();
       const headers: Record<string, string> = {};
@@ -371,6 +387,8 @@ export default function ShopCabinetPage() {
         
         if (profile.shopRole) {
           setShopRole(profile.shopRole as ShopRole);
+        } else if (profile.role) {
+          setShopRole(profile.role as ShopRole);
         } else if (profile.isFarmer) {
           setShopRole('FARMER');
         } else {
@@ -1900,6 +1918,21 @@ export default function ShopCabinetPage() {
 
   const headerContent = (
     <div style={{ background: '#F8FAFC' }}>
+      {isSuperAdmin && adminViewRole && (
+        <div style={{
+          background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+          padding: '8px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+        }}>
+          <Shield size={16} color="#fff" />
+          <span style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>
+            Режим супер-админа: просмотр кабинета {ROLE_BADGES[adminViewRole].label}
+          </span>
+        </div>
+      )}
       <div style={{
         background: roleConfig.gradient,
         padding: '16px 20px 24px',
@@ -1907,7 +1940,7 @@ export default function ShopCabinetPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
-            onClick={() => navigate('/profile')}
+            onClick={() => isSuperAdmin && adminViewRole ? navigate('/my-shop') : navigate('/profile')}
             style={{
               background: 'rgba(255,255,255,0.2)',
               border: 'none',
