@@ -3,9 +3,20 @@ import { validateSession } from '@/api/telegramAuth';
 import { fetchFavorites, toggleFavorite as apiToggleFavorite } from '@/api/favorites';
 import { FavoriteItem, UserProfile } from '@/types';
 import { detectPlatform } from '@/platform/platformDetection';
+import { setSessionToken } from '@/api/http';
 
 const AUTH_TOKEN_KEY = 'ketmar_auth_token';
 const API_BASE = import.meta.env.VITE_API_URL || '';
+
+function restoreTokenFromStorage() {
+  const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (storedToken) {
+    console.log('[UserStore] Restoring token from localStorage');
+    setSessionToken(storedToken);
+  }
+}
+
+restoreTokenFromStorage();
 
 export interface UserState {
   user: UserProfile | null;
@@ -99,6 +110,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (storedToken) {
         try {
           set({ status: 'loading', error: undefined });
+          setSessionToken(storedToken);
           
           const response = await fetch(`${API_BASE}/api/auth/me`, {
             headers: {
@@ -121,10 +133,12 @@ export const useUserStore = create<UserState>((set, get) => ({
           }
           
           localStorage.removeItem(AUTH_TOKEN_KEY);
+          setSessionToken(null);
           set({ status: 'need_auth', cityCode: 'brest' });
         } catch (error) {
           console.error('Web auth error', error);
           localStorage.removeItem(AUTH_TOKEN_KEY);
+          setSessionToken(null);
           set({ status: 'need_auth', cityCode: 'brest' });
         }
       } else {

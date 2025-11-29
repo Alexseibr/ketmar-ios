@@ -1,8 +1,10 @@
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
 const DEFAULT_TTL_SECONDS = Number(process.env.TELEGRAM_INITDATA_TTL || 60 * 60 * 24); // 24 часа по умолчанию
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN;
+const JWT_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'ketmar-market-secret-key';
 
 function safeJsonParse(value) {
   if (typeof value !== 'string') {
@@ -149,44 +151,76 @@ export function telegramAuthMiddleware(req, res, next) {
   return next();
 }
 
+function extractBearerToken(req) {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice(7);
+  }
+  return null;
+}
+
+async function authenticateWithJWT(req) {
+  const token = extractBearerToken(req);
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (!decoded || !decoded.telegramId) {
+      return null;
+    }
+
+    const userDoc = await User.findOne({ telegramId: decoded.telegramId });
+    return userDoc;
+  } catch (error) {
+    console.warn('[TelegramAuth] JWT verification failed:', error.message);
+    return null;
+  }
+}
+
 export async function telegramInitDataMiddleware(req, res, next) {
   const initData = extractInitDataFromRequest(req);
   const validation = validateTelegramInitData(initData);
 
-  if (!validation.ok) {
-    return res.status(401).json({ error: 'Invalid Telegram initData' });
+  if (validation.ok) {
+    const telegramUser = validation.data?.user;
+
+    if (telegramUser && telegramUser.id) {
+      try {
+        const update = {
+          telegramId: telegramUser.id,
+          username: telegramUser.username,
+          firstName: telegramUser.first_name,
+          lastName: telegramUser.last_name,
+        };
+
+        const userDoc = await User.findOneAndUpdate(
+          { telegramId: telegramUser.id },
+          {
+            $set: update,
+            $setOnInsert: {
+              favoritesCount: 0,
+              ordersCount: 0,
+            },
+          },
+          { upsert: true, new: true }
+        );
+
+        req.currentUser = userDoc;
+        return next();
+      } catch (error) {
+        console.error('Failed to upsert Telegram user', error);
+        return res.status(500).json({ error: 'Internal server error' });
+      }
+    }
   }
 
-  const telegramUser = validation.data?.user;
-
-  if (!telegramUser || !telegramUser.id) {
-    return res.status(401).json({ error: 'Invalid Telegram initData' });
-  }
-
-  try {
-    const update = {
-      telegramId: telegramUser.id,
-      username: telegramUser.username,
-      firstName: telegramUser.first_name,
-      lastName: telegramUser.last_name,
-    };
-
-    const userDoc = await User.findOneAndUpdate(
-      { telegramId: telegramUser.id },
-      {
-        $set: update,
-        $setOnInsert: {
-          favoritesCount: 0,
-          ordersCount: 0,
-        },
-      },
-      { upsert: true, new: true }
-    );
-
-    req.currentUser = userDoc;
+  const userFromJWT = await authenticateWithJWT(req);
+  if (userFromJWT) {
+    req.currentUser = userFromJWT;
     return next();
-  } catch (error) {
-    console.error('Failed to upsert Telegram user', error);
-    return res.status(500).json({ error: 'Internal server error' });
   }
+
+  return res.status(401).json({ error: 'Invalid Telegram initData' });
 }
