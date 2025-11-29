@@ -1,0 +1,291 @@
+PROMPT: Heatmap спроса по фермеру + карта нехватки предложений
+
+(Для кабинета фермера KETMAR Market)
+
+Проект: KETMAR Market (маркетплейс, фермерские объявления, гео-платформа).
+Надо создать новый раздел аналитики для фермеров:
+
+### 1. “Карта спроса по моим объявлениям”
+Показывает, где по городу/району просматривают все объявления данного фермера (агрегация по AdView).
+Точка входа: В кабинете фермера → вкладка “Аналитика” → кнопка “Карта спроса”.
+
+### 2. “Карта нехватки предложения”
+Показывает районы, где высокий спрос (по запросам и просмотрам), но мало объявлений фермера или конкурентов.  
+Это позволяет фермеру увидеть, куда стоит расширяться.
+
+Нужно реализовать:
+- backend модели и агрегацию,
+- API для heatmap на уровнях “все мои объявления” и “спрос vs предложение”,
+- frontend visual: heatmap + списки районов + вывод по категориям.
+
+---
+
+# 1. ЛОГИКА ДАННЫХ
+
+## A. Источники данных:
+1. **AdView** — просмотры объявлений (уже есть).
+   Содержит:
+   - adId  
+   - viewerId (если есть)  
+   - viewedAt  
+   - location (Point)  
+   - district / zone  
+   - source (feed/map/search/direct)
+
+2. **SearchQueryLog** — нужно создать новую модель (лог поиска):
+Поля:
+- _id  
+- userId (опционально)
+- query: string (например, “картошка”, “малина”, “маракуйя”, “йогурт”)  
+- createdAt  
+- location: Point  
+- district/zone: string  
+- matchCategory?: categoryId  
+- matchKeywords?: string[]  
+- resultsCount: number (сколько результатов получил пользователь)
+- clickedAdId?: string (если кликнул)
+
+3. **Ad** — объявления:
+- category
+- location
+- farmerId
+
+---
+
+# 2. МОДЕЛИ, КОТОРЫЕ НУЖНО СОЗДАТЬ
+
+## A. SearchQueryLog (для тепловой карты спроса):
+```ts
+{
+  _id,
+  userId,
+  query,
+  createdAt,
+  location: { type: "Point", coordinates: [lng, lat] },
+  district,
+  resultsCount,
+  matchCategory,
+  clickedAdId
+}
+
+
+Индекс:
+
+{ location: "2dsphere" }
+
+{ createdAt: -1 }
+
+{ query: text }
+
+B. AggregatedDemandDeficit (опционально)
+
+Это таблица-кэш для масштабных расчётов, чтобы не считать каждый раз.
+
+{
+  _id,
+  categoryId,
+  district,
+  demandScore,      // спрос (просмотры + поиски)
+  supplyScore,      // количество объявлений
+  deficitScore,     // demandScore - supplyScore
+  updatedAt
+}
+
+3. BACKEND API
+3.1. API — Heatmap спроса по фермеру
+GET /api/farmer/analytics/heatmap
+
+Параметры:
+
+period: "7d" | "30d" | "90d" | "all"
+
+group: "grid" | "district" | "both"
+
+Логика:
+
+Найти все объявления фермера.
+
+Найти все AdView с их adId.
+
+Сгруппировать:
+
+points (heatmap) — по округлённым координатам (grid ~300–500m).
+
+districts — по названию района.
+
+Вернуть:
+
+{
+  "totalViews": 1240,
+  "points": [
+    { "lat": 52.098, "lng": 23.694, "weight": 12 },
+    ...
+  ],
+  "districts": [
+    { "district": "Центр", "views": 320, "share": 0.26 },
+    ...
+  ]
+}
+
+3.2. API — Heatmap спроса по поискам (SearchQueryLog)
+GET /api/farmer/analytics/search-heatmap
+
+Аналогично, но на основе поисков.
+
+Вернуть:
+
+где искали, что связано с товарами фермера.
+
+3.3. API — “Карта нехватки предложения”
+GET /api/farmer/analytics/deficit-map
+
+Параметры:
+
+categoryId? — можно фильтровать по категории (например: "Картошка")
+
+period: "30d" или "90d"
+
+group: "district" | "grid"
+
+АЛГОРИТМ:
+
+Получить heatmap спроса:
+
+кол-во поисков + кол-во просмотров объявлений этой категории.
+
+Получить карту предложения:
+
+count объявлений в каждом районе (по всей платформе).
+
+deficitScore = demandScore — supplyScore
+
+Вернуть точки:
+
+{
+  "points": [
+    { "lat": ..., "lng": ..., "deficit": 14 }, // красные — высокий дефицит  
+    { "lat": ..., "lng": ..., "deficit": 1 },  // низкий дефицит  
+    { "lat": ..., "lng": ..., "deficit": -3 }  // избыток (синий/зелёный)
+  ],
+  "districts": [...],
+  "topDeficitDistricts": [...]
+}
+
+4. FRONTEND
+A. Раздел “Аналитика фермера”
+
+Новые вкладки:
+
+Карта спроса
+
+Карта поисков
+
+Где меня не видно (дефицит)
+
+B. Компонент Heatmap
+
+Использовать:
+
+leaflet.heat
+
+react-leaflet-heatmap-layer
+
+API:
+
+<HeatmapLayer
+   points={points}
+   longitudeExtractor={p => p.lng}
+   latitudeExtractor={p => p.lat}
+   intensityExtractor={p => p.weight}
+   radius={25}
+   blur={15}
+   maxZoom={17}
+/>
+
+C. Карта “Дефицит”
+
+Тут heatmap должна иметь 2 цвета:
+
+красный → спрос выше предложения,
+
+синий/зелёный → предложение выше спроса.
+
+Логика:
+
+intensity > 0 → ‘hot’
+
+intensity < 0 → ‘cold’
+
+Можно создать кастомный gradient:
+
+{
+  0.0: "blue",
+  0.3: "green",
+  0.6: "yellow",
+  1.0: "red"
+}
+
+D. Под картой — Top районов
+
+Например:
+
+“Где вас ждут покупатели”
+
+Центр — дефицит +42
+
+Ковалёво — дефицит +18
+
+Юго-Запад — дефицит +13
+
+Bar UI:
+
+мини-гистограммы с цветовой заливкой.
+
+5. ПОВЕДЕНИЕ ДЛЯ ФЕРМЕРА (UX)
+
+Farmer → Кабинет → Аналитика.
+
+“Карта спроса” — показывает, где смотрят все его товары.
+
+“Карта поисков” — где ищут его категории (даже без его объявлений).
+
+“Карта нехватки” — показывает районы, где спрос выше, чем предложение.
+
+Он может нажать “Добавить объявление” прямо с этого экрана → категория подставляется автоматически → геозона подсвечивается.
+
+6. Codex должен выдать:
+
+Полные Mongo-модели AdView и SearchQueryLog.
+
+Backend endpoints:
+
+/api/farmer/analytics/heatmap
+
+/api/farmer/analytics/search-heatmap
+
+/api/farmer/analytics/deficit-map
+
+Mongo aggregation pipelines (с округлением координат).
+
+Компоненты React:
+
+FarmerAnalyticsScreen
+
+FarmerHeatmap
+
+FarmerDeficitMap
+
+TopDistrictsList
+
+Стили heatmap + кастомный gradient.
+
+Встройку в кабинет фермера (пункт меню “Аналитика”).
+
+README/описание.
+
+Сделать весь код готовым для использования в KETMAR Market.
+
+
+---
+
+Хочешь — могу дополнительно собрать **PROMPT под супер-аналитику рекламных кампаний (8 марта, сезонность, тюльпаны, ярмарки).**

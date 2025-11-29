@@ -240,6 +240,53 @@ router.get('/trends', authMiddleware, async (req, res) => {
   }
 });
 
+router.get('/ads/:adId/heatmap', authMiddleware, async (req, res) => {
+  try {
+    const { adId } = req.params;
+    const { period = '7' } = req.query;
+    
+    const Ad = (await import('../../models/Ad.js')).default;
+    const AdView = (await import('../../models/AdView.js')).default;
+    
+    const ad = await Ad.findById(adId);
+    if (!ad) {
+      return res.status(404).json({ error: 'Объявление не найдено' });
+    }
+    
+    const isOwner = ad.userId?.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
+    
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'Доступ запрещён' });
+    }
+    
+    const days = parseInt(period) || 7;
+    const maxDays = 180;
+    const finalDays = Math.min(days, maxDays);
+    
+    const from = new Date();
+    from.setDate(from.getDate() - finalDays);
+    from.setHours(0, 0, 0, 0);
+    
+    const to = new Date();
+    
+    const heatmapData = await AdView.getHeatmapData(adId, { from, to });
+    
+    res.json({
+      success: true,
+      ...heatmapData,
+      ad: {
+        _id: ad._id,
+        title: ad.title,
+        location: ad.location,
+      }
+    });
+  } catch (error) {
+    console.error('[SellerAnalytics] Heatmap error:', error);
+    res.status(500).json({ error: 'Failed to get heatmap data' });
+  }
+});
+
 router.get('/admin/all-sellers', authMiddleware, async (req, res) => {
   try {
     if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {

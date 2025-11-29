@@ -1539,7 +1539,7 @@ router.post('/:id/debug-notify-favorites', requireInternalAuth, async (req, res)
 router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { lat, lng } = req.query;
+    const { lat, lng, source, city, district } = req.query;
     
     const ad = await Ad.findById(id);
     
@@ -1547,15 +1547,39 @@ router.get('/:id', async (req, res, next) => {
       return res.status(404).json({ message: 'Объявление не найдено' });
     }
     
-    // Увеличиваем счетчик просмотров
     ad.views += 1;
     await ad.save();
     
-    // Добавляем расстояние если переданы координаты покупателя
-    const adObj = ad.toObject();
-    
     const buyerLat = Number(lat);
     const buyerLng = Number(lng);
+    
+    const viewerId = req.user?._id || null;
+    const viewerTelegramId = req.user?.telegramId || null;
+    const isOwner = viewerId && ad.userId?.toString() === viewerId.toString();
+    
+    if (!isOwner) {
+      setImmediate(async () => {
+        try {
+          const AdView = (await import('../../models/AdView.js')).default;
+          await AdView.logView({
+            adId: ad._id,
+            viewerId,
+            viewerTelegramId,
+            lat: Number.isFinite(buyerLat) ? buyerLat : null,
+            lng: Number.isFinite(buyerLng) ? buyerLng : null,
+            city: city || null,
+            district: district || null,
+            source: source || 'direct',
+            userAgent: req.get('User-Agent'),
+            sessionId: req.sessionID,
+          });
+        } catch (err) {
+          console.error('[AdView] Error logging view:', err.message);
+        }
+      });
+    }
+    
+    const adObj = ad.toObject();
     
     if (
       Number.isFinite(buyerLat) &&
