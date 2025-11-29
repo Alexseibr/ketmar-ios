@@ -84,3 +84,33 @@ The system supports multiple countries with their currencies: BY (BYN), RU (RUB)
 
 ### Route Planning Algorithm
 Uses nearest-neighbor algorithm starting from seller's base location. Orders with `deliveryRequired: true` are included in route planning. Returns total distance, estimated time, and ordered sequence with per-stop distances.
+
+## Home Feed System (Yandex Go Style)
+
+### API Endpoint
+`GET /api/home-feed` returns dynamic block-based content structure:
+- Query params: `lat`, `lng`, `userId`, `radiusKm` (default 10)
+- Returns: `{ success, location, blocks[] }`
+
+### Block Types
+- `banners`: Promo carousel with gradients and links
+- `horizontal_list`: Horizontal scrolling ad cards with id, title, subtitle, icon, accentColor
+
+### Sections
+1. **Фермерские товары рядом** - Farmer products nearby
+2. **Популярное сейчас** - Popular items (sorted by views/favorites)
+3. **Отдам даром рядом** - Free giveaway items (pink accent #EC4899)
+4. **Со скидкой** - Items with price drops (priceHistory)
+5. **Новое поступление** - New items nearby
+
+### MongoDB Geo-Query Rules
+- NEVER combine `$near` with `sort()` - causes MongoDB error
+- Use aggregation pipeline with `$geoNear` stage instead
+- Always specify `key: 'location.geo'` to avoid multi-index ambiguity
+- `$geoNear` returns `distanceMeters`, convert to km for display
+
+### Frontend Components
+- `HomePage.tsx` - Main page with category grid and dynamic feed
+- `CategoryGrid` - 4x3 grid of category icons
+- `HorizontalSection` - Horizontal scrolling ad cards
+- `CompactAdCard` - Small ad preview with discount display
