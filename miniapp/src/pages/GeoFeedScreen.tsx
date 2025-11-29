@@ -224,64 +224,123 @@ export default function GeoFeedScreen() {
   }[sheetHeight]), [sheetHeight]);
 
   return (
-    <div 
-      className="fixed inset-0 flex flex-col bg-gray-50 overflow-hidden"
-      style={{ paddingBottom: 'calc(72px + env(safe-area-inset-bottom))' }}
-    >
-      {/* TOP AREA - Fixed Header */}
-      <div className="flex-shrink-0 bg-white z-20" style={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)' }}>
+    <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ background: 'var(--bg-base, #FFFFFF)' }}>
+      {/* STICKY HEADER - Never moves during scroll */}
+      <header 
+        className="flex-shrink-0 z-50"
+        style={{ 
+          position: 'sticky',
+          top: 0,
+          background: 'var(--bg-base, #FFFFFF)',
+          boxShadow: 'var(--shadow-card, 0 2px 8px rgba(0,0,0,0.08))',
+          paddingTop: 'env(safe-area-inset-top)',
+        }}
+      >
         {/* Search Input */}
-        <div className="px-4 pt-3 pb-2">
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <div style={{ padding: '12px 16px 8px' }}>
+          <div style={{ position: 'relative' }}>
+            <Search 
+              style={{ 
+                position: 'absolute', 
+                left: 14, 
+                top: '50%', 
+                transform: 'translateY(-50%)',
+                width: 20, 
+                height: 20, 
+                color: 'var(--text-tertiary, #9CA3AF)' 
+              }} 
+            />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Поиск товаров рядом..."
-              className="w-full h-11 pl-11 pr-10 rounded-2xl bg-gray-100 text-base placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:bg-white border border-transparent focus:border-blue-200 transition-all"
+              style={{
+                width: '100%',
+                height: 44,
+                paddingLeft: 44,
+                paddingRight: 40,
+                borderRadius: 'var(--radius-md, 12px)',
+                background: 'var(--bg-input, #F5F6F8)',
+                border: '1px solid transparent',
+                fontSize: 16,
+                color: 'var(--text-primary, #1F2937)',
+                outline: 'none',
+              }}
               data-testid="input-search"
             />
             {searchQuery && (
               <button
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-gray-200 transition-colors"
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  padding: 6,
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                }}
                 onClick={() => { setSearchQuery(''); handleSearch(); }}
                 data-testid="button-clear-search"
               >
-                <X className="w-4 h-4 text-gray-500" />
+                <X style={{ width: 16, height: 16, color: 'var(--text-secondary, #6B7280)' }} />
               </button>
             )}
           </div>
         </div>
         
         {/* Radius Chips */}
-        <div className="px-4 pb-3">
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {RADIUS_OPTIONS.map((r) => (
-              <button
-                key={r.value}
-                className={`flex-shrink-0 h-8 px-4 rounded-full text-sm font-medium transition-all ${
-                  radiusKm === r.value && !smartRadiusEnabled
-                    ? 'bg-blue-50 text-blue-600 border-2 border-blue-400' 
-                    : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
-                }`}
-                onClick={() => handleRadiusChange(r.value)}
-                data-testid={`button-radius-${r.value}`}
-              >
-                {r.label}
-              </button>
-            ))}
+        <div style={{ padding: '0 16px 12px', overflowX: 'auto' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {RADIUS_OPTIONS.map((r) => {
+              const isActive = radiusKm === r.value && !smartRadiusEnabled;
+              return (
+                <button
+                  key={r.value}
+                  style={{
+                    flexShrink: 0,
+                    height: 32,
+                    padding: '0 14px',
+                    borderRadius: 16,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    border: isActive ? '2px solid var(--blue-primary, #3A7BFF)' : '2px solid transparent',
+                    background: isActive ? 'var(--blue-light, #E8F0FF)' : 'var(--bg-tertiary, #F0F2F5)',
+                    color: isActive ? 'var(--blue-primary, #3A7BFF)' : 'var(--text-secondary, #6B7280)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onClick={() => handleRadiusChange(r.value)}
+                  data-testid={`button-radius-${r.value}`}
+                >
+                  {r.label}
+                </button>
+              );
+            })}
             <button
-              className={`flex-shrink-0 h-8 px-4 rounded-full text-sm font-medium flex items-center gap-1.5 transition-all ${
-                smartRadiusEnabled
-                  ? 'bg-purple-50 text-purple-600 border-2 border-purple-400' 
-                  : 'bg-gray-100 text-purple-600 border-2 border-transparent hover:bg-purple-50'
-              }`}
+              style={{
+                flexShrink: 0,
+                height: 32,
+                padding: '0 14px',
+                borderRadius: 16,
+                fontSize: 13,
+                fontWeight: 500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                border: smartRadiusEnabled ? '2px solid #8B5CF6' : '2px solid transparent',
+                background: smartRadiusEnabled ? '#F3E8FF' : 'var(--bg-tertiary, #F0F2F5)',
+                color: '#8B5CF6',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
               onClick={handleSmartToggle}
               data-testid="button-smart-radius"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles style={{ width: 14, height: 14 }} />
               Smart
             </button>
           </div>
@@ -289,21 +348,32 @@ export default function GeoFeedScreen() {
         
         {/* Smart radius message */}
         {smartRadiusMessage && (
-          <div className="px-4 pb-3">
-            <div className="px-3 py-2 rounded-xl bg-purple-50 border border-purple-100">
-              <div className="flex items-center gap-2 text-sm text-purple-700">
-                <Sparkles className="w-4 h-4" />
-                <span>{smartRadiusMessage}</span>
-              </div>
+          <div style={{ padding: '0 16px 12px' }}>
+            <div style={{
+              padding: '8px 12px',
+              borderRadius: 12,
+              background: '#F3E8FF',
+              border: '1px solid #E9D5FF',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 13,
+              color: '#7C3AED',
+            }}>
+              <Sparkles style={{ width: 16, height: 16 }} />
+              <span>{smartRadiusMessage}</span>
             </div>
           </div>
         )}
-      </div>
+      </header>
 
       {/* MAP + BOTTOM SHEET CONTAINER */}
-      <div className="flex-1 relative min-h-0">
+      <div 
+        className="flex-1 relative min-h-0"
+        style={{ paddingBottom: 'calc(72px + env(safe-area-inset-bottom))' }}
+      >
         {/* Map View */}
-        <div className="absolute inset-0">
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
           {(lat && lng) ? (
             <Suspense fallback={<MapFallback />}>
               <LazyMap 
@@ -358,93 +428,194 @@ export default function GeoFeedScreen() {
           )}
         </div>
         
-        {/* Floating Locate Button - Modern Style */}
+        {/* Floating Locate Button */}
         {lat && lng && (
           <button
-            className="absolute top-4 right-4 w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center active:scale-95 transition-all z-10"
             style={{
-              background: 'linear-gradient(135deg, #4A8CFF 0%, #3A7BFF 100%)',
-              boxShadow: '0 4px 14px rgba(58, 123, 255, 0.35)',
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              width: 44,
+              height: 44,
+              borderRadius: 'var(--radius-md, 12px)',
+              border: 'none',
+              background: 'var(--gradient-blue, linear-gradient(135deg, #4A8CFF 0%, #3A7BFF 100%))',
+              boxShadow: 'var(--shadow-blue, 0 4px 14px rgba(58, 123, 255, 0.35))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 30,
+              transition: 'transform 0.2s',
             }}
             onClick={handleLocate}
             disabled={isLocating}
             data-testid="button-locate"
           >
-            <Locate className={`w-5 h-5 text-white ${isLocating ? 'animate-pulse' : ''}`} />
+            <Locate style={{ 
+              width: 20, 
+              height: 20, 
+              color: '#FFFFFF',
+              animation: isLocating ? 'pulse 1.5s infinite' : 'none',
+            }} />
           </button>
         )}
 
-        {/* BOTTOM SHEET */}
+        {/* BOTTOM SHEET - Fixed at bottom */}
         <div 
-          className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-[0_-4px_24px_rgba(0,0,0,0.08)] flex flex-col transition-all duration-300 ease-out z-10"
-          style={{ height: `${sheetHeightValue}%`, maxHeight: 'calc(100% - 60px)' }}
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: `${sheetHeightValue}%`,
+            maxHeight: 'calc(100% - 60px)',
+            background: 'var(--bg-base, #FFFFFF)',
+            borderRadius: '24px 24px 0 0',
+            boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            transition: 'height 0.3s ease-out',
+            zIndex: 40,
+          }}
         >
           {/* Sheet Handle */}
           <div 
-            className="flex justify-center py-3 cursor-pointer touch-none select-none"
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: '12px 0',
+              cursor: 'pointer',
+              touchAction: 'none',
+              userSelect: 'none',
+            }}
             onTouchStart={handleDragStart}
             onTouchEnd={handleDragEnd}
             onMouseDown={handleDragStart}
             onMouseUp={handleDragEnd}
           >
-            <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            <div style={{ width: 40, height: 4, background: 'var(--border-default, #E5E7EB)', borderRadius: 2 }} />
           </div>
           
           {/* Sheet Header */}
-          <div className="flex-shrink-0 px-4 pb-3 border-b border-gray-100">
-            <div className="flex items-center justify-between">
+          <div style={{
+            flexShrink: 0,
+            padding: '0 16px 12px',
+            borderBottom: '1px solid var(--border-default, #F3F4F6)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Рядом с вами</h2>
+                <h2 style={{ 
+                  fontSize: 18, 
+                  fontWeight: 700, 
+                  color: 'var(--text-primary, #1F2937)',
+                  margin: 0,
+                }}>
+                  Рядом с вами
+                </h2>
                 {cityName && (
-                  <div className="flex items-center gap-1 text-sm text-gray-500 mt-0.5">
-                    <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 4, 
+                    marginTop: 2, 
+                    fontSize: 13, 
+                    color: 'var(--text-secondary, #6B7280)',
+                  }}>
+                    <MapPin style={{ width: 14, height: 14, color: 'var(--blue-primary, #3A7BFF)' }} />
                     <span>{cityName}</span>
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full" data-testid="text-ads-count">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span 
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--text-secondary, #6B7280)',
+                    background: 'var(--bg-tertiary, #F0F2F5)',
+                    padding: '4px 10px',
+                    borderRadius: 12,
+                  }}
+                  data-testid="text-ads-count"
+                >
                   {feed.length} объявл.
                 </span>
                 <button
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-95 transition-all"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: 'var(--bg-tertiary, #F0F2F5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
                   onClick={() => setSheetHeight(sheetHeight === 'full' ? 'collapsed' : 'full')}
                   data-testid="button-expand-sheet"
                 >
                   {sheetHeight === 'full' ? (
-                    <ChevronDown className="w-5 h-5 text-gray-600" />
+                    <ChevronDown style={{ width: 20, height: 20, color: 'var(--text-secondary, #6B7280)' }} />
                   ) : (
-                    <ChevronUp className="w-5 h-5 text-gray-600" />
+                    <ChevronUp style={{ width: 20, height: 20, color: 'var(--text-secondary, #6B7280)' }} />
                   )}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Sheet Content */}
-          <div className="flex-1 overflow-y-auto overscroll-contain">
+          {/* Sheet Content - Scrollable */}
+          <div style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain' }}>
             {error ? (
-              <div className="flex flex-col items-center justify-center py-12 px-4">
-                <AlertCircle className="w-14 h-14 text-red-400 mb-3" />
-                <p className="text-gray-700 font-medium text-center">{error}</p>
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                padding: '48px 16px',
+              }}>
+                <AlertCircle style={{ width: 56, height: 56, color: '#F87171', marginBottom: 12 }} />
+                <p style={{ color: 'var(--text-primary, #1F2937)', fontWeight: 500, textAlign: 'center' }}>{error}</p>
                 <button
-                  className="mt-4 px-5 py-2.5 rounded-xl bg-blue-500 text-white font-medium text-sm flex items-center gap-2 active:scale-95 transition-transform"
+                  style={{
+                    marginTop: 16,
+                    padding: '10px 20px',
+                    borderRadius: 12,
+                    border: 'none',
+                    background: 'var(--blue-primary, #3A7BFF)',
+                    color: '#FFFFFF',
+                    fontWeight: 500,
+                    fontSize: 14,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    cursor: 'pointer',
+                  }}
                   onClick={handleRetry}
                   data-testid="button-retry"
                 >
-                  <RefreshCw className="w-4 h-4" />
+                  <RefreshCw style={{ width: 16, height: 16 }} />
                   Повторить
                 </button>
               </div>
             ) : loading ? (
-              <div className="p-4 space-y-3">
+              <div style={{ padding: 16 }}>
                 {Array(3).fill(0).map((_, i) => (
-                  <div key={i} className="flex gap-3 p-3 rounded-2xl bg-gray-50 animate-pulse">
-                    <div className="w-20 h-20 rounded-xl bg-gray-200" />
-                    <div className="flex-1 space-y-2 py-1">
-                      <div className="h-4 w-3/4 bg-gray-200 rounded-lg" />
-                      <div className="h-5 w-1/3 bg-gray-200 rounded-lg" />
-                      <div className="h-3 w-1/4 bg-gray-200 rounded-lg" />
+                  <div key={i} style={{ 
+                    display: 'flex', 
+                    gap: 12, 
+                    padding: 12, 
+                    borderRadius: 16, 
+                    background: 'var(--bg-secondary, #F9FAFB)', 
+                    marginBottom: 12,
+                  }}>
+                    <div style={{ width: 80, height: 80, borderRadius: 12, background: 'var(--bg-tertiary, #E5E7EB)' }} />
+                    <div style={{ flex: 1, paddingTop: 4 }}>
+                      <div style={{ height: 16, width: '75%', background: 'var(--bg-tertiary, #E5E7EB)', borderRadius: 8, marginBottom: 8 }} />
+                      <div style={{ height: 20, width: '33%', background: 'var(--bg-tertiary, #E5E7EB)', borderRadius: 8, marginBottom: 8 }} />
+                      <div style={{ height: 12, width: '25%', background: 'var(--bg-tertiary, #E5E7EB)', borderRadius: 8 }} />
                     </div>
                   </div>
                 ))}
