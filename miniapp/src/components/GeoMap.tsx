@@ -159,23 +159,24 @@ const createClusterIcon = (cluster: L.MarkerCluster) => {
   });
 };
 
-const RADIUS_TO_ZOOM: Record<number, number> = {
-  0.3: 17,
-  1: 15,
-  3: 14,
-  5: 13,
-  10: 12,
-  20: 11,
-};
+const RADIUS_ZOOM_MAP: Array<{ radius: number; zoom: number }> = [
+  { radius: 0.3, zoom: 17 },
+  { radius: 1, zoom: 15 },
+  { radius: 3, zoom: 14 },
+  { radius: 5, zoom: 13 },
+  { radius: 10, zoom: 12 },
+  { radius: 20, zoom: 11 },
+];
 
 function getZoomForRadius(radiusKm: number): number {
-  if (RADIUS_TO_ZOOM[radiusKm]) {
-    return RADIUS_TO_ZOOM[radiusKm];
+  for (const item of RADIUS_ZOOM_MAP) {
+    if (Math.abs(radiusKm - item.radius) < 0.01) {
+      return item.zoom;
+    }
   }
-  const radii = Object.keys(RADIUS_TO_ZOOM).map(Number).sort((a, b) => a - b);
-  for (let i = 0; i < radii.length; i++) {
-    if (radiusKm <= radii[i]) {
-      return RADIUS_TO_ZOOM[radii[i]];
+  for (const item of RADIUS_ZOOM_MAP) {
+    if (radiusKm <= item.radius) {
+      return item.zoom;
     }
   }
   return 11;
