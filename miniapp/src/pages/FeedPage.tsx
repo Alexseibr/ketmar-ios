@@ -1046,7 +1046,7 @@ export default function FeedPage() {
                   minHeight: cardHeight > 0 ? cardHeight : '100%',
                   scrollSnapAlign: 'start',
                   scrollSnapStop: 'always',
-                  padding: '0 16px 8px',
+                  padding: 0,
                   boxSizing: 'border-box',
                   flexShrink: 0,
                 }}
