@@ -158,6 +158,16 @@ export default function BottomTabs() {
     return null;
   }
 
+  // Hide bottom tabs on ad detail page (has its own action buttons)
+  if (location.pathname.startsWith('/ad/')) {
+    return null;
+  }
+
+  // Hide on chat page
+  if (location.pathname.startsWith('/chat/')) {
+    return null;
+  }
+
   return (
     <nav
       ref={navRef}
