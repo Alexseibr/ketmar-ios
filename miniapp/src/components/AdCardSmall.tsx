@@ -4,6 +4,7 @@ import { AdPreview } from '@/types';
 import { DistanceBadge } from './DistanceBadge';
 import { PriceBadgeChip } from './pricing';
 import { NO_PHOTO_PLACEHOLDER, getThumbnailUrl } from '@/constants/placeholders';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface AdCardSmallProps {
   ad: AdPreview;
@@ -12,8 +13,10 @@ interface AdCardSmallProps {
 
 export default function AdCardSmall({ ad, onSelect }: AdCardSmallProps) {
   const navigate = useNavigate();
+  const { formatCard } = useFormatPrice();
   
   const photo = ad.photos && ad.photos.length > 0 ? getThumbnailUrl(ad.photos[0]) : NO_PHOTO_PLACEHOLDER;
+  const isFree = ad.price === 0;
 
   const handleClick = () => {
     if (onSelect) {
@@ -108,7 +111,7 @@ export default function AdCardSmall({ ad, onSelect }: AdCardSmallProps) {
             }}
             data-testid={`ad-price-small-${ad._id}`}
           >
-            {ad.price.toLocaleString('ru-RU')} руб.
+            {formatCard(ad.price, isFree)}
           </p>
           {ad.priceBadge && <PriceBadgeChip badge={ad.priceBadge} size="small" />}
         </div>

@@ -4,6 +4,7 @@ import { Ad } from '@/types';
 import { formatRelativeTime } from '@/utils/time';
 import { ScheduledAdBadge } from './schedule/ScheduledAdBadge';
 import { JustPublishedChip, isJustPublished } from './schedule/JustPublishedChip';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface MyAdCardProps {
   ad: Ad;
@@ -13,6 +14,7 @@ interface MyAdCardProps {
 
 export default function MyAdCard({ ad, index, getStatusBadge }: MyAdCardProps) {
   const justPublished = isJustPublished(ad);
+  const { formatCard } = useFormatPrice();
   
   return (
     <article
@@ -58,7 +60,7 @@ export default function MyAdCard({ ad, index, getStatusBadge }: MyAdCardProps) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div>
           <div style={{ fontSize: 18, fontWeight: 700 }}>
-            {ad.price?.toLocaleString('ru-RU') || '0'} руб.
+            {formatCard(ad.price ?? 0, ad.price === 0)}
           </div>
           {ad.createdAt && (
             <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>

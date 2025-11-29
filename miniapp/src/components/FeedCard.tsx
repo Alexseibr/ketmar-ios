@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FeedItem } from '@/types';
 import { getFeedImageUrl, getThumbnailUrl } from '@/constants/placeholders';
 import { getLocationDisplayText } from '@/utils/geo';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface FeedCardProps {
   item: FeedItem;
@@ -24,6 +25,7 @@ export default function FeedCard({
   isLiked = false,
 }: FeedCardProps) {
   const navigate = useNavigate();
+  const { formatCard: formatPriceValue } = useFormatPrice();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
@@ -84,7 +86,7 @@ export default function FeedCard({
   const handleShare = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     const shareUrl = `${window.location.origin}/ads/${item._id}`;
-    const shareText = `${item.title} - ${item.price > 0 ? `${item.price.toLocaleString('ru-RU')} руб.` : 'Даром'}`;
+    const shareText = `${item.title} - ${formatPriceValue(item.price, item.price === 0)}`;
     
     const showToast = () => {
       if (shareToastTimerRef.current) {
@@ -111,7 +113,7 @@ export default function FeedCard({
       await navigator.clipboard.writeText(shareUrl);
       showToast();
     }
-  }, [item]);
+  }, [item, formatPriceValue]);
 
   const handleCardClick = useCallback(() => {
     onViewOpen();
@@ -154,8 +156,7 @@ export default function FeedCard({
   };
 
   const formatPrice = (price: number): string => {
-    if (price === 0) return 'Даром';
-    return `${price.toLocaleString('ru-RU')} р.`;
+    return formatPriceValue(price, price === 0);
   };
 
   const location = getLocationDisplayText(item.city, item.district, 'Беларусь');
@@ -515,7 +516,7 @@ export default function FeedCard({
                   textDecoration: 'line-through',
                 }}
               >
-                {oldPrice.toLocaleString('ru-RU')} р.
+                {formatPriceValue(oldPrice, false)}
               </span>
             )}
           </div>

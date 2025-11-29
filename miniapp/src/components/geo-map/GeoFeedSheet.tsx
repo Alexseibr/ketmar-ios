@@ -3,6 +3,7 @@ import useGeoStore from '../../store/useGeoStore';
 import { ChevronDown, MapPin, TrendingUp, Search, Package } from 'lucide-react';
 import { getThumbnailUrl } from '@/constants/placeholders';
 import { motion, AnimatePresence, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 interface Ad {
   _id: string;
@@ -39,6 +40,7 @@ const SHEET_HEIGHTS = {
 
 export function GeoFeedSheet({ isOpen, onOpenChange, categoryId, onAdClick }: GeoFeedSheetProps) {
   const { coords, radiusKm } = useGeoStore();
+  const { formatCard } = useFormatPrice();
   const lat = coords?.lat;
   const lng = coords?.lng;
   
@@ -106,8 +108,7 @@ export function GeoFeedSheet({ isOpen, onOpenChange, categoryId, onAdClick }: Ge
   }, [isOpen, fetchFeed]);
   
   const formatPrice = (price: number, isFree?: boolean) => {
-    if (isFree || price === 0) return 'Даром';
-    return `${price.toLocaleString('ru-RU')} р.`;
+    return formatCard(price, isFree || price === 0);
   };
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {

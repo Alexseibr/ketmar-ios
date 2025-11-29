@@ -20,6 +20,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/zoom';
 import { getFullImageUrl, getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
 import ScreenLayout from '@/components/layout/ScreenLayout';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 export default function AdPage() {
   const { id } = useParams();
@@ -28,6 +29,7 @@ export default function AdPage() {
   const geoCoords = useGeoStore((state) => state.coords);
   const requestLocation = useGeoStore((state) => state.requestLocation);
   const geoStatus = useGeoStore((state) => state.status);
+  const { formatCard } = useFormatPrice();
   const [ad, setAd] = useState<Ad | null>(null);
   const [loading, setLoading] = useState(true);
   const [startingChat, setStartingChat] = useState(false);
@@ -93,7 +95,7 @@ export default function AdPage() {
 
   const handleShare = useCallback(() => {
     const adUrl = `${window.location.origin}/ads/${id}`;
-    const shareText = ad ? `${ad.title} - ${ad.price} руб.` : 'Объявление на KETMAR';
+    const shareText = ad ? `${ad.title} - ${formatCard(ad.price ?? 0, ad.price === 0)}` : 'Объявление на KETMAR';
     
     if (window.Telegram?.WebApp?.openTelegramLink) {
       const telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(adUrl)}&text=${encodeURIComponent(shareText)}`;
@@ -421,7 +423,7 @@ export default function AdPage() {
                 marginBottom: 6,
                 letterSpacing: '-0.5px',
               }}>
-                {ad.price.toLocaleString('ru-RU')} руб.
+                {formatCard(ad.price ?? 0, ad.price === 0)}
               </div>
               {(ad.city || ad.distanceKm != null) && (
                 <div style={{ 
@@ -731,7 +733,7 @@ export default function AdPage() {
                             color: '#111827',
                             marginBottom: 4
                           }}>
-                            {similarAd.price.toLocaleString('ru-RU')} руб.
+                            {formatCard(similarAd.price ?? 0, similarAd.price === 0)}
                           </div>
                           <div style={{
                             fontSize: 13,
@@ -1139,7 +1141,7 @@ export default function AdPage() {
                       {ad.title}
                     </div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>
-                      {ad.price.toLocaleString('ru-RU')} руб.
+                      {formatCard(ad.price ?? 0, ad.price === 0)}
                     </div>
                   </div>
                 </div>
@@ -1188,7 +1190,7 @@ export default function AdPage() {
                       <Plus size={20} color="#374151" />
                     </button>
                     <div style={{ flex: 1, textAlign: 'right', fontSize: 16, fontWeight: 600, color: '#111827' }}>
-                      {(ad.price * orderQuantity).toLocaleString('ru-RU')} руб.
+                      {formatCard((ad.price ?? 0) * orderQuantity, false)}
                     </div>
                   </div>
                 </div>
@@ -1360,7 +1362,7 @@ export default function AdPage() {
                   ) : (
                     <>
                       <ShoppingCart size={20} />
-                      Оформить заказ на {(ad.price * orderQuantity).toLocaleString('ru-RU')} руб.
+                      Оформить заказ на {formatCard((ad.price ?? 0) * orderQuantity, false)}
                     </>
                   )}
                 </button>

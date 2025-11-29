@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import http from '@/api/http';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
 import ScreenLayout from '@/components/layout/ScreenLayout';
+import { useFormatPrice } from '@/hooks/useFormatPrice';
 
 type SortOption = 'distance' | 'newest' | 'price_asc' | 'price_desc';
 
@@ -41,6 +42,7 @@ function SkeletonCard({ index }: { index: number }) {
 }
 
 function FavoriteCard({ favorite, index, onRemove, removing, onClick }: FavoriteCardProps) {
+  const { formatCard } = useFormatPrice();
   const ad = favorite.ad;
   
   if (!ad) {
@@ -67,8 +69,8 @@ function FavoriteCard({ favorite, index, onRemove, removing, onClick }: Favorite
   }
 
   const isUnavailable = ad.isUnavailable || ad.status === 'sold' || ad.status === 'archived';
-  const price = ad.price ? `${ad.price.toLocaleString('ru-RU')} руб.` : 'Цена не указана';
-  const oldPrice = ad.oldPrice ? `${ad.oldPrice.toLocaleString('ru-RU')} руб.` : null;
+  const price = formatCard(ad.price ?? 0, ad.price === 0);
+  const oldPrice = ad.oldPrice ? formatCard(ad.oldPrice, false) : null;
   const priceDropPercent = ad.priceChangePercent && ad.priceChangePercent < 0 ? Math.abs(ad.priceChangePercent) : null;
   
   const distanceText = ad.distanceKm != null 
@@ -83,7 +85,7 @@ function FavoriteCard({ favorite, index, onRemove, removing, onClick }: Favorite
     ? getThumbnailUrl(ad.photos[0])
     : null;
 
-  const isToday = ad.updatedAt && new Date(ad.updatedAt).toDateString() === new Date().toDateString();
+  const isToday = ad.createdAt && new Date(ad.createdAt).toDateString() === new Date().toDateString();
   
   const sellerIcon = ad.sellerType === 'farmer' ? Tractor : ad.sellerType === 'shop' ? Store : User;
   const SellerIcon = sellerIcon;
