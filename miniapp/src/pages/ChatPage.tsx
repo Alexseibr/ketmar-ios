@@ -321,8 +321,8 @@ export default function ChatPage() {
             disabled={!text.trim() || sending}
             style={{
               padding: '12px',
-              background: text.trim() && !sending ? 'var(--color-primary)' : 'var(--color-secondary-soft)',
-              color: '#fff',
+              background: text.trim() && !sending ? '#3B82F6' : '#E5E7EB',
+              color: text.trim() && !sending ? '#fff' : '#9CA3AF',
               border: 'none',
               borderRadius: 'var(--radius-md)',
               cursor: text.trim() && !sending ? 'pointer' : 'not-allowed',
@@ -331,7 +331,7 @@ export default function ChatPage() {
               justifyContent: 'center',
               minWidth: '44px',
               minHeight: '44px',
-              transition: 'background 150ms ease',
+              transition: 'all 150ms ease',
             }}
             data-testid="button-send"
           >
