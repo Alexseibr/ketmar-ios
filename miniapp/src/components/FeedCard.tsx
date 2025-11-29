@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Heart, MapPin, Package, Share2, ChevronLeft, ChevronRight, Gift, TrendingDown, Leaf, MessageCircle, Bookmark, Sparkles } from 'lucide-react';
+import { Heart, MapPin, Package, Share2, Gift, TrendingDown, Leaf, MessageCircle, Bookmark, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FeedItem } from '@/types';
 import { getFeedImageUrl, getThumbnailUrl } from '@/constants/placeholders';
@@ -139,17 +139,6 @@ export default function FeedCard({
     }
   }, [useFallback, rawMainImage]);
 
-  const handlePrevImage = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex(prev => (prev > 0 ? prev - 1 : images.length - 1));
-    setImageLoaded(false);
-  }, [images.length]);
-
-  const handleNextImage = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCurrentImageIndex(prev => (prev < images.length - 1 ? prev + 1 : 0));
-    setImageLoaded(false);
-  }, [images.length]);
 
   const formatDistance = (meters: number): string => {
     if (meters < 1000) {
@@ -252,64 +241,17 @@ export default function FeedCard({
         </div>
       )}
 
-      {/* Image slider controls */}
-      {hasMultipleImages && (
-        <>
-          <button
-            onClick={handlePrevImage}
-            style={{
-              position: 'absolute',
-              left: 12,
-              top: '45%',
-              transform: 'translateY(-50%)',
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              background: 'rgba(0,0,0,0.4)',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-            data-testid="button-prev-image"
-          >
-            <ChevronLeft size={24} color="#fff" />
-          </button>
-          <button
-            onClick={handleNextImage}
-            style={{
-              position: 'absolute',
-              right: 70,
-              top: '45%',
-              transform: 'translateY(-50%)',
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              background: 'rgba(0,0,0,0.4)',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-            data-testid="button-next-image"
-          >
-            <ChevronRight size={24} color="#fff" />
-          </button>
-        </>
-      )}
 
       {/* Right side action buttons (TikTok style) */}
       <div
         style={{
           position: 'absolute',
           right: 12,
-          top: '35%',
+          bottom: 280,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 20,
+          gap: 16,
         }}
       >
         {/* Like button */}
@@ -416,7 +358,7 @@ export default function FeedCard({
         style={{
           position: 'absolute',
           left: 16,
-          bottom: 200,
+          bottom: 255,
           display: 'flex',
           alignItems: 'center',
           gap: 10,
@@ -478,7 +420,7 @@ export default function FeedCard({
         style={{
           position: 'absolute',
           left: 16,
-          bottom: 155,
+          bottom: 210,
           display: 'flex',
           flexWrap: 'wrap',
           gap: 8,
@@ -562,12 +504,12 @@ export default function FeedCard({
         style={{
           position: 'absolute',
           left: 16,
-          bottom: 115,
+          bottom: 165,
         }}
       >
         <span
           style={{
-            fontSize: 28,
+            fontSize: 32,
             fontWeight: 700,
             color: isFreeGiveaway ? '#EC4899' : '#fff',
             textShadow: '0 2px 4px rgba(0,0,0,0.3)',
@@ -584,9 +526,9 @@ export default function FeedCard({
           position: 'absolute',
           left: 16,
           right: 70,
-          bottom: 85,
+          bottom: 120,
           margin: 0,
-          fontSize: 17,
+          fontSize: 18,
           fontWeight: 600,
           color: '#fff',
           lineHeight: 1.3,
@@ -608,13 +550,13 @@ export default function FeedCard({
             position: 'absolute',
             left: 16,
             right: 70,
-            bottom: 58,
+            bottom: 80,
             margin: 0,
             fontSize: 14,
             lineHeight: 1.4,
             color: 'rgba(255,255,255,0.8)',
             display: '-webkit-box',
-            WebkitLineClamp: 1,
+            WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
           }}
@@ -630,7 +572,7 @@ export default function FeedCard({
           position: 'absolute',
           left: 16,
           right: 16,
-          bottom: 12,
+          bottom: 20,
           display: 'flex',
           alignItems: 'center',
           gap: 12,
@@ -686,32 +628,6 @@ export default function FeedCard({
         </motion.button>
       </div>
 
-      {/* Image indicators at bottom center */}
-      {hasMultipleImages && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 70,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            gap: 6,
-          }}
-        >
-          {images.map((_, idx) => (
-            <div
-              key={idx}
-              style={{
-                width: idx === currentImageIndex ? 16 : 6,
-                height: 6,
-                borderRadius: 3,
-                background: idx === currentImageIndex ? '#fff' : 'rgba(255,255,255,0.4)',
-                transition: 'all 0.2s ease',
-              }}
-            />
-          ))}
-        </div>
-      )}
 
       {/* Share toast */}
       <AnimatePresence>
