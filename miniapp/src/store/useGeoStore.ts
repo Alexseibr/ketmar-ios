@@ -43,10 +43,14 @@ const MAX_ADS_TARGET = 30;
 
 async function resolveCity(lat: number, lng: number): Promise<string | null> {
   try {
-    const response = await fetch(`/api/geo/resolve?lat=${lat}&lng=${lng}`);
+    const response = await fetch('/api/geo/resolve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat, lng }),
+    });
     if (response.ok) {
       const data = await response.json();
-      return data.city || data.address || null;
+      return data.label || data.city || null;
     }
   } catch (e) {
     console.warn('Failed to resolve city name:', e);
