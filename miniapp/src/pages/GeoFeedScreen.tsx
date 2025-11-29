@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } fro
 import { useNavigate } from 'react-router-dom';
 import useGeoStore from '../store/useGeoStore';
 import { 
-  Search, MapPin, Locate, Package, 
+  Search, MapPin, Locate, Package, ArrowLeft,
   ChevronUp, ChevronDown, Sparkles, X, AlertCircle, RefreshCw,
   Leaf, Store, User, Loader2
 } from 'lucide-react';
@@ -225,19 +225,54 @@ export default function GeoFeedScreen() {
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden" style={{ background: 'var(--bg-base, #FFFFFF)' }}>
-      {/* STICKY HEADER - Never moves during scroll */}
+      {/* FIXED HEADER - Always on top */}
       <header 
-        className="flex-shrink-0 z-50"
         style={{ 
-          position: 'sticky',
-          top: 0,
+          flexShrink: 0,
+          position: 'relative',
+          zIndex: 100,
           background: 'var(--bg-base, #FFFFFF)',
-          boxShadow: 'var(--shadow-card, 0 2px 8px rgba(0,0,0,0.08))',
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
           paddingTop: 'env(safe-area-inset-top)',
         }}
       >
+        {/* Back button + Title row */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 12,
+          padding: '12px 16px 8px',
+        }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              border: 'none',
+              background: 'var(--bg-tertiary, #F0F2F5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+            data-testid="button-back"
+          >
+            <ArrowLeft style={{ width: 20, height: 20, color: 'var(--text-primary, #1F2937)' }} />
+          </button>
+          <h1 style={{ 
+            fontSize: 17, 
+            fontWeight: 600, 
+            color: 'var(--text-primary, #1F2937)',
+            margin: 0,
+          }}>
+            Карта объявлений
+          </h1>
+        </div>
+
         {/* Search Input */}
-        <div style={{ padding: '12px 16px 8px' }}>
+        <div style={{ padding: '0 16px 8px' }}>
           <div style={{ position: 'relative' }}>
             <Search 
               style={{ 
@@ -369,11 +404,16 @@ export default function GeoFeedScreen() {
 
       {/* MAP + BOTTOM SHEET CONTAINER */}
       <div 
-        className="flex-1 relative min-h-0"
-        style={{ paddingBottom: 'calc(72px + env(safe-area-inset-bottom))' }}
+        style={{ 
+          flex: 1, 
+          position: 'relative', 
+          minHeight: 0,
+          zIndex: 1,
+          paddingBottom: 'calc(72px + env(safe-area-inset-bottom))',
+        }}
       >
         {/* Map View */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
           {(lat && lng) ? (
             <Suspense fallback={<MapFallback />}>
               <LazyMap 

@@ -9,6 +9,28 @@
 /* Import Leaflet CSS for maps */
 @import 'leaflet/dist/leaflet.css';
 
+/* === LEAFLET Z-INDEX CONTROL === */
+/* Ensure map doesn't overlap fixed headers */
+.leaflet-container {
+  z-index: 1 !important;
+}
+.leaflet-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane,
+.leaflet-shadow-pane {
+  z-index: auto !important;
+}
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 10 !important;
+}
+.leaflet-control {
+  z-index: 10 !important;
+}
+
 :root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
   
