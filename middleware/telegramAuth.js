@@ -208,19 +208,24 @@ export async function telegramInitDataMiddleware(req, res, next) {
         );
 
         req.currentUser = userDoc;
+        console.log('[TelegramAuth] Authenticated via Telegram initData:', telegramUser.id);
         return next();
       } catch (error) {
         console.error('Failed to upsert Telegram user', error);
         return res.status(500).json({ error: 'Internal server error' });
       }
     }
+  } else {
+    console.log('[TelegramAuth] InitData validation failed:', validation.error, '- trying JWT fallback');
   }
 
   const userFromJWT = await authenticateWithJWT(req);
   if (userFromJWT) {
     req.currentUser = userFromJWT;
+    console.log('[TelegramAuth] Authenticated via JWT fallback:', userFromJWT.telegramId);
     return next();
   }
 
-  return res.status(401).json({ error: 'Invalid Telegram initData' });
+  console.log('[TelegramAuth] All authentication methods failed');
+  return res.status(401).json({ error: 'Authentication required', details: validation.error || 'No valid token' });
 }

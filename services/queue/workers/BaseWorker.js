@@ -14,6 +14,9 @@ export class BaseWorker {
     this.isRunning = false;
     this.processedCount = 0;
     this.failedCount = 0;
+    this.connectionErrorCount = 0;
+    this.lastErrorLogTime = 0;
+    this.errorLogThrottleMs = 30000; // Log connection errors at most every 30 seconds
   }
 
   /**
@@ -86,7 +89,21 @@ export class BaseWorker {
     });
 
     this.worker.on('error', (err) => {
-      console.error(`[${this.constructor.name}] Worker error:`, err.message);
+      const isConnectionError = ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'Connection is closed'].some(
+        e => err.message?.includes(e)
+      );
+      
+      if (isConnectionError) {
+        this.connectionErrorCount++;
+        const now = Date.now();
+        if (now - this.lastErrorLogTime > this.errorLogThrottleMs) {
+          console.error(`[${this.constructor.name}] Worker error: ${err.message} (${this.connectionErrorCount} errors since last log)`);
+          this.lastErrorLogTime = now;
+          this.connectionErrorCount = 0;
+        }
+      } else {
+        console.error(`[${this.constructor.name}] Worker error:`, err.message);
+      }
     });
 
     this.worker.on('stalled', (jobId) => {
