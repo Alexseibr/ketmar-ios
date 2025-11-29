@@ -13,7 +13,10 @@ import {
   CheckCircle2,
   Clock,
   FileText,
+  Map,
 } from 'lucide-react';
+import SellerDemandHeatmap from '@/components/SellerDemandHeatmap';
+import SellerDeficitMap from '@/components/SellerDeficitMap';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,13 +40,16 @@ const statusLabels: Record<MyShopProduct['status'], { label: string; color: stri
   expired: { label: 'Истекло', color: 'bg-slate-100 text-slate-700' },
 };
 
+type TabType = 'products' | 'stats' | 'heatmap' | 'profile';
+
 export default function MyShopPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'products' | 'stats' | 'profile'>('products');
+  const [activeTab, setActiveTab] = useState<TabType>('products');
   const [statusFilter, setStatusFilter] = useState<'active' | 'draft' | 'expired'>('active');
   const [profileForm, setProfileForm] = useState<Partial<MyShopProfile>>({});
+  const [heatmapView, setHeatmapView] = useState<'demand' | 'deficit'>('demand');
 
   const productsQuery = useQuery({
     queryKey: ['my-shop-products', statusFilter],
@@ -131,16 +137,20 @@ export default function MyShopPage() {
             onValueChange={(value) => setActiveTab(value as typeof activeTab)}
             className="w-full"
           >
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="products" className="gap-1" data-testid="tab-products">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="products" className="gap-1 text-xs px-1" data-testid="tab-products">
                 <Package className="h-4 w-4" />
                 Товары
               </TabsTrigger>
-              <TabsTrigger value="stats" className="gap-1" data-testid="tab-stats">
+              <TabsTrigger value="stats" className="gap-1 text-xs px-1" data-testid="tab-stats">
                 <TrendingUp className="h-4 w-4" />
                 Статистика
               </TabsTrigger>
-              <TabsTrigger value="profile" className="gap-1" data-testid="tab-profile">
+              <TabsTrigger value="heatmap" className="gap-1 text-xs px-1" data-testid="tab-heatmap">
+                <Map className="h-4 w-4" />
+                Карта
+              </TabsTrigger>
+              <TabsTrigger value="profile" className="gap-1 text-xs px-1" data-testid="tab-profile">
                 <UserRound className="h-4 w-4" />
                 Профиль
               </TabsTrigger>
@@ -324,6 +334,45 @@ export default function MyShopPage() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="heatmap" className="mt-0">
+            <div className="mb-4">
+              <div className="flex gap-2 p-1 bg-muted rounded-lg">
+                <button
+                  onClick={() => setHeatmapView('demand')}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                    heatmapView === 'demand' 
+                      ? 'bg-background shadow-sm text-foreground' 
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  data-testid="button-heatmap-demand"
+                >
+                  Карта спроса
+                </button>
+                <button
+                  onClick={() => setHeatmapView('deficit')}
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                    heatmapView === 'deficit' 
+                      ? 'bg-background shadow-sm text-foreground' 
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                  data-testid="button-heatmap-deficit"
+                >
+                  Где вас ждут
+                </button>
+              </div>
+            </div>
+            
+            <Card className="overflow-hidden">
+              <div style={{ height: 500 }}>
+                {heatmapView === 'demand' ? (
+                  <SellerDemandHeatmap />
+                ) : (
+                  <SellerDeficitMap onAddAd={() => navigate('/create')} />
+                )}
+              </div>
+            </Card>
           </TabsContent>
 
           <TabsContent value="profile" className="mt-0">

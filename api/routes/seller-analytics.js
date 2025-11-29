@@ -91,23 +91,6 @@ router.get('/price-position', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/demand-heatmap', authMiddleware, async (req, res) => {
-  try {
-    const sellerId = req.query.sellerId || req.user._id;
-    const radiusKm = parseFloat(req.query.radiusKm) || 20;
-
-    if (req.query.sellerId && req.user.role !== 'admin' && req.query.sellerId !== req.user._id.toString()) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    const heatmap = await SellerAnalyticsEngine.getDemandHeatmap(sellerId, radiusKm);
-    res.json({ success: true, heatmap });
-  } catch (error) {
-    console.error('[SellerAnalytics] Demand heatmap error:', error);
-    res.status(500).json({ error: 'Failed to get demand heatmap' });
-  }
-});
-
 router.get('/hotspots', authMiddleware, async (req, res) => {
   try {
     const sellerId = req.query.sellerId || req.user._id;
@@ -289,6 +272,79 @@ router.get('/ads/:adId/heatmap', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('[SellerAnalytics] Heatmap error:', error);
     res.status(500).json({ success: false, error: 'Ошибка при загрузке данных' });
+  }
+});
+
+router.get('/demand-heatmap', authMiddleware, async (req, res) => {
+  try {
+    const { period = '30', categorySlug } = req.query;
+    const sellerId = req.user._id;
+    
+    const AdView = (await import('../../models/AdView.js')).default;
+    
+    const days = Math.min(parseInt(period) || 30, 180);
+    
+    const heatmapData = await AdView.getSellerDemandHeatmap(sellerId, {
+      period: days,
+      categorySlug: categorySlug || null,
+    });
+    
+    res.json({
+      success: true,
+      data: heatmapData,
+    });
+  } catch (error) {
+    console.error('[SellerAnalytics] Demand heatmap error:', error);
+    res.status(500).json({ success: false, error: 'Ошибка загрузки карты спроса' });
+  }
+});
+
+router.get('/search-heatmap', authMiddleware, async (req, res) => {
+  try {
+    const { period = '30', categorySlug } = req.query;
+    
+    const SearchQueryLog = (await import('../../models/SearchQueryLog.js')).default;
+    
+    const days = Math.min(parseInt(period) || 30, 90);
+    
+    const heatmapData = await SearchQueryLog.getSearchHeatmapData({
+      categorySlug: categorySlug || null,
+      period: days,
+      sellerId: req.user._id,
+    });
+    
+    res.json({
+      success: true,
+      data: heatmapData,
+    });
+  } catch (error) {
+    console.error('[SellerAnalytics] Search heatmap error:', error);
+    res.status(500).json({ success: false, error: 'Ошибка загрузки карты поисков' });
+  }
+});
+
+router.get('/deficit-map', authMiddleware, async (req, res) => {
+  try {
+    const { period = '30', categorySlug, lat, lng } = req.query;
+    
+    const AdView = (await import('../../models/AdView.js')).default;
+    
+    const days = Math.min(parseInt(period) || 30, 90);
+    
+    const deficitData = await AdView.getDeficitMap({
+      categorySlug: categorySlug || null,
+      period: days,
+      lat: lat ? parseFloat(lat) : 53.9,
+      lng: lng ? parseFloat(lng) : 27.56,
+    });
+    
+    res.json({
+      success: true,
+      data: deficitData,
+    });
+  } catch (error) {
+    console.error('[SellerAnalytics] Deficit map error:', error);
+    res.status(500).json({ success: false, error: 'Ошибка загрузки карты дефицита' });
   }
 });
 

@@ -1,0 +1,80 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/docs/ketmar-prompts.md b/docs/ketmar-prompts.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..bed9c28cb516d7b32b45121038429e9fdd46f7c5
+--- /dev/null
++++ b/docs/ketmar-prompts.md
+@@ -0,0 +1,70 @@
++# KETMAR Market Creative Prompt Pack
++
++This pack includes three prompt sets tailored for KETMAR Market visuals, adapted from popular delivery-brand styles (Yandex Lavka, Yandex Go, Samokat, Bolt Food) while keeping the KETMAR identity. Use them directly with Midjourney, DALL·E 3, Stable Diffusion XL, Recraft, Lottie/Rive/After Effects, or 3D tools like C4D/Blender.
++
++---
++
++## 🎨 PROMPT №1 — Баннера в стиле Yandex Lavka (сезон, фермеры, тюльпаны, Новый Год)
++*Формат: статичные баннеры, без текста.*
++
++### 1️⃣ Баннер: «ТЮЛЬПАНЫ / ВЕСЕННЯЯ ЯРМАРКА»
++**PROMPT:**
++Bright seasonal promo banner for a mobile marketplace. Pink and yellow tulips, soft gradient background (pink → peach → cream), glossy 3D flowers, modern Yandex Lavka style, big clean typography area, smooth rounded shapes, floating petals, premium and friendly look, 4K, no text.
++
++### 2️⃣ Баннер: «НОВЫЙ ГОД / ПОДАРКИ / ЯРМАРКА»
++**PROMPT:**
++Festive New Year marketplace promo banner. 3D gift boxes, Christmas lights, pine branches, snow particles, red–gold gradient background, soft shadows, glossy elements, Yandex Lavka / Yandex Go promo style, clean area for text, 4K, no text.
++
++### 3️⃣ Баннер: «ФЕРМЕРСКАЯ ПРОДУКЦИЯ»
++**PROMPT:**
++Farmers market premium banner. 3D strawberries, tomatoes, milk bottle, fresh vegetables in a wooden basket, green–yellow gradient background, soft light, friendly shapes, Yandex Lavka product card style, modern, 4K, no text.
++
++### 4️⃣ Баннер: «СЕЗОННАЯ РАСПРОДАЖА»
++**PROMPT:**
++Colorful discount promo banner. Floating 3D percentage icons (-20%, -50%), orange–pink gradient, dynamic diagonal shapes, glossy icons, modern e-commerce design in Yandex Lavka style, soft shadows, 4K, no text.
++
++### 5️⃣ Баннер: «ОТДАМ ДАРОМ»
++**PROMPT:**
++Cute charity/free-giveaway banner. Open gift box with glowing heart, soft pink–violet gradient, floating sparkles, rounded glossy shapes, warm and friendly vibe, Yandex Go style, 4K, no text.
++
++---
++
++## 🌀 PROMPT №2 — Анимации 3D-иконок (wiggle, float, bounce/pop-up)
++*Подходит для: Lottie, Rive, After Effects, Figma Smart Animate, C4D, Blender. Формат: PNG/JSON или риг для 3D.*
++
++### 🎯 1. Анимация “FLOAT” (парение, лёгкое движение вверх-вниз)
++**PROMPT:**
++Create a 3D looping animation of an app icon floating in the air. The icon gently moves up and down by 8–14 pixels, with soft easing. Smooth rotation around Z-axis (1–2 degrees), ultra-soft shadows, glossy material, Yandex Go 3D icon style. Loop length: 3 seconds. No camera jump. Clean alpha background.
++
++### 🔄 2. Анимация “WIGGLE” (покачивание, живая реакция)
++**PROMPT:**
++Create a short 3D wiggle animation for a marketplace icon. Icon tilts left–right by 4–6 degrees, with squash & stretch on impact, smooth spring easing, friendly and playful motion, glossy 3D style like Yandex Lavka icons. Loop or single reaction state. Transparent background.
++
++### 💥 3. Анимация “POP-UP” (появление/нажатие)
++**PROMPT:**
++Generate a 3D pop-up animation for an app icon. Sequence: scale 0.6 → 1.12 → 0.95 → 1.00. Duration: 300–400ms. Soft rubber-spring effect, subtle glow on the first expansion frame, premium UI motion style (Yandex Go). Output: PNG sequence or Lottie JSON.
++
++---
++
++## 🧸 PROMPT №3 — 3D-Маскоты KETMAR Market (фермер, домик, ягода)
++*Для фирменных персонажей наподобие маскотов Яндекс Еды, Озона, Тинькоффа.*
++
++### 🧑‍🌾 1. Маскот — ФЕРМЕР KETMAR
++**PROMPT:**
++Cute 3D mascot character: a friendly tiny farmer with a round body, simple emoji-style face (eyes + smile), wearing a small hat and holding a basket of vegetables. Soft glossy materials, pastel colors, Yandex Go / Apple Emoji 3D style, smooth lighting, minimalistic details, premium and friendly look, 4K, isolated on transparent background.
++
++### 🏡 2. Маскот — ДОМИК (KETMAR HOME)
++**PROMPT:**
++Cute 3D mascot house character. Small rounded house with a smiley face, bright orange roof, soft blue door, glossy finish, warm lighting. Friendly toy-like proportions, Yandex Go 3D visual style, adorable look, 4K, transparent background.
++
++### 🍓 3. Маскот — ЯГОДА (KETMAR BERRY)
++**PROMPT:**
++Cute 3D strawberry mascot character. Bright red berry with tiny arms and legs, smiling emoji-style face, glossy seeds, soft reflections, vibrant colors, friendly and playful, Yandex Go 3D icon style, 4K, transparent background.
++
++---
++
++### Дополнительно (что можно подготовить по запросу)
++- PROMPT для 3D-наборов «ТЮЛЬПАНЫ / 8 МАРТА»
++- PROMPT для 3D-иллюстраций ярмарок (новогодняя, весенняя, осенняя)
++- PROMPT для создания полного бренд-набора KETMAR (маскоты, цвета, паттерны)
++- PROMPT для рекламных карточек под новый главный экран
+ 
+EOF
+)
