@@ -1,0 +1,196 @@
+PROMPT: «Кластеры пинов + цвета по типам объявлений»
+
+Полностью под твою карту KETMAR Market
+
+Проект: KETMAR Market – Telegram Mini App.
+Экран: «Карта объявлений» (Leaflet + OSM), пины объявлений уже отображаются, работает поиск и фильтр по радиусу.
+
+Задача: реализовать кластеры пинов (cluster markers), где:
+  – множество объявлений, находящихся рядом друг с другом, группируются в единую «гроздь»,
+  – кластер показывает числом, сколько объявлений внутри,
+  – кластер автоматически раскрывается при зуме,
+  – одиночные пины отображаются в зависимости от типа объявления разными цветами,
+  – внутри кластера должны быть разные цвета (на основе типов),
+  – UI должен быть аккуратным — как на Яндекс.Картах/Авито.
+
+Типы объявлений, которые нужно визуально разделять цветом:
+  • Продукты / Еда / Фермерское → зелёный пин
+  • Услуги → фиолетовый пин
+  • Товары (обычные) → синий пин
+  • Бесплатно / «Отдам даром» → оранжевый пин
+  • Магазины / ПРО продавцы → бирюзовый или насыщенный голубой
+  • Если тип не определён → серый
+
+Цели:
+1) Улучшить UX карты.
+2) Минимизировать наложение пинов.
+3) Сделать визуально красивую и быструю кластеризацию как у Яндекс Go / Авито.
+
+---
+
+## 1) Что нужно сделать (пошагово)
+
+### **A. Установить плагин кластеризации для Leaflet**
+Использовать библиотеку:
+- leaflet.markercluster
+
+Для React:
+- @changey/react-leaflet-markercluster
+или другой стабильный wrapper.
+
+Установить:
+npm install leaflet.markercluster @changey/react-leaflet-markercluster
+
+### **B. Подключить MarkerClusterGroup в компонент карты**
+Текущий компонент, например: `MapScreen.tsx` или `AdsMap.tsx`.
+
+Пример:
+
+<MarkerClusterGroup
+    chunkedLoading={true}
+    spiderfyOnMaxZoom={true}
+    showCoverageOnHover={false}
+    disableClusteringAtZoom={16}
+    iconCreateFunction={createClusterIcon}
+/>
+
+И внутрь помещаются <Marker> для каждого объявления.
+
+### **C. Создать разные кастомные иконки пинов**
+Нужно создать 6 SVG-иконок для пинов разных цветов:
+
+- pin-green.svg
+- pin-purple.svg
+- pin-blue.svg
+- pin-orange.svg
+- pin-cyan.svg
+- pin-gray.svg
+
+Codex должен сам создать минимальные аккуратные SVG (одноцветный пин с круглой точкой внутри).
+
+Создать функцию:
+
+function getPinIconByType(type) {
+  switch(type) {
+    case "food":
+    case "farmer":
+       return greenIcon;
+    case "service":
+       return purpleIcon;
+    case "goods":
+       return blueIcon;
+    case "free":
+       return orangeIcon;
+    case "pro-shop":
+       return cyanIcon;
+    default:
+       return grayIcon;
+  }
+}
+
+И возвращать L.icon({...})
+
+### **D. Кластерная иконка (большой кружок с числом)**
+Создать JS-функцию:
+
+function createClusterIcon(cluster) {
+  const count = cluster.getChildCount();
+
+  // Цвет кластера определяется смешанным типом:
+  // – если >50% товаров → кластер синий
+  // – если >50% фермерских → зелёный
+  – если >50% услуг → фиолетовый
+  – если смешанные → серый
+
+  вернуть divIcon:
+  return L.divIcon({
+     html: `<div class="cluster-pin">${count}</div>`,
+     className: "cluster-wrapper",
+     iconSize: [40, 40]
+  });
+
+}
+
+А в CSS:
+
+.cluster-wrapper {
+  background: transparent;
+}
+
+.cluster-pin {
+  width: 40px;
+  height: 40px;
+  background: #5E8BFF;  /* динамически менять */
+  color: #fff;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+Codex должен завершить формирование кода.
+
+### **E. Изменить вывод пинов**
+
+Вместо:
+
+ads.map(ad => <Marker ... />)
+
+Должно быть:
+
+<MarkerClusterGroup ...>
+  {ads.map(ad => (
+     <Marker
+        key={ad._id}
+        position={[ad.location.lat, ad.location.lng]}
+        icon={getPinIconByType(ad.type)}
+        eventHandlers={{
+          click: () => openAdCard(ad)
+        }}
+     />
+  ))}
+</MarkerClusterGroup>
+
+### **F. Быстрая работа**
+Включить:
+- chunkedLoading = true
+- disableClusteringAtZoom = 16
+- устанавливать optimizedPath = true
+- использовать debounce для перестроения карты при поиске/радиусе.
+
+---
+
+## 2) Результат, который должен выдать Codex
+
+Codex должен создать:
+
+1. Готовый импорт и установку leaflet.markercluster.  
+2. Готовый компонент `AdsMapWithClusters.jsx` или обновить текущий.  
+3. 6 SVG-иконок под разные типы объявлений.  
+4. Функцию `getPinIconByType()`.  
+5. Функцию `createClusterIcon()` с логикой определения цвета.  
+6. CSS-файл для кластеров.  
+7. Вставить MarkerClusterGroup вокруг маркеров.  
+8. Сделать всё так, чтобы pины выглядели современно, ровно и красиво в стиле KETMAR Market.
+
+---
+
+## 3) Пример поведения
+
+- Я ввожу «малина» → на карте появляются только зелёные точки (фермерские).  
+- Ввожу «услуги» → на карте только фиолетовые.  
+- В центре Бреста много объяв → появляется кластер «23».  
+- При увеличении карты кластер разлетается на отдельные пины.  
+- Если в кластере смешанные товары → кластер серый.
+
+---
+
+## 4) В конце Codex должен показать:
+- Полный код нового компонента карты  
+- Функции кластеров  
+- SVG  
+- CSS  
+- Готовый коммит  

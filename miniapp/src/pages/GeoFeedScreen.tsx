@@ -68,11 +68,29 @@ export default function GeoFeedScreen() {
   const [loading, setLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [smartRadiusMessage, setSmartRadiusMessage] = useState<string | null>(null);
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
   
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>();
   const abortRef = useRef<AbortController | null>(null);
+  
+  // Debounce search query (400ms delay)
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 400);
+    
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchQuery]);
 
   const fetchNearbyAds = useCallback(async (centerLat: number, centerLng: number, radius: number, query?: string) => {
     if (abortRef.current) {
@@ -121,11 +139,12 @@ export default function GeoFeedScreen() {
     }
   }, [smartRadiusEnabled, setRadius, calculateSmartRadius]);
 
+  // Fetch ads when location, radius or debounced search query changes
   useEffect(() => {
     if (lat && lng) {
-      fetchNearbyAds(lat, lng, radiusKm, searchQuery);
+      fetchNearbyAds(lat, lng, radiusKm, debouncedQuery);
     }
-  }, [lat, lng, radiusKm]);
+  }, [lat, lng, radiusKm, debouncedQuery]);
 
   useEffect(() => {
     if (!lat || !lng) {
@@ -133,11 +152,22 @@ export default function GeoFeedScreen() {
     }
   }, []);
 
+  // Immediate search on Enter (skip debounce)
   const handleSearch = useCallback(() => {
     if (lat && lng) {
+      setDebouncedQuery(searchQuery); // Sync immediately
       fetchNearbyAds(lat, lng, radiusKm, searchQuery);
     }
   }, [lat, lng, radiusKm, searchQuery, fetchNearbyAds]);
+  
+  // Clear search and refetch all ads
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setDebouncedQuery('');
+    if (lat && lng) {
+      fetchNearbyAds(lat, lng, radiusKm, '');
+    }
+  }, [lat, lng, radiusKm, fetchNearbyAds]);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -325,7 +355,7 @@ export default function GeoFeedScreen() {
                   background: 'transparent',
                   cursor: 'pointer',
                 }}
-                onClick={() => { setSearchQuery(''); handleSearch(); }}
+                onClick={handleClearSearch}
                 data-testid="button-clear-search"
               >
                 <X style={{ width: 16, height: 16, color: '#6B7280' }} />

@@ -663,6 +663,7 @@ router.get('/near', async (req, res) => {
  * @param {number} lat - Широта точки поиска (обязательно)
  * @param {number} lng - Долгота точки поиска (обязательно)
  * @param {number} [radiusKm=10] - Радиус поиска в километрах (мин: 0.1, макс: 100)
+ * @param {string} [q] - Поисковый запрос (фильтрует по title, description, categoryName, tags)
  * @param {string} [categoryId] - Фильтр по категории
  * @param {string} [subcategoryId] - Фильтр по подкатегории
  * @param {number} [limit=50] - Количество результатов (макс: 200)
@@ -676,7 +677,7 @@ router.get('/near', async (req, res) => {
  */
 router.get('/nearby', async (req, res, next) => {
   try {
-    const { lat, lng, radiusKm, categoryId, subcategoryId, limit, minPrice, maxPrice, sort } = req.query;
+    const { lat, lng, radiusKm, q, categoryId, subcategoryId, limit, minPrice, maxPrice, sort } = req.query;
 
     // Валидация обязательных параметров
     if (lat === undefined || lng === undefined) {
@@ -748,6 +749,21 @@ router.get('/nearby', async (req, res, next) => {
     }
     if (Number.isFinite(maxPriceNumber) && maxPriceNumber >= 0) {
       baseFilter.price = { ...baseFilter.price, $lte: maxPriceNumber };
+    }
+
+    // Текстовый поиск по q (title, description, categoryName, tags, type)
+    const searchQuery = q?.toString().trim();
+    if (searchQuery) {
+      const searchRegex = new RegExp(searchQuery, 'i');
+      baseFilter.$or = [
+        { title: searchRegex },
+        { description: searchRegex },
+        { categoryName: searchRegex },
+        { subcategoryName: searchRegex },
+        { tags: searchRegex },
+        { type: searchRegex },
+        { sellerName: searchRegex },
+      ];
     }
 
     // Получаем кандидатов (берём больше, чем нужно, т.к. будем фильтровать по радиусу)
