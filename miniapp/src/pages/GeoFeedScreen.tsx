@@ -147,9 +147,7 @@ export default function GeoFeedScreen() {
   }, [lat, lng, radiusKm, debouncedQuery]);
 
   useEffect(() => {
-    if (!lat || !lng) {
-      requestLocation();
-    }
+    requestLocation();
   }, []);
 
   // Immediate search on Enter (skip debounce)

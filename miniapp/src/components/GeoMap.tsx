@@ -159,24 +159,59 @@ const createClusterIcon = (cluster: L.MarkerCluster) => {
   });
 };
 
+const RADIUS_TO_ZOOM: Record<number, number> = {
+  0.3: 17,
+  1: 15,
+  3: 14,
+  5: 13,
+  10: 12,
+  20: 11,
+};
+
+function getZoomForRadius(radiusKm: number): number {
+  if (RADIUS_TO_ZOOM[radiusKm]) {
+    return RADIUS_TO_ZOOM[radiusKm];
+  }
+  const radii = Object.keys(RADIUS_TO_ZOOM).map(Number).sort((a, b) => a - b);
+  for (let i = 0; i < radii.length; i++) {
+    if (radiusKm <= radii[i]) {
+      return RADIUS_TO_ZOOM[radii[i]];
+    }
+  }
+  return 11;
+}
+
 function MapController({ 
   center, 
+  radiusKm,
   onMove,
   onMapClick 
 }: { 
   center: [number, number];
+  radiusKm: number;
   onMove: (lat: number, lng: number) => void;
   onMapClick?: () => void;
 }) {
   const map = useMap();
   const initializedRef = useRef(false);
+  const lastRadiusRef = useRef(radiusKm);
   
   useEffect(() => {
     if (!initializedRef.current && center[0] !== 0 && center[1] !== 0) {
-      map.setView(center, 14);
+      const zoom = getZoomForRadius(radiusKm);
+      map.setView(center, zoom);
       initializedRef.current = true;
+      lastRadiusRef.current = radiusKm;
     }
-  }, [center, map]);
+  }, [center, radiusKm, map]);
+  
+  useEffect(() => {
+    if (initializedRef.current && lastRadiusRef.current !== radiusKm) {
+      const zoom = getZoomForRadius(radiusKm);
+      map.flyTo(center, zoom, { duration: 0.5 });
+      lastRadiusRef.current = radiusKm;
+    }
+  }, [radiusKm, center, map]);
   
   useMapEvents({
     moveend: () => {
@@ -308,7 +343,7 @@ export default function GeoMap({ lat, lng, radiusKm, feed, selectedAdId, onMarke
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         
-        <MapController center={center} onMove={onMapMove} onMapClick={onMapClick} />
+        <MapController center={center} radiusKm={radiusKm} onMove={onMapMove} onMapClick={onMapClick} />
         
         <Marker position={center} icon={userIcon} />
         
