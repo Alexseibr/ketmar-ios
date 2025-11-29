@@ -1,0 +1,146 @@
+dedda9d Улучшить анализ русской кодовой базы
+~/workspace$ # 1. Обновить локальную main из origin
+git checkout main
+git pull origin main
+
+# 2. Влить изменения из replit в main
+git merge replit -m "Merge replit: map fix, Redis fix, UI components"
+
+# 3. Запушить на GitHub
+git push origin main
+
+# 4. Вернуться на рабочую ветку
+git checkout replit
+Switched to branch 'main'
+Your branch and 'origin/main' have diverged,
+and have 3 and 452 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+From https://github.com/Alexseibr/miniapp
+ * branch            main       -> FETCH_HEAD
+hint: You have divergent branches and need to specify how to reconcile them.
+hint: You can do so by running one of the following commands sometime before
+hint: your next pull:
+hint:
+hint:   git config pull.rebase false  # merge
+hint:   git config pull.rebase true   # rebase
+hint:   git config pull.ff only       # fast-forward only
+hint:
+hint: You can replace "git config" with "git config --global" to set a default
+hint: preference for all repositories. You can also pass --rebase, --no-rebase,
+hint: or --ff-only on the command line to override the configured default per
+hint: invocation.
+fatal: Need to specify how to reconcile divergent branches.
+Auto-merging .replit
+CONFLICT (content): Merge conflict in .replit
+Auto-merging api/routes/phoneAuth.js
+CONFLICT (add/add): Merge conflict in api/routes/phoneAuth.js
+Auto-merging api/server.js
+CONFLICT (content): Merge conflict in api/server.js
+Auto-merging middleware/auth.js
+CONFLICT (add/add): Merge conflict in middleware/auth.js
+Auto-merging miniapp/src/App.tsx
+CONFLICT (content): Merge conflict in miniapp/src/App.tsx
+Auto-merging miniapp/src/components/AdCard.tsx
+CONFLICT (content): Merge conflict in miniapp/src/components/AdCard.tsx
+Auto-merging miniapp/src/components/AdGallery.tsx
+CONFLICT (add/add): Merge conflict in miniapp/src/components/AdGallery.tsx
+Auto-merging miniapp/src/components/AdsMap.tsx
+CONFLICT (add/add): Merge conflict in miniapp/src/components/AdsMap.tsx
+Auto-merging miniapp/src/pages/AdPage.tsx
+CONFLICT (content): Merge conflict in miniapp/src/pages/AdPage.tsx
+Auto-merging miniapp/src/pages/ChatPage.tsx
+CONFLICT (add/add): Merge conflict in miniapp/src/pages/ChatPage.tsx
+Auto-merging miniapp/src/pages/ConversationsPage.tsx
+CONFLICT (add/add): Merge conflict in miniapp/src/pages/ConversationsPage.tsx
+Auto-merging package-lock.json
+CONFLICT (content): Merge conflict in package-lock.json
+Auto-merging package.json
+CONFLICT (content): Merge conflict in package.json
+Auto-merging replit.md
+CONFLICT (content): Merge conflict in replit.md
+Automatic merge failed; fix conflicts and then commit the result.
+To https://github.com/Alexseibr/miniapp.git
+ ! [rejected]        main -> main (non-fast-forward)
+error: failed to push some refs to 'https://github.com/Alexseibr/miniapp.git'
+hint: Updates were rejected because the tip of your current branch is behind
+hint: its remote counterpart. If you want to integrate the remote changes,
+hint: use 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+.replit: needs merge
+api/routes/phoneAuth.js: needs merge
+api/server.js: needs merge
+middleware/auth.js: needs merge
+miniapp/src/App.tsx: needs merge
+miniapp/src/components/AdCard.tsx: needs merge
+miniapp/src/components/AdGallery.tsx: needs merge
+miniapp/src/components/AdsMap.tsx: needs merge
+miniapp/src/pages/AdPage.tsx: needs merge
+miniapp/src/pages/ChatPage.tsx: needs merge
+miniapp/src/pages/ConversationsPage.tsx: needs merge
+package-lock.json: needs merge
+package.json: needs merge
+replit.md: needs merge
+error: you need to resolve your current index first
+~/workspace$ # Исправить конфликт в package.json
+sed -i '/<<<<<<< HEAD/,/>>>>>>> replit/c\    "sharp": "^0.34.5",' package.json
+
+# Проверить что конфликт исправлен
+grep -n "sharp" package.json
+
+# Установить зависимости
+npm install
+
+removed 111 packages, changed 2 packages, and audited 726 packages in 4s
+
+137 packages are looking for funding
+  run `npm fund` for details
+
+15 vulnerabilities (3 low, 9 moderate, 1 high, 2 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+~/workspace$ # 1. Убедитесь что все изменения сохранены
+git status
+
+# 2. Создайте ветку prod от текущего состояния
+git checkout -b prod
+
+# 3. Отправьте ветку на GitHub
+git push -u origin prod
+
+# 4. Вернитесь на main для продолжения разработки
+git checkout main
+On branch main
+Your branch and 'origin/main' have diverged,
+and have 4 and 452 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+
+nothing to commit, working tree clean
+Switched to a new branch 'prod'
+Enumerating objects: 1249, done.
+Counting objects: 100% (1249/1249), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (1109/1109), done.
+Writing objects: 100% (1119/1119), 1.18 GiB | 5.59 MiB/s, done.
+Total 1119 (delta 104), reused 26 (delta 2), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (104/104), completed with 51 local objects.
+
+remote: error: Trace: a38e912f52e2dfccd82ca7a461a8ece35220694ef218b0f45f6c3df088b34035
+remote: error: See https://gh.io/lfs for more information.
+remote: error: File attached_assets/generated_images.tar.gz is 127.83 MB; this exceeds GitHub's file size limit of 100.00 MB
+remote: error: File ketmar-deploy.tar.gz is 875.22 MB; this exceeds GitHub's file size limit of 100.00 MB
+remote: error: GH001: Large files detected. You may want to try Git Large File Storage - https://git-lfs.github.com.
+To https://github.com/Alexseibr/miniapp.git
+ ! [remote rejected] prod -> prod (pre-receive hook declined)
+error: failed to push some refs to 'https://github.com/Alexseibr/miniapp.git'
+Switched to branch 'main'
+Your branch and 'origin/main' have diverged,
+and have 4 and 452 different commits each, respectively.
+  (use "git pull" if you want to integrate the remote branch with yours)
+~/workspace$ 
+~/workspace$ 
