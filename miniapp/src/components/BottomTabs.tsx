@@ -151,6 +151,10 @@ export default function BottomTabs() {
     return null;
   }
 
+  if (isKeyboardVisible) {
+    return null;
+  }
+
   return (
     <nav
       ref={navRef}
@@ -165,8 +169,6 @@ export default function BottomTabs() {
         borderTop: '1px solid #E5E7EB',
         zIndex: 100,
         transform: 'translateZ(0)',
-        visibility: isKeyboardVisible ? 'hidden' : 'visible',
-        pointerEvents: isKeyboardVisible ? 'none' : 'auto',
       }}
     >
       <div

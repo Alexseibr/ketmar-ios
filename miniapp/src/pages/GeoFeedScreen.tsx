@@ -363,8 +363,8 @@ export default function GeoFeedScreen() {
         </div>
         
         {/* Row 3: Radius Chips */}
-        <div style={{ padding: '0 16px 12px', overflowX: 'auto' }}>
-          <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ padding: '0 16px 12px', overflowX: 'auto', position: 'relative', zIndex: 1001 }}>
+          <div style={{ display: 'flex', gap: 8, position: 'relative', pointerEvents: 'auto' }}>
             {RADIUS_OPTIONS.map((r) => {
               const isActive = radiusKm === r.value && !smartRadiusEnabled;
               return (
