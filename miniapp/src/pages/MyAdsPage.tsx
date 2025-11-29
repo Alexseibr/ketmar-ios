@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useUserStore } from '@/store/useUserStore';
 import { Ad } from '@/types';
 import { fetchMyAds } from '@/api/ads';
-import { Plus, Loader2, Clock, Package, Eye, ShoppingBag, Archive, MapPin, Trash2, X, AlertTriangle, MoreVertical, EyeOff, Play, XCircle, Edit, Gift } from 'lucide-react';
+import { Plus, Loader2, Clock, Package, Eye, ShoppingBag, Archive, MapPin, Trash2, X, AlertTriangle, MoreVertical, EyeOff, Play, XCircle, Edit, Gift, BarChart2 } from 'lucide-react';
 import { ScheduledAdChip } from '@/components/schedule/ScheduledAdBadge';
 import { getThumbnailUrl } from '@/constants/placeholders';
 import http from '@/api/http';
@@ -766,28 +766,48 @@ function MyAdListCard({ ad, onClick, onDelete, onToggleStatus, showActions, onTo
             minWidth: 180,
           }}
         >
-          {/* Edit button for rejected ads */}
-          {isRejected && (
-            <Link
-              to={`/ads/${ad._id}/edit`}
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                display: 'flex',
-                width: '100%',
-                padding: '12px 16px',
-                background: 'transparent',
-                textDecoration: 'none',
-                alignItems: 'center',
-                gap: 10,
-                fontSize: 14,
-                color: '#3A7BFF',
-              }}
-              data-testid={`button-edit-${ad._id}`}
-            >
-              <Edit size={18} color="#3A7BFF" />
-              Редактировать
-            </Link>
-          )}
+          {/* Edit button - for all ads */}
+          <Link
+            to={`/ads/${ad._id}/edit`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: 'flex',
+              width: '100%',
+              padding: '12px 16px',
+              background: 'transparent',
+              textDecoration: 'none',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 14,
+              color: '#3A7BFF',
+            }}
+            data-testid={`button-edit-${ad._id}`}
+          >
+            <Edit size={18} color="#3A7BFF" />
+            Редактировать
+          </Link>
+          
+          {/* Stats button - for all ads */}
+          <Link
+            to={`/ads/${ad._id}/stats`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: 'flex',
+              width: '100%',
+              padding: '12px 16px',
+              background: 'transparent',
+              textDecoration: 'none',
+              borderTop: '1px solid #F3F4F6',
+              alignItems: 'center',
+              gap: 10,
+              fontSize: 14,
+              color: '#374151',
+            }}
+            data-testid={`button-stats-${ad._id}`}
+          >
+            <BarChart2 size={18} color="#6B7280" />
+            Статистика
+          </Link>
           
           {ad.status === 'active' ? (
             <button

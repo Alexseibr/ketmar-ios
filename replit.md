@@ -145,3 +145,35 @@ The feed uses a filtered pipeline architecture with memoized data:
 ### Files
 - `miniapp/src/pages/FeedPage.tsx` - Main feed with filters and pagination
 - `miniapp/src/components/FeedCard.tsx` - Individual card component
+
+## My Ads Management System
+
+### User Features
+All users (including regular physical persons) can:
+- **Edit ads**: Change title, description, price, category, contacts
+- **View statistics**: See views, contacts, favorites, lifecycle info, recommendations
+- **Extend/Republish ads**: Extend active ads or republish expired ones
+- **Hide/Delete ads**: Archive or permanently delete ads
+
+### Routes
+- `GET /api/ads/stats/:id` - Get ad statistics (owner only)
+- `PATCH /api/ads/:id` - Edit ad (owner only, requires sellerTelegramId)
+- `POST /api/ads/:id/extend` - Extend ad lifetime
+
+### Frontend Pages
+- `MyAdsPage.tsx` - List of user's ads with action menu (Edit, Stats, Hide, Delete)
+- `AdEditPage.tsx` - Edit form for title, description, price, category, contacts
+- `AdStatsPage.tsx` - Statistics dashboard with views, contacts, lifecycle info, recommendations
+
+### Ad Lifecycle Types
+- `perishable_daily` (1 day) - Fresh food, flowers
+- `fast` (7 days) - Electronics, seasonal items
+- `medium` (14 days) - Clothing, furniture
+- `long` (30 days) - Real estate, services
+
+### Statistics Tracked
+- `viewsTotal`, `viewsToday` - Page views
+- `contacts` - Contact button clicks (ContactEvent)
+- `favorites` - Users who favorited
+- `daysActive`, `daysLeft` - Lifecycle progress
+- Recommendations: Add photos, improve description, check price

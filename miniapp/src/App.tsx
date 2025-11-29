@@ -65,6 +65,8 @@ const MyShopPage = lazy(() => import('@/pages/MyShopPage'));
 const StoryCreatorPage = lazy(() => import('@/pages/StoryCreatorPage'));
 const GiveawayFeedPage = lazy(() => import('@/pages/GiveawayFeedPage'));
 const CreateGiveawayAdPage = lazy(() => import('@/pages/CreateGiveawayAdPage'));
+const AdEditPage = lazy(() => import('@/pages/AdEditPage'));
+const AdStatsPage = lazy(() => import('@/pages/AdStatsPage'));
 
 export default function App() {
   const location = useLocation();
@@ -384,6 +386,18 @@ export default function App() {
               <Route path="/create-giveaway" element={
                 <PrivateRoute>
                   <CreateGiveawayAdPage />
+                </PrivateRoute>
+              } />
+
+              {/* Ad Edit & Stats */}
+              <Route path="/ads/:id/edit" element={
+                <PrivateRoute>
+                  <AdEditPage />
+                </PrivateRoute>
+              } />
+              <Route path="/ads/:id/stats" element={
+                <PrivateRoute>
+                  <AdStatsPage />
                 </PrivateRoute>
               } />
 

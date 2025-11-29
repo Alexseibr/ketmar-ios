@@ -1905,6 +1905,72 @@ router.delete('/:id', async (req, res, next) => {
   }
 });
 
+// PATCH /api/ads/:id — редактирование объявления
+router.patch('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      title, 
+      description, 
+      price, 
+      categoryId, 
+      subcategoryId,
+      contactPhone,
+      contactUsername,
+      sellerTelegramId 
+    } = req.body || {};
+
+    const sellerId = sellerTelegramId || getSellerIdFromRequest(req);
+    if (!sellerId) {
+      return res.status(401).json({ message: 'Требуется авторизация для редактирования' });
+    }
+
+    const ad = await Ad.findById(id);
+    if (!ad) {
+      return res.status(404).json({ message: 'Объявление не найдено' });
+    }
+
+    if (Number(ad.sellerTelegramId) !== Number(sellerId)) {
+      return res.status(403).json({ message: 'Нет прав для редактирования этого объявления' });
+    }
+
+    const before = ad.toObject();
+
+    if (title !== undefined) ad.title = title.trim();
+    if (description !== undefined) ad.description = description.trim();
+    if (price !== undefined) ad.price = Number(price);
+    if (categoryId !== undefined) ad.categoryId = categoryId;
+    if (subcategoryId !== undefined) ad.subcategoryId = subcategoryId;
+    if (contactPhone !== undefined) ad.contactPhone = contactPhone || null;
+    if (contactUsername !== undefined) ad.contactUsername = contactUsername || null;
+
+    if (ad.moderationStatus === 'rejected') {
+      ad.moderationStatus = 'pending';
+      ad.moderationComment = null;
+    }
+
+    await ad.save();
+
+    const after = ad.toObject();
+
+    if (before.price !== after.price) {
+      try {
+        await notifySubscribers(
+          ad._id,
+          `Цена объявления "${after.title}" изменилась: ${before.price} → ${after.price}`
+        );
+      } catch (notifyError) {
+        console.error('Notify subscribers error:', notifyError);
+      }
+    }
+
+    return res.json({ message: 'Объявление обновлено', ad });
+  } catch (error) {
+    console.error('PATCH /api/ads/:id error:', error);
+    return res.status(500).json({ error: 'Ошибка при обновлении объявления' });
+  }
+});
+
 // PATCH /api/ads/:id/status — обновление статуса объявления
 router.patch('/:id/status', async (req, res) => {
   try {
