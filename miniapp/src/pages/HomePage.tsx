@@ -91,6 +91,10 @@ export default function HomePage() {
     }
   }, [hasCompletedOnboarding, coords]);
 
+  useEffect(() => {
+    requestLocation();
+  }, []);
+
   const fetchHomeFeed = useCallback(async () => {
     setLoading(true);
     try {

@@ -114,8 +114,8 @@ async function requestBrowserLocation(): Promise<{ lat: number; lng: number } | 
   });
 }
 
-// Время жизни кэша геолокации - 24 часа
-const GEO_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+// Время жизни кэша геолокации - 5 минут (пользователь может переместиться)
+const GEO_CACHE_TTL_MS = 5 * 60 * 1000;
 
 // Проверка актуальности кэшированной геолокации
 function isCachedLocationValid(lastUpdate: number | null): boolean {
@@ -182,7 +182,7 @@ const useGeoStore = create<GeoState>()(
       },
 
       setRadius(value) {
-        const clampedValue = Math.max(5, Math.min(100, value));
+        const clampedValue = Math.max(0.1, Math.min(100, value));
         set({ radiusKm: clampedValue });
       },
 
