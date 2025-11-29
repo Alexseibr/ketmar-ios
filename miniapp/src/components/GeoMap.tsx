@@ -27,7 +27,7 @@ interface GeoMapProps {
   radiusKm: number;
   feed: Ad[];
   selectedAdId: string | null;
-  onMarkerClick: (adId: string) => void;
+  onZoneClick: (ads: Ad[]) => void;
   onMapClick?: () => void;
   onMapMove: (lat: number, lng: number) => void;
 }
@@ -307,17 +307,13 @@ function HeatZonesLayer({
   return null;
 }
 
-export default function GeoMap({ lat, lng, radiusKm, feed, selectedAdId, onMarkerClick, onMapClick, onMapMove }: GeoMapProps) {
+export default function GeoMap({ lat, lng, radiusKm, feed, selectedAdId, onZoneClick, onMapClick, onMapMove }: GeoMapProps) {
   const center: [number, number] = [lat, lng];
   
   const heatZones = useMemo(() => groupAdsIntoZones(feed), [feed]);
   
   const handleZoneClick = (ads: Ad[]) => {
-    if (ads.length === 1) {
-      onMarkerClick(ads[0]._id);
-    } else if (ads.length > 1) {
-      onMarkerClick(ads[0]._id);
-    }
+    onZoneClick(ads);
   };
   
   return (

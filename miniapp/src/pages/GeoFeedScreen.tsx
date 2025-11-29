@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import useGeoStore from '../store/useGeoStore';
 import { 
   Search, MapPin, Locate, ArrowLeft,
-  Sparkles, X, AlertCircle, Loader2
+  Sparkles, X, AlertCircle, Loader2,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
 import { useFormatPrice } from '@/hooks/useFormatPrice';
@@ -69,7 +70,9 @@ export default function GeoFeedScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [smartRadiusMessage, setSmartRadiusMessage] = useState<string | null>(null);
-  const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
+  const [selectedAds, setSelectedAds] = useState<Ad[]>([]);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
   
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>();
@@ -190,26 +193,48 @@ export default function GeoFeedScreen() {
     setSmartRadiusMessage(null);
   };
 
-  const handleMarkerClick = useCallback((adId: string) => {
-    const ad = feed.find(a => a._id === adId);
-    if (ad) {
-      setSelectedAd(ad);
+  const handleZoneClick = useCallback((ads: Ad[]) => {
+    setSelectedAds(ads);
+    setCarouselIndex(0);
+    // Scroll carousel to start
+    if (carouselRef.current) {
+      carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
     }
-  }, [feed]);
+  }, []);
 
   const handleCloseCard = useCallback(() => {
-    setSelectedAd(null);
+    setSelectedAds([]);
+    setCarouselIndex(0);
   }, []);
 
   const handleMapClick = useCallback(() => {
-    setSelectedAd(null);
+    setSelectedAds([]);
+    setCarouselIndex(0);
   }, []);
 
-  const handleViewDetails = useCallback(() => {
-    if (selectedAd) {
-      navigate(`/ads/${selectedAd._id}`);
+  const handleViewDetails = useCallback((ad: Ad) => {
+    navigate(`/ads/${ad._id}`);
+  }, [navigate]);
+
+  const handleCarouselPrev = useCallback(() => {
+    if (carouselIndex > 0) {
+      setCarouselIndex(carouselIndex - 1);
+      if (carouselRef.current) {
+        const cardWidth = 280 + 12; // card width + gap
+        carouselRef.current.scrollTo({ left: (carouselIndex - 1) * cardWidth, behavior: 'smooth' });
+      }
     }
-  }, [selectedAd, navigate]);
+  }, [carouselIndex]);
+
+  const handleCarouselNext = useCallback(() => {
+    if (carouselIndex < selectedAds.length - 1) {
+      setCarouselIndex(carouselIndex + 1);
+      if (carouselRef.current) {
+        const cardWidth = 280 + 12; // card width + gap
+        carouselRef.current.scrollTo({ left: (carouselIndex + 1) * cardWidth, behavior: 'smooth' });
+      }
+    }
+  }, [carouselIndex, selectedAds.length]);
 
   return (
     <div style={{ 
@@ -451,8 +476,8 @@ export default function GeoFeedScreen() {
               lng={lng} 
               radiusKm={radiusKm}
               feed={feed}
-              selectedAdId={selectedAd?._id || null}
-              onMarkerClick={handleMarkerClick}
+              selectedAdId={selectedAds[carouselIndex]?._id || null}
+              onZoneClick={handleZoneClick}
               onMapClick={handleMapClick}
               onMapMove={(centerLat: number, centerLng: number) => {
                 if (debounceRef.current) {
@@ -542,124 +567,238 @@ export default function GeoFeedScreen() {
         )}
       </div>
 
-      {/* AD CARD - Bottom sheet for selected pin */}
-      {selectedAd && (
+      {/* AD CAROUSEL - Bottom sheet for selected zone */}
+      {selectedAds.length > 0 && (
         <div 
           style={{
             position: 'fixed',
             bottom: 'calc(72px + env(safe-area-inset-bottom) + 16px)',
-            left: 16,
-            right: 16,
-            background: '#FFFFFF',
-            borderRadius: 16,
-            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12)',
+            left: 0,
+            right: 0,
             zIndex: 500,
             animation: 'slideUp 0.3s ease-out',
           }}
-          data-testid="card-selected-ad"
+          data-testid="carousel-selected-ads"
         >
           {/* Close button */}
           <button
             onClick={handleCloseCard}
             style={{
               position: 'absolute',
-              top: 12,
-              right: 12,
-              width: 28,
-              height: 28,
+              top: -40,
+              right: 16,
+              width: 36,
+              height: 36,
               borderRadius: '50%',
               border: 'none',
-              background: 'rgba(0, 0, 0, 0.06)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              boxShadow: '0 2px 12px rgba(0, 0, 0, 0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               zIndex: 10,
             }}
-            data-testid="button-close-card"
+            data-testid="button-close-carousel"
           >
-            <X style={{ width: 16, height: 16, color: '#6B7280' }} />
+            <X style={{ width: 18, height: 18, color: '#6B7280' }} />
           </button>
 
-          <div style={{ display: 'flex', gap: 12, padding: 12 }}>
-            {/* Photo */}
-            <div 
-              style={{ 
-                width: 100, 
-                height: 100, 
-                borderRadius: 12, 
-                overflow: 'hidden',
-                flexShrink: 0,
-                background: '#F3F4F6',
-              }}
-            >
-              <img 
-                src={selectedAd.photos?.[0] ? getThumbnailUrl(selectedAd.photos[0]) : NO_PHOTO_PLACEHOLDER}
-                alt={selectedAd.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                loading="lazy"
-              />
+          {/* Counter badge */}
+          {selectedAds.length > 1 && (
+            <div style={{
+              position: 'absolute',
+              top: -40,
+              left: 16,
+              padding: '6px 12px',
+              borderRadius: 16,
+              background: 'rgba(255, 255, 255, 0.95)',
+              boxShadow: '0 2px 12px rgba(0, 0, 0, 0.15)',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#374151',
+            }}>
+              {carouselIndex + 1} / {selectedAds.length}
             </div>
+          )}
 
-            {/* Info */}
-            <div style={{ flex: 1, minWidth: 0, paddingRight: 24 }}>
-              <p style={{ 
-                fontSize: 18, 
-                fontWeight: 700, 
-                color: '#3A7BFF',
-                margin: '0 0 4px',
-              }}>
-                {formatCard(selectedAd.price, selectedAd.price === 0)}
-              </p>
-              <h3 style={{ 
-                fontSize: 15, 
-                fontWeight: 500, 
-                color: '#1F2937',
-                margin: '0 0 8px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-              }}>
-                {selectedAd.title}
-              </h3>
-              
-              {selectedAd.distanceKm && (
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 4,
-                  fontSize: 13,
-                  color: '#6B7280',
-                }}>
-                  <MapPin style={{ width: 14, height: 14, color: '#3A7BFF' }} />
-                  <span>{formatDistance(selectedAd.distanceKm)}</span>
-                </div>
+          {/* Navigation arrows for multiple ads */}
+          {selectedAds.length > 1 && (
+            <>
+              {carouselIndex > 0 && (
+                <button
+                  onClick={handleCarouselPrev}
+                  style={{
+                    position: 'absolute',
+                    left: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 20,
+                  }}
+                  data-testid="button-carousel-prev"
+                >
+                  <ChevronLeft style={{ width: 20, height: 20, color: '#374151' }} />
+                </button>
               )}
-            </div>
-          </div>
+              {carouselIndex < selectedAds.length - 1 && (
+                <button
+                  onClick={handleCarouselNext}
+                  style={{
+                    position: 'absolute',
+                    right: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    zIndex: 20,
+                  }}
+                  data-testid="button-carousel-next"
+                >
+                  <ChevronRight style={{ width: 20, height: 20, color: '#374151' }} />
+                </button>
+              )}
+            </>
+          )}
 
-          {/* View Details Button */}
-          <div style={{ padding: '0 12px 12px' }}>
-            <button
-              onClick={handleViewDetails}
-              style={{
-                width: '100%',
-                height: 44,
-                borderRadius: 12,
-                border: 'none',
-                background: 'linear-gradient(135deg, #4A8CFF 0%, #3A7BFF 100%)',
-                color: '#FFFFFF',
-                fontSize: 15,
-                fontWeight: 600,
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(58, 123, 255, 0.3)',
-              }}
-              data-testid="button-view-details"
-            >
-              Подробнее
-            </button>
+          {/* Carousel container */}
+          <div 
+            ref={carouselRef}
+            style={{
+              display: 'flex',
+              gap: 12,
+              overflowX: 'auto',
+              scrollSnapType: 'x mandatory',
+              scrollBehavior: 'smooth',
+              padding: '0 16px',
+              WebkitOverflowScrolling: 'touch',
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+            }}
+            onScroll={(e) => {
+              const target = e.target as HTMLDivElement;
+              const cardWidth = 280 + 12;
+              const newIndex = Math.round(target.scrollLeft / cardWidth);
+              if (newIndex !== carouselIndex && newIndex >= 0 && newIndex < selectedAds.length) {
+                setCarouselIndex(newIndex);
+              }
+            }}
+          >
+            {selectedAds.map((ad, index) => (
+              <div
+                key={ad._id}
+                style={{
+                  flexShrink: 0,
+                  width: 280,
+                  background: '#FFFFFF',
+                  borderRadius: 16,
+                  boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12)',
+                  scrollSnapAlign: 'start',
+                  border: index === carouselIndex ? '2px solid #3A7BFF' : '2px solid transparent',
+                  transition: 'border-color 0.2s',
+                }}
+                data-testid={`card-ad-${ad._id}`}
+              >
+                <div style={{ display: 'flex', gap: 12, padding: 12 }}>
+                  {/* Photo */}
+                  <div 
+                    style={{ 
+                      width: 80, 
+                      height: 80, 
+                      borderRadius: 10, 
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      background: '#F3F4F6',
+                    }}
+                  >
+                    <img 
+                      src={ad.photos?.[0] ? getThumbnailUrl(ad.photos[0]) : NO_PHOTO_PLACEHOLDER}
+                      alt={ad.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      loading="lazy"
+                    />
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ 
+                      fontSize: 16, 
+                      fontWeight: 700, 
+                      color: '#3A7BFF',
+                      margin: '0 0 2px',
+                    }}>
+                      {formatCard(ad.price, ad.price === 0)}
+                    </p>
+                    <h3 style={{ 
+                      fontSize: 13, 
+                      fontWeight: 500, 
+                      color: '#1F2937',
+                      margin: '0 0 4px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      lineHeight: 1.3,
+                    }}>
+                      {ad.title}
+                    </h3>
+                    
+                    {ad.distanceKm && (
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 3,
+                        fontSize: 11,
+                        color: '#6B7280',
+                      }}>
+                        <MapPin style={{ width: 12, height: 12, color: '#3A7BFF' }} />
+                        <span>{formatDistance(ad.distanceKm)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* View Details Button */}
+                <div style={{ padding: '0 12px 12px' }}>
+                  <button
+                    onClick={() => handleViewDetails(ad)}
+                    style={{
+                      width: '100%',
+                      height: 38,
+                      borderRadius: 10,
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #4A8CFF 0%, #3A7BFF 100%)',
+                      color: '#FFFFFF',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(58, 123, 255, 0.3)',
+                    }}
+                    data-testid={`button-view-details-${ad._id}`}
+                  >
+                    Подробнее
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
