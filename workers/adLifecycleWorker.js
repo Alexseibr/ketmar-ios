@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import AdLifecycleService from '../services/AdLifecycleService.js';
+import AdStatsService from '../services/AdStatsService.js';
 
 let notificationCallback = null;
 
@@ -7,10 +8,10 @@ export function setNotificationCallback(callback) {
   notificationCallback = callback;
 }
 
-async function sendNotification(sellerId, message, type = 'info') {
+async function sendNotification(sellerId, message, type = 'info', data = null) {
   if (notificationCallback) {
     try {
-      await notificationCallback(sellerId, message, type);
+      await notificationCallback(sellerId, message, type, data);
     } catch (error) {
       console.error('[AdLifecycleWorker] Error sending notification:', error);
     }
@@ -25,13 +26,27 @@ async function runFrequentTasks() {
     console.log(`[AdLifecycleWorker] Expired ${expired.length} ads`);
     
     for (const result of expired) {
-      await sendNotification(
-        result.sellerId,
-        `⏰ Объявление "${result.title}" истекло.\n\n` +
-        `Хотите продлить ещё на несколько дней или архивировать?\n\n` +
-        `Используйте команду /extend_${result.adId} для продления`,
-        'expired'
-      );
+      try {
+        const statsData = await AdStatsService.getAdStats(result.adId);
+        const statsText = AdStatsService.formatForTelegram(statsData);
+        
+        await sendNotification(
+          result.sellerId,
+          `⏰ Объявление истекло!\n"${result.title}"\n\n` +
+          `${statsText}\n\n` +
+          `Хотите продлить ещё на несколько дней?\n` +
+          `Нажмите /extend_${result.adId}`,
+          'expired',
+          { adId: result.adId, stats: statsData.stats }
+        );
+      } catch (statsError) {
+        await sendNotification(
+          result.sellerId,
+          `⏰ Объявление "${result.title}" истекло.\n\n` +
+          `Хотите продлить? /extend_${result.adId}`,
+          'expired'
+        );
+      }
     }
   } catch (error) {
     console.error('[AdLifecycleWorker] Error processing expired ads:', error);
@@ -85,13 +100,34 @@ async function runReminderTasks() {
     console.log(`[AdLifecycleWorker] Sent ${reminders.length} expiry reminders`);
     
     for (const result of reminders) {
-      await sendNotification(
-        result.sellerId,
-        `⚠️ Через ${result.daysLeft} дн. объявление "${result.title}" истечёт.\n\n` +
-        `Продлите его или обновите фото/описание, чтобы привлечь больше покупателей.\n\n` +
-        `Используйте /extend_${result.adId} для продления`,
-        'reminder'
-      );
+      try {
+        const statsData = await AdStatsService.getAdStats(result.adId);
+        const statsText = AdStatsService.formatForTelegram(statsData);
+        
+        let recText = '';
+        if (statsData.recommendations.length > 0) {
+          recText = '\n\n💡 Советы:\n';
+          statsData.recommendations.slice(0, 2).forEach(rec => {
+            recText += `${rec.icon} ${rec.message}\n`;
+          });
+        }
+        
+        await sendNotification(
+          result.sellerId,
+          `⚠️ Через ${result.daysLeft} дн. истекает объявление!\n"${result.title}"\n\n` +
+          `${statsText}${recText}\n` +
+          `Продлить: /extend_${result.adId}`,
+          'reminder',
+          { adId: result.adId, stats: statsData.stats, daysLeft: result.daysLeft }
+        );
+      } catch (statsError) {
+        await sendNotification(
+          result.sellerId,
+          `⚠️ Через ${result.daysLeft} дн. объявление "${result.title}" истечёт.\n\n` +
+          `Продлите его: /extend_${result.adId}`,
+          'reminder'
+        );
+      }
     }
   } catch (error) {
     console.error('[AdLifecycleWorker] Error processing reminders:', error);
@@ -102,13 +138,33 @@ async function runReminderTasks() {
     console.log(`[AdLifecycleWorker] Sent ${midLifeReminders.length} mid-life reminders`);
     
     for (const result of midLifeReminders) {
-      await sendNotification(
-        result.sellerId,
-        `💡 Совет для объявления "${result.title}":\n\n` +
-        `Прошла половина срока публикации. Добавьте новые фото или обновите описание, ` +
-        `чтобы привлечь больше покупателей!`,
-        'mid_life_reminder'
-      );
+      try {
+        const statsData = await AdStatsService.getAdStats(result.adId);
+        const statsText = AdStatsService.formatForTelegram(statsData);
+        
+        let tips = '';
+        const photoRec = statsData.recommendations.find(r => r.type === 'photos');
+        const descRec = statsData.recommendations.find(r => r.type === 'description');
+        if (photoRec) tips += `\n${photoRec.icon} ${photoRec.message}`;
+        if (descRec) tips += `\n${descRec.icon} ${descRec.message}`;
+        
+        await sendNotification(
+          result.sellerId,
+          `💡 Середина срока публикации\n"${result.title}"\n\n` +
+          `${statsText}` +
+          (tips ? `\n\n🎯 Что можно улучшить:${tips}` : '') +
+          `\n\nОбновите объявление для большего интереса!`,
+          'mid_life_reminder',
+          { adId: result.adId, stats: statsData.stats }
+        );
+      } catch (statsError) {
+        await sendNotification(
+          result.sellerId,
+          `💡 Совет для объявления "${result.title}":\n\n` +
+          `Прошла половина срока. Добавьте фото или обновите описание!`,
+          'mid_life_reminder'
+        );
+      }
     }
   } catch (error) {
     console.error('[AdLifecycleWorker] Error processing mid-life reminders:', error);

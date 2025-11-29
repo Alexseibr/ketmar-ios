@@ -18,6 +18,7 @@ import DigitalTwinNotificationService from '../../services/DigitalTwinNotificati
 import FastMarketScoringService from '../../services/FastMarketScoringService.js';
 import eventBus, { Events } from '../../shared/events/eventBus.js';
 import AdLimitService from '../../services/AdLimitService.js';
+import AdStatsService from '../../services/AdStatsService.js';
 
 const router = Router();
 
@@ -1564,6 +1565,42 @@ router.get('/limits/stats', async (req, res) => {
   }
 });
 
+router.get('/stats/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = await AdStatsService.getAdStats(id);
+    
+    res.json({
+      success: true,
+      ...data,
+    });
+  } catch (error) {
+    console.error('[ad-stats]', error.message);
+    const status = error.message.includes('не найден') ? 404 : 500;
+    res.status(status).json({ error: error.message });
+  }
+});
+
+router.get('/seller/dashboard', async (req, res) => {
+  try {
+    const telegramId = Number(req.query.telegramId || req.headers['x-telegram-id']);
+    
+    if (!telegramId) {
+      return res.status(400).json({ error: 'telegramId обязателен' });
+    }
+    
+    const dashboard = await AdStatsService.getSellerDashboard(telegramId);
+    
+    res.json({
+      success: true,
+      ...dashboard,
+    });
+  } catch (error) {
+    console.error('[seller-dashboard]', error.message);
+    res.status(500).json({ error: 'Ошибка получения данных' });
+  }
+});
+
 router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -2287,6 +2324,12 @@ router.post('/:id/extend', async (req, res) => {
     
     const ad = await AdLifecycleService.extendAd(id, sellerId);
     
+    let stats = null;
+    try {
+      const statsData = await AdStatsService.getAdStats(id);
+      stats = statsData.stats;
+    } catch (e) {}
+    
     res.json({
       success: true,
       ad: {
@@ -2296,6 +2339,7 @@ router.post('/:id/extend', async (req, res) => {
         expiresAt: ad.expiresAt,
         lifetimeType: ad.lifetimeType,
       },
+      stats,
       message: 'Объявление успешно продлено',
     });
   } catch (error) {

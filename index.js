@@ -345,10 +345,27 @@ async function start() {
     startTrendAnalyticsWorker();
     startHotSearchWorker();
     
-    const sendTelegramNotification = async (telegramId, message, type) => {
+    const sendTelegramNotification = async (telegramId, message, type, data = null) => {
       try {
         if (bot && telegramId) {
-          await bot.telegram.sendMessage(telegramId, message);
+          const options = {};
+          
+          const actionableTypes = ['expired', 'reminder', 'mid_life_reminder'];
+          if (data?.adId && actionableTypes.includes(type)) {
+            options.reply_markup = {
+              inline_keyboard: [
+                [
+                  { text: '🔄 Продлить', callback_data: `extend_${data.adId}` },
+                  { text: '✏️ Редактировать', callback_data: `edit_${data.adId}` },
+                ],
+                [
+                  { text: '📊 Подробнее', callback_data: `stats_${data.adId}` },
+                ],
+              ],
+            };
+          }
+          
+          await bot.telegram.sendMessage(telegramId, message, options);
         }
       } catch (err) {
         console.error(`[Notification] Failed to send ${type} notification to ${telegramId}:`, err.message);
