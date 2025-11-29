@@ -765,95 +765,95 @@ export default function AdPage() {
               </div>
             )}
           </div>
-
-          {/* Action buttons - fixed bottom */}
-          <div style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: '#fff',
-            borderTop: '1px solid #E5E7EB',
-            padding: '12px 16px',
-            paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
-            display: 'flex',
-            gap: 12,
-            zIndex: 10
-          }}>
-            {hasDeliveryOption && (
-              <button
-                onClick={handleOpenOrderModal}
-                style={{
-                  flex: 1,
-                  padding: '14px 20px',
-                  background: '#10B981',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 14,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  minHeight: 52,
-                }}
-                data-testid="button-order"
-              >
-                <ShoppingCart size={20} />
-                Заказать
-              </button>
-            )}
-            <button
-              onClick={startChat}
-              disabled={startingChat}
-              style={{
-                flex: hasDeliveryOption ? undefined : 1,
-                padding: '14px 20px',
-                background: '#3B73FC',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 14,
-                fontSize: 16,
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                minHeight: 52,
-              }}
-              data-testid="button-start-chat"
-            >
-              <MessageCircle size={20} />
-              {startingChat ? 'Открываем...' : (hasDeliveryOption ? '' : 'Написать')}
-            </button>
-            {ad.contactPhone && (
-              <button
-                onClick={() => setShowPhoneActionSheet(true)}
-                style={{
-                  padding: '14px 20px',
-                  background: hasDeliveryOption ? '#F3F4F6' : '#10B981',
-                  color: hasDeliveryOption ? '#374151' : '#fff',
-                  border: 'none',
-                  borderRadius: 14,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: 52,
-                }}
-                data-testid="button-call"
-              >
-                <Phone size={20} />
-              </button>
-            )}
-          </div>
         </div>
       </ScreenLayout>
+
+      {/* Action buttons - OUTSIDE ScreenLayout for proper z-index in Telegram WebView */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: '#fff',
+        borderTop: '1px solid #E5E7EB',
+        padding: '12px 16px',
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+        display: 'flex',
+        gap: 12,
+        zIndex: 100
+      }}>
+        {hasDeliveryOption && (
+          <button
+            onClick={handleOpenOrderModal}
+            style={{
+              flex: 1,
+              padding: '14px 20px',
+              background: '#10B981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 14,
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              minHeight: 52,
+            }}
+            data-testid="button-order"
+          >
+            <ShoppingCart size={20} />
+            Заказать
+          </button>
+        )}
+        <button
+          onClick={startChat}
+          disabled={startingChat}
+          style={{
+            flex: hasDeliveryOption ? undefined : 1,
+            padding: '14px 20px',
+            background: '#3B73FC',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 14,
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            minHeight: 52,
+          }}
+          data-testid="button-start-chat"
+        >
+          <MessageCircle size={20} />
+          {startingChat ? 'Открываем...' : (hasDeliveryOption ? '' : 'Написать')}
+        </button>
+        {ad.contactPhone && (
+          <button
+            onClick={() => setShowPhoneActionSheet(true)}
+            style={{
+              padding: '14px 20px',
+              background: hasDeliveryOption ? '#F3F4F6' : '#10B981',
+              color: hasDeliveryOption ? '#374151' : '#fff',
+              border: 'none',
+              borderRadius: 14,
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 52,
+            }}
+            data-testid="button-call"
+          >
+            <Phone size={20} />
+          </button>
+        )}
+      </div>
 
       {/* Phone Action Sheet - outside ScreenLayout */}
       {showPhoneActionSheet && (
