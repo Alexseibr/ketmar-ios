@@ -461,6 +461,7 @@ router.get('/ai-hints', async (req, res) => {
 router.post('/resolve', async (req, res) => {
   try {
     const { lat, lng } = req.body;
+    console.log('[GeoResolve] Request received:', { lat, lng });
 
     if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
       return res.status(400).json({ error: 'Требуются корректные координаты lat и lng' });
@@ -536,6 +537,7 @@ router.post('/resolve', async (req, res) => {
       },
     };
 
+    console.log('[GeoResolve] Result:', { label, countryCode, city });
     res.json(result);
   } catch (error) {
     console.error('Ошибка геокодинга:', error);

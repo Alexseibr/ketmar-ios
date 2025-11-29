@@ -174,11 +174,24 @@ const useRegionStore = create<RegionState>()(
 
       setCountry(countryCode: CountryCode) {
         const config = COUNTRY_CONFIGS[countryCode];
+        // Определяем язык по стране
+        const languageMap: Record<CountryCode, LanguageCode> = {
+          'BY': 'ru',
+          'RU': 'ru',
+          'UA': 'ru', // Можно добавить 'uk' когда будет поддержка
+          'KZ': 'ru',
+          'PL': 'pl',
+          'DE': 'en',
+          'US': 'en',
+        };
         set({
           countryCode,
           currency: config.defaultCurrency,
+          language: languageMap[countryCode],
           locale: config.defaultLocale,
+          isInitialized: true,
         });
+        console.log('🌍 [RegionStore] Country set:', countryCode, 'Currency:', config.defaultCurrency, 'Language:', languageMap[countryCode]);
       },
 
       setCurrency(currency: CurrencyCode) {
