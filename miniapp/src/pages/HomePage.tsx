@@ -12,6 +12,7 @@ import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders'
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
 import { t } from '@/lib/i18n';
+import { BlockRenderer, ZoneType } from '@/components/blocks/BlockRenderer';
 import 'swiper/css';
 import 'swiper/css/pagination';
 
@@ -60,6 +61,27 @@ interface HomeFeedResponse {
   blocks: HomeFeedBlock[];
 }
 
+interface HomeConfigResponse {
+  success: boolean;
+  zone: ZoneType;
+  location: string;
+  confidence: number;
+  blocks: HomeFeedBlock[];
+  uiConfig: {
+    buttonSize: 'large' | 'medium' | 'small';
+    cardStyle: 'simple' | 'standard' | 'fancy';
+    animations: boolean;
+    colorAccent: string;
+    categoryGridCols?: number;
+  };
+  meta: {
+    generatedAt: string;
+    location: { lat: number; lng: number };
+    radiusKm: number;
+    diagnostics?: any;
+  };
+}
+
 const SECTION_ICONS: Record<string, typeof Flame> = {
   fire: Flame,
   gift: Gift,
@@ -83,8 +105,10 @@ export default function HomePage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
   const [feedData, setFeedData] = useState<HomeFeedResponse | null>(null);
+  const [homeConfig, setHomeConfig] = useState<HomeConfigResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [locationName, setLocationName] = useState(() => t('location.your_area'));
+  const [useZoneBased, setUseZoneBased] = useState(true);
 
   useEffect(() => {
     if (!hasCompletedOnboarding && !coords) {
@@ -101,12 +125,33 @@ export default function HomePage() {
         params.set('lng', coords.lng.toString());
       }
       params.set('radiusKm', (radiusKm || 10).toString());
+      if (user?.telegramId) {
+        params.set('userId', user.telegramId.toString());
+      }
+      
+      if (useZoneBased && coords) {
+        try {
+          const configResponse = await fetch(`/api/home/config?${params.toString()}`);
+          if (configResponse.ok) {
+            const configData: HomeConfigResponse = await configResponse.json();
+            if (configData.success) {
+              setHomeConfig(configData);
+              setFeedData(null);
+              setLocationName(configData.location || cityName || t('location.your_area'));
+              return;
+            }
+          }
+        } catch (err) {
+          console.warn('Zone-based home config failed, falling back to legacy:', err);
+        }
+      }
       
       const response = await fetch(`/api/home-feed?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
           setFeedData(data);
+          setHomeConfig(null);
           setLocationName(data.location || cityName || t('location.your_area'));
         }
       }
@@ -115,7 +160,7 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, [coords, radiusKm, cityName]);
+  }, [coords, radiusKm, cityName, user?.telegramId, useZoneBased]);
 
   useEffect(() => {
     fetchHomeFeed();
@@ -145,8 +190,21 @@ export default function HomePage() {
     return <GeoOnboarding onComplete={handleOnboardingComplete} />;
   }
 
-  const bannersBlock = feedData?.blocks.find(b => b.type === 'banners');
-  const listBlocks = feedData?.blocks.filter(b => b.type === 'horizontal_list') || [];
+  const zoneBlocks = homeConfig?.blocks || [];
+  const zoneUiConfig = homeConfig?.uiConfig || {
+    buttonSize: 'medium' as const,
+    cardStyle: 'standard' as const,
+    animations: true,
+    colorAccent: '#3A7BFF',
+  };
+  const currentZone: ZoneType = homeConfig?.zone || 'suburb';
+  
+  const bannersBlock = homeConfig 
+    ? zoneBlocks.find(b => b.type === 'banners')
+    : feedData?.blocks.find(b => b.type === 'banners');
+  const listBlocks = homeConfig 
+    ? zoneBlocks.filter(b => b.type === 'horizontal_list') 
+    : (feedData?.blocks.filter(b => b.type === 'horizontal_list') || []);
 
   return (
     <div style={{ 
@@ -524,8 +582,18 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Dynamic Sections */}
-        {!loading && listBlocks.map((block) => (
+        {/* Dynamic Sections - Zone-Based */}
+        {!loading && homeConfig && listBlocks.map((block) => (
+          <BlockRenderer
+            key={block.id}
+            block={block as any}
+            zone={currentZone}
+            uiConfig={zoneUiConfig}
+          />
+        ))}
+        
+        {/* Dynamic Sections - Legacy */}
+        {!loading && !homeConfig && listBlocks.map((block) => (
           <HorizontalSection
             key={block.id}
             block={block}
