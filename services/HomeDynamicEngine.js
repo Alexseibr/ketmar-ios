@@ -344,12 +344,12 @@ const PROMO_BANNERS = [
     icon: 'tulip',
   },
   {
-    id: 'job_seekers',
-    title: 'Соискатели',
-    subtitle: 'Люди ищут работу рядом',
+    id: 'local_demand',
+    title: 'Ищут в районе',
+    subtitle: 'Что хотят купить люди рядом',
     gradient: ['#0ea5e9', '#0284c7'],
     link: '/job-seekers',
-    icon: 'briefcase',
+    icon: 'search',
   },
   {
     id: 'farmers_nearby',

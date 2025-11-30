@@ -2,62 +2,35 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  ArrowLeft, MapPin, Briefcase, Clock, Star, 
-  Phone, Loader2, User, ChevronRight, Filter
+  ArrowLeft, MapPin, Search, TrendingUp, 
+  Loader2, Plus, ChevronRight, Sparkles
 } from 'lucide-react';
 import { usePlatform } from '@/platform/PlatformProvider';
 
-interface JobSeeker {
-  id: string;
-  name: string;
-  photo?: string;
-  age?: number;
-  skills: string[];
-  category: string;
-  categoryLabel: string;
-  description?: string;
-  experience?: string;
-  hourlyRate?: number;
-  currency: string;
-  availability: string;
-  availabilityLabel: string;
-  location?: string;
-  distanceKm?: number;
-  viewsCount: number;
-  lastActiveAt: string;
-  createdAt: string;
+interface DemandItem {
+  query: string;
+  count: number;
+  trend?: 'up' | 'down' | 'stable';
 }
 
-interface CategoryOption {
-  id: string;
-  label: string;
-}
-
-interface JobSeekersResponse {
-  items: JobSeeker[];
+interface LocalDemandResponse {
+  items: DemandItem[];
+  radius: number;
   total: number;
-  categories: CategoryOption[];
 }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  cleaning: '#10B981',
-  repair: '#F59E0B',
-  garden: '#84CC16',
-  driving: '#3B82F6',
-  childcare: '#EC4899',
-  eldercare: '#8B5CF6',
-  cooking: '#F97316',
-  tutoring: '#6366F1',
-  construction: '#78716C',
-  moving: '#14B8A6',
-  beauty: '#F472B6',
-  other: '#6B7280',
-};
+const RADIUS_OPTIONS = [
+  { value: 1, label: '1 км' },
+  { value: 3, label: '3 км' },
+  { value: 5, label: '5 км' },
+  { value: 10, label: '10 км' },
+  { value: 20, label: '20 км' },
+];
 
 export default function JobSeekersPage() {
   const navigate = useNavigate();
   const { getLocation } = usePlatform();
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [radius, setRadius] = useState(5);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
@@ -75,8 +48,8 @@ export default function JobSeekersPage() {
     fetchLocation();
   }, [getLocation]);
 
-  const { data, isLoading } = useQuery<JobSeekersResponse>({
-    queryKey: ['/api/job-seekers', location?.lat, location?.lng, selectedCategory],
+  const { data, isLoading } = useQuery<LocalDemandResponse>({
+    queryKey: ['/api/local-demand', location?.lat, location?.lng, radius],
     enabled: !!location,
   });
 
@@ -88,28 +61,8 @@ export default function JobSeekersPage() {
     }
   };
 
-  const handleSeekerClick = (seeker: JobSeeker) => {
-    navigate(`/job-seeker/${seeker.id}`);
-  };
-
-  const formatDistance = (km?: number) => {
-    if (!km) return null;
-    if (km < 1) return `${Math.round(km * 1000)} м`;
-    return `${km.toFixed(1)} км`;
-  };
-
-  const formatTimeAgo = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMins < 60) return 'Сейчас онлайн';
-    if (diffHours < 24) return `${diffHours} ч. назад`;
-    if (diffDays < 7) return `${diffDays} дн. назад`;
-    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  const handleDemandClick = (query: string) => {
+    navigate(`/create?title=${encodeURIComponent(query)}`);
   };
 
   return (
@@ -177,14 +130,14 @@ export default function JobSeekersPage() {
               margin: 0,
               letterSpacing: '-0.5px',
             }}>
-              Соискатели
+              Ищут в районе
             </h1>
             <p style={{ 
               fontSize: 13, 
               opacity: 0.9, 
               margin: '4px 0 0',
             }}>
-              Люди ищут работу рядом с вами
+              Что хотят купить люди рядом
             </p>
           </div>
         </div>
@@ -199,14 +152,14 @@ export default function JobSeekersPage() {
           position: 'relative',
           zIndex: 1,
         }}>
-          <Briefcase size={18} />
+          <Search size={18} />
           <span style={{ fontSize: 14 }}>
-            {data?.total || 0} человек готовы к работе
+            {data?.total || 0} запросов в радиусе {radius} км
           </span>
         </div>
       </div>
 
-      {/* Category Filter */}
+      {/* Radius selector */}
       <div style={{
         padding: '12px 16px',
         overflowX: 'auto',
@@ -216,35 +169,17 @@ export default function JobSeekersPage() {
         msOverflowStyle: 'none',
         scrollbarWidth: 'none',
       }}>
-        <button
-          onClick={() => setSelectedCategory('all')}
-          data-testid="filter-all"
-          style={{
-            padding: '8px 16px',
-            borderRadius: 20,
-            border: 'none',
-            background: selectedCategory === 'all' ? '#0ea5e9' : '#fff',
-            color: selectedCategory === 'all' ? '#fff' : '#374151',
-            fontSize: 13,
-            fontWeight: 500,
-            whiteSpace: 'nowrap',
-            cursor: 'pointer',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          }}
-        >
-          Все
-        </button>
-        {data?.categories.map(cat => (
+        {RADIUS_OPTIONS.map(opt => (
           <button
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            data-testid={`filter-${cat.id}`}
+            key={opt.value}
+            onClick={() => setRadius(opt.value)}
+            data-testid={`radius-${opt.value}`}
             style={{
               padding: '8px 16px',
               borderRadius: 20,
               border: 'none',
-              background: selectedCategory === cat.id ? CATEGORY_COLORS[cat.id] || '#0ea5e9' : '#fff',
-              color: selectedCategory === cat.id ? '#fff' : '#374151',
+              background: radius === opt.value ? '#0ea5e9' : '#fff',
+              color: radius === opt.value ? '#fff' : '#374151',
               fontSize: 13,
               fontWeight: 500,
               whiteSpace: 'nowrap',
@@ -252,13 +187,43 @@ export default function JobSeekersPage() {
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
             }}
           >
-            {cat.label}
+            {opt.label}
           </button>
         ))}
       </div>
 
+      {/* Info banner */}
+      <div style={{
+        margin: '0 16px 16px',
+        padding: '12px 16px',
+        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+        borderRadius: 12,
+        border: '1px solid #bae6fd',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <Sparkles size={20} color="#0ea5e9" style={{ flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <p style={{ 
+              margin: 0, 
+              fontSize: 13, 
+              color: '#0369a1',
+              fontWeight: 500,
+            }}>
+              Нажмите на запрос, чтобы создать объявление
+            </p>
+            <p style={{ 
+              margin: '4px 0 0', 
+              fontSize: 12, 
+              color: '#0284c7',
+            }}>
+              Продайте то, что ищут люди в вашем районе
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
-      <div style={{ padding: '8px 16px' }}>
+      <div style={{ padding: '0 16px' }}>
         {isLoading ? (
           <div style={{
             display: 'flex',
@@ -269,9 +234,9 @@ export default function JobSeekersPage() {
             color: '#9CA3AF',
           }}>
             <Loader2 size={32} className="animate-spin" style={{ marginBottom: 12 }} />
-            <span style={{ fontSize: 14 }}>Ищем соискателей...</span>
+            <span style={{ fontSize: 14 }}>Анализируем запросы...</span>
           </div>
-        ) : data?.items.length === 0 ? (
+        ) : !data?.items.length ? (
           <div style={{
             display: 'flex',
             flexDirection: 'column',
@@ -280,187 +245,146 @@ export default function JobSeekersPage() {
             padding: 60,
             color: '#9CA3AF',
           }}>
-            <User size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
+            <Search size={48} style={{ marginBottom: 16, opacity: 0.5 }} />
             <p style={{ fontSize: 16, fontWeight: 500, margin: 0, color: '#374151' }}>
-              Пока нет соискателей
+              Пока нет запросов
             </p>
             <p style={{ fontSize: 13, margin: '8px 0 0', textAlign: 'center' }}>
-              В вашем районе пока никто не ищет работу
+              В вашем районе пока не ищут товары
             </p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {data?.items.map((seeker) => (
-              <div
-                key={seeker.id}
-                onClick={() => handleSeekerClick(seeker)}
-                data-testid={`seeker-card-${seeker.id}`}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {data.items.map((item, index) => (
+              <button
+                key={index}
+                onClick={() => handleDemandClick(item.query)}
+                data-testid={`demand-item-${index}`}
                 style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
                   background: '#fff',
-                  borderRadius: 16,
-                  padding: 16,
+                  borderRadius: 14,
+                  padding: '14px 16px',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                   cursor: 'pointer',
+                  border: 'none',
+                  width: '100%',
+                  textAlign: 'left',
                   transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                 }}
               >
-                <div style={{ display: 'flex', gap: 12 }}>
-                  {/* Avatar */}
-                  <div style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 14,
-                    background: seeker.photo 
-                      ? `url(${seeker.photo}) center/cover`
-                      : `linear-gradient(135deg, ${CATEGORY_COLORS[seeker.category] || '#6B7280'}, ${CATEGORY_COLORS[seeker.category] || '#6B7280'}dd)`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
+                {/* Icon */}
+                <div style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <Search size={20} color="#fff" />
+                </div>
+
+                {/* Query text */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ 
+                    margin: 0, 
+                    fontSize: 15, 
+                    fontWeight: 600,
+                    color: '#111827',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}>
-                    {!seeker.photo && (
-                      <User size={24} color="#fff" />
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <h3 style={{ 
-                        fontSize: 16, 
-                        fontWeight: 600, 
-                        margin: 0,
-                        color: '#111827',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}>
-                        {seeker.name}
-                        {seeker.age && <span style={{ fontWeight: 400, color: '#6B7280' }}>, {seeker.age}</span>}
-                      </h3>
-                    </div>
-
-                    <div style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '3px 8px',
-                      borderRadius: 6,
-                      background: `${CATEGORY_COLORS[seeker.category] || '#6B7280'}15`,
-                      color: CATEGORY_COLORS[seeker.category] || '#6B7280',
-                      fontSize: 12,
-                      fontWeight: 500,
-                      marginBottom: 8,
-                    }}>
-                      <Briefcase size={12} />
-                      {seeker.categoryLabel}
-                    </div>
-
-                    {seeker.skills.length > 0 && (
-                      <div style={{ 
-                        display: 'flex', 
-                        flexWrap: 'wrap', 
-                        gap: 4, 
-                        marginBottom: 8,
-                      }}>
-                        {seeker.skills.slice(0, 3).map((skill, idx) => (
-                          <span 
-                            key={idx}
-                            style={{
-                              fontSize: 11,
-                              padding: '2px 6px',
-                              borderRadius: 4,
-                              background: '#F3F4F6',
-                              color: '#6B7280',
-                            }}
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                        {seeker.skills.length > 3 && (
-                          <span style={{
-                            fontSize: 11,
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            background: '#F3F4F6',
-                            color: '#6B7280',
-                          }}>
-                            +{seeker.skills.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    )}
-
-                    <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: 12,
-                      flexWrap: 'wrap',
-                    }}>
-                      {seeker.distanceKm && (
-                        <div style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 4,
-                          fontSize: 12,
-                          color: '#6B7280',
-                        }}>
-                          <MapPin size={12} />
-                          {formatDistance(seeker.distanceKm)}
-                        </div>
-                      )}
-                      {seeker.location && (
-                        <div style={{ 
-                          fontSize: 12,
-                          color: '#6B7280',
-                        }}>
-                          {seeker.location}
-                        </div>
-                      )}
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: 4,
-                        fontSize: 12,
-                        color: '#9CA3AF',
-                      }}>
-                        <Clock size={12} />
-                        {formatTimeAgo(seeker.lastActiveAt)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Price & Arrow */}
+                    {item.query}
+                  </p>
                   <div style={{ 
                     display: 'flex', 
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
-                    justifyContent: 'space-between',
+                    alignItems: 'center', 
+                    gap: 8,
+                    marginTop: 4,
                   }}>
-                    {seeker.hourlyRate ? (
-                      <div style={{
-                        fontSize: 16,
-                        fontWeight: 700,
-                        color: '#0ea5e9',
+                    <span style={{
+                      fontSize: 12,
+                      color: '#6B7280',
+                    }}>
+                      {item.count} {item.count === 1 ? 'запрос' : item.count < 5 ? 'запроса' : 'запросов'}
+                    </span>
+                    {item.trend === 'up' && (
+                      <span style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        fontSize: 11,
+                        color: '#10B981',
+                        fontWeight: 500,
                       }}>
-                        {seeker.hourlyRate} {seeker.currency}/ч
-                      </div>
-                    ) : (
-                      <div style={{
-                        fontSize: 13,
-                        color: '#9CA3AF',
-                      }}>
-                        Договорная
-                      </div>
+                        <TrendingUp size={12} />
+                        растёт
+                      </span>
                     )}
-                    <ChevronRight size={20} color="#D1D5DB" />
                   </div>
                 </div>
-              </div>
+
+                {/* Action */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  background: '#f0f9ff',
+                  color: '#0284c7',
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}>
+                  <Plus size={14} />
+                  Продать
+                </div>
+              </button>
             ))}
           </div>
         )}
       </div>
+
+      {/* Bottom CTA */}
+      {data?.items.length ? (
+        <div style={{
+          position: 'fixed',
+          bottom: 80,
+          left: 16,
+          right: 16,
+          zIndex: 10,
+        }}>
+          <button
+            onClick={() => navigate('/create')}
+            data-testid="button-create-ad"
+            style={{
+              width: '100%',
+              padding: '14px 20px',
+              borderRadius: 14,
+              border: 'none',
+              background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+              color: '#fff',
+              fontSize: 15,
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(14, 165, 233, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <Plus size={20} />
+            Создать своё объявление
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
