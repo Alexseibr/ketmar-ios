@@ -811,14 +811,17 @@ function HorizontalSection({
         msOverflowStyle: 'none',
         scrollbarWidth: 'none',
       }}>
-        {block.items.map((ad: AdPreview) => (
-          <CompactAdCard 
-            key={ad._id} 
-            ad={ad} 
-            onClick={() => onAdClick(ad._id)}
-            accentColor={accentColor}
-          />
-        ))}
+        {block.items.map((ad: AdPreview & { id?: string }) => {
+          const adId = ad._id || ad.id || '';
+          return (
+            <CompactAdCard 
+              key={adId} 
+              ad={{ ...ad, _id: adId }} 
+              onClick={() => onAdClick(adId)}
+              accentColor={accentColor}
+            />
+          );
+        })}
       </div>
     </section>
   );
@@ -829,7 +832,7 @@ function CompactAdCard({
   onClick,
   accentColor,
 }: { 
-  ad: AdPreview; 
+  ad: AdPreview & { photo?: string; distance?: number }; 
   onClick: () => void;
   accentColor: string;
 }) {
@@ -838,7 +841,8 @@ function CompactAdCard({
     return `${price.toLocaleString('ru-RU')} BYN`;
   };
 
-  const photoUrl = ad.photos?.[0] ? getThumbnailUrl(ad.photos[0]) : NO_PHOTO_PLACEHOLDER;
+  const photoUrl = ad.photo || ad.photos?.[0] ? getThumbnailUrl(ad.photo || ad.photos?.[0] || '') : NO_PHOTO_PLACEHOLDER;
+  const distanceKm = ad.distanceKm ?? ad.distance;
   
   const priceHistory = ad.priceHistory || [];
   const hasDiscount = priceHistory.length > 0;
@@ -962,14 +966,14 @@ function CompactAdCard({
             {formatPrice(ad.price)}
           </div>
           
-          {ad.distanceKm !== undefined && ad.distanceKm > 0 && (
+          {distanceKm !== undefined && distanceKm > 0 && (
             <div style={{
               fontSize: 11,
               color: '#9CA3AF',
             }}>
-              {ad.distanceKm < 1 
-                ? `${Math.round(ad.distanceKm * 1000)}м`
-                : `${ad.distanceKm.toFixed(1)}км`
+              {distanceKm < 1 
+                ? `${Math.round(distanceKm * 1000)}м`
+                : `${distanceKm.toFixed(1)}км`
               }
             </div>
           )}
