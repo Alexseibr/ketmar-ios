@@ -57,6 +57,7 @@ import categoryProposalsRoutes from './routes/categoryProposals.js';
 import homeFeedRoutes from './routes/home-feed.js';
 import homeConfigRoutes from './routes/home-config.js';
 import socialTrafficRoutes from './routes/social-traffic.js';
+import localDemandRoutes from './routes/local-demand.js';
 import { registerMobileApi } from './mobile/index.js';
 
 const app = express();
@@ -165,6 +166,7 @@ app.use('/api/admin/category-proposals', adminAuth, categoryProposalsRoutes);
 app.use('/api/home-feed', homeFeedRoutes);
 app.use('/api/home/config', homeConfigRoutes);
 app.use('/api/social-traffic', socialTrafficRoutes);
+app.use('/api/local-demand', localDemandRoutes);
 
 // Mobile API v1 (for native apps)
 registerMobileApi(app);

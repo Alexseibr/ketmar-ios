@@ -61,6 +61,7 @@ const CampaignsListPage = lazy(() => import('@/pages/CampaignsListPage'));
 const CampaignPage = lazy(() => import('@/pages/CampaignPage'));
 const CampaignAnalyticsPage = lazy(() => import('@/pages/CampaignAnalyticsPage'));
 const NeonDemoPage = lazy(() => import('@/pages/NeonDemoPage'));
+const LocalDemandPage = lazy(() => import('@/pages/LocalDemandPage'));
 const AuthScreen = lazy(() => import('@/components/AuthScreen'));
 const AdminSellersPage = lazy(() => import('@/pages/AdminSellersPage'));
 const AdminShopRequestsPage = lazy(() => import('@/pages/AdminShopRequestsPage'));
@@ -249,6 +250,7 @@ export default function App() {
               <Route path="/campaigns/:campaignCode" element={<CampaignPage />} />
               <Route path="/for-you" element={<ForYouFeedPage />} />
               <Route path="/neon-demo" element={<NeonDemoPage />} />
+              <Route path="/local-demand" element={<LocalDemandPage />} />
 
               {/* Private routes - require authentication */}
               <Route path="/create" element={
