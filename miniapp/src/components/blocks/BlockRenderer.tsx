@@ -121,7 +121,7 @@ interface FilterOption {
 }
 
 interface HomeBlock {
-  type: 'banners' | 'horizontal_list' | 'demand_chips';
+  type: 'banners' | 'horizontal_list' | 'demand_chips' | 'banner_card';
   id: string;
   title?: string;
   subtitle?: string;
@@ -129,6 +129,7 @@ interface HomeBlock {
   accentColor?: string;
   link?: string;
   instruction?: string;
+  gradient?: string[];
   items: BlockItem[];
   filters?: FilterOption[] | null;
 }
@@ -191,7 +192,7 @@ const BADGE_COLORS: Record<string, { bg: string; text: string }> = {
 export function BlockRenderer({ block, zone, uiConfig }: BlockRendererProps) {
   const navigate = useNavigate();
 
-  if (!block.items?.length && block.type !== 'banners') {
+  if (!block.items?.length && block.type !== 'banners' && block.type !== 'banner_card') {
     if (block.id === 'second_hand') {
       return <SecondHandEmptyState zone={zone} onPostClick={() => navigate('/create')} />;
     }
@@ -200,6 +201,16 @@ export function BlockRenderer({ block, zone, uiConfig }: BlockRendererProps) {
 
   if (block.type === 'banners') {
     return <BannersBlock items={block.items} zone={zone} uiConfig={uiConfig} />;
+  }
+
+  if (block.type === 'banner_card') {
+    return (
+      <BannerCardBlock 
+        block={block} 
+        zone={zone}
+        onClick={() => block.link && navigate(block.link)}
+      />
+    );
   }
 
   if (block.type === 'demand_chips') {
@@ -291,6 +302,104 @@ function BannersBlock({ items, zone, uiConfig }: { items: BlockItem[]; zone: Zon
           </SwiperSlide>
         ))}
       </Swiper>
+    </div>
+  );
+}
+
+function BannerCardBlock({ 
+  block, 
+  zone,
+  onClick,
+}: { 
+  block: HomeBlock; 
+  zone: ZoneType;
+  onClick: () => void;
+}) {
+  const IconComponent = block.icon ? ICONS[block.icon] || Search : Search;
+  const styles = ZONE_STYLES[zone];
+  
+  const cardPadding = zone === 'village' ? 20 : zone === 'city_center' ? 16 : 18;
+  const titleSize = zone === 'village' ? 20 : zone === 'city_center' ? 17 : 18;
+  const subtitleSize = zone === 'village' ? 14 : zone === 'city_center' ? 12 : 13;
+  const borderRadius = zone === 'village' ? 16 : zone === 'city_center' ? 14 : 16;
+  
+  const gradientColors = block.gradient || ['#6366f1', '#4f46e5'];
+
+  return (
+    <div style={{ 
+      padding: `0 ${styles.sectionPadding}px`,
+      marginBottom: styles.sectionPadding,
+    }}>
+      <div
+        onClick={onClick}
+        style={{
+          background: `linear-gradient(135deg, ${gradientColors[0]} 0%, ${gradientColors[1]} 100%)`,
+          borderRadius,
+          padding: cardPadding,
+          color: '#fff',
+          cursor: 'pointer',
+          minHeight: zone === 'village' ? 110 : 100,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: '0 4px 16px rgba(99, 102, 241, 0.25)',
+        }}
+        data-testid={`banner-card-${block.id}`}
+      >
+        {/* Background pattern */}
+        <div style={{
+          position: 'absolute',
+          top: -20,
+          right: -20,
+          width: 120,
+          height: 120,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.1)',
+        }} />
+        <div style={{
+          position: 'absolute',
+          bottom: -30,
+          right: 40,
+          width: 80,
+          height: 80,
+          borderRadius: '50%',
+          background: 'rgba(255,255,255,0.08)',
+        }} />
+        
+        {/* Content */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{ 
+            fontSize: titleSize, 
+            fontWeight: 700, 
+            marginBottom: 6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}>
+            <IconComponent size={zone === 'village' ? 24 : 20} />
+            {block.title}
+          </div>
+          <div style={{ 
+            fontSize: subtitleSize, 
+            opacity: 0.9,
+            marginBottom: 12,
+          }}>
+            {block.subtitle}
+          </div>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: zone === 'village' ? 14 : 13,
+            fontWeight: 600,
+          }}>
+            Смотреть
+            <ChevronRight size={16} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

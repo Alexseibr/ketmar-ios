@@ -12,6 +12,7 @@ const ZONE_BLOCK_PRIORITY = {
   village: [
     'banners',
     'darom',
+    'local_demand_banner',
     'local_demand',
     'second_hand',
     'garden_help',
@@ -26,6 +27,7 @@ const ZONE_BLOCK_PRIORITY = {
   suburb: [
     'banners',
     'darom',
+    'local_demand_banner',
     'local_demand',
     'second_hand',
     'farmer',
@@ -43,6 +45,7 @@ const ZONE_BLOCK_PRIORITY = {
   city_center: [
     'banners',
     'darom',
+    'local_demand_banner',
     'local_demand',
     'second_hand',
     'farmer',
@@ -97,6 +100,15 @@ const BLOCK_CONFIGS = {
     instruction: 'Нажмите на товар, чтобы разместить объявление',
     allowedCategories: ['goods', 'garden', 'farmer', 'handmade', 'second_hand', 'kids', 'electronics', 'furniture', 'clothing', 'sports', 'home', 'auto'],
     excludeCategories: ['uslugi', 'remont', 'master', 'electrician', 'plumber', 'services'],
+  },
+  local_demand_banner: {
+    title: 'В вашем районе ищут',
+    subtitle: 'Узнайте, что востребовано рядом с вами',
+    icon: 'search',
+    accentColor: '#6366f1',
+    blockType: 'banner_card',
+    link: '/local-demand',
+    gradient: ['#6366f1', '#4f46e5'],
   },
   services: {
     title: 'Услуги',
@@ -427,6 +439,9 @@ class HomeDynamicEngine {
 
         if (blockType === 'banners') {
           items = PROMO_BANNERS;
+        } else if (blockType === 'local_demand_banner') {
+          // Banner card doesn't need items - it's just a navigation card
+          items = [];
         } else if (blockType === 'local_demand') {
           items = await this.fetchLocalDemand(lat, lng, config);
         } else if (config.fetchType === 'shops') {
@@ -445,7 +460,9 @@ class HomeDynamicEngine {
           ? 'banners' 
           : config.blockType === 'demand_chips' 
             ? 'demand_chips' 
-            : 'horizontal_list';
+            : config.blockType === 'banner_card'
+              ? 'banner_card'
+              : 'horizontal_list';
 
         blocks.push({
           type: blockTypeOutput,
@@ -455,6 +472,7 @@ class HomeDynamicEngine {
           icon: config.icon,
           accentColor: config.accentColor,
           link: config.link,
+          gradient: config.gradient || null,
           items: items.slice(0, this.maxItemsPerBlock),
           filters: config.filters || null,
           instruction: config.instruction || null,
