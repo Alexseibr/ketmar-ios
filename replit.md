@@ -30,3 +30,46 @@ The system employs a modular backend. Order data is denormalized, and all photo 
 
 ### Cloud Services
 - **Google Cloud Storage**: For photo uploads and storage.
+
+## Multiple Seller Roles System
+
+### Overview
+A seller can have multiple roles simultaneously (e.g., BLOGGER + ARTISAN). The system supports role combinations with merged features and capabilities.
+
+### Supported Roles
+- **SHOP**: Regular retail store
+- **FARMER**: Agricultural producer
+- **BLOGGER**: Author brand / content creator
+- **ARTISAN**: Handmade crafts maker
+
+### Model Structure (SellerProfile)
+- `role`: Primary role (string) - backward compatible
+- `roles`: Array of roles - supports multiple roles
+- `primaryRoleIndex`: Index of primary role in roles array
+
+### API Endpoints
+- `POST /api/seller-profile/my/roles` - Add a role
+- `DELETE /api/seller-profile/my/roles/:role` - Remove a role
+- `PUT /api/seller-profile/my/roles/primary` - Set primary role
+
+### Frontend Integration
+- ShopCabinetPage displays all roles as clickable badges in header
+- Tabs/features/fairs are per-role (not merged) - based on currently selected role
+- Role switching updates tabs, features, and triggers data reload
+- Single-role helpers used: `getTabsForRole(shopRole)`, `getFairsForRole(shopRole)`
+- `shopRoles` array only used for badge display and checking `hasMultipleRoles`
+
+### Backend Query Pattern
+```javascript
+// Support both single role and multiple roles
+$or: [
+  { role: 'BLOGGER' },
+  { roles: 'BLOGGER' },
+]
+```
+
+### Key Files
+- `models/SellerProfile.js` - Schema with roles array
+- `api/routes/seller-profile.js` - Role management endpoints
+- `miniapp/src/config/businessConfig.ts` - Multi-role utility functions
+- `miniapp/src/pages/ShopCabinetPage.tsx` - UI for multiple roles

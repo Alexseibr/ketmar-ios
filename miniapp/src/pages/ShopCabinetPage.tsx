@@ -11,14 +11,12 @@ import {
   BUSINESS_CONFIG, 
   getTabsForRole, 
   getFairsForRole,
-  getCategoriesForRole,
   canAccessFeature,
   shouldShowSocialLinks,
   ROLE_BADGES,
   ROLE_GRADIENTS,
   ROLE_ICONS,
-  ALL_FAIRS,
-  ALL_TABS,
+  ROLE_LABELS,
   type TabConfig,
   type TabType as BusinessTabType,
   type ShopRole as BusinessShopRole,
@@ -41,6 +39,9 @@ interface SellerProfile {
   avatar?: string;
   isFarmer?: boolean;
   shopRole?: ShopRole;
+  role?: ShopRole;
+  roles?: ShopRole[];
+  primaryRoleIndex?: number;
 }
 
 interface DashboardAd {
@@ -306,6 +307,7 @@ export default function ShopCabinetPage() {
   const adminViewRole = locationState?.adminViewRole;
   
   const [shopRole, setShopRole] = useState<ShopRole>(adminViewRole || 'SHOP');
+  const [shopRoles, setShopRoles] = useState<ShopRole[]>([adminViewRole || 'SHOP']);
   const [sellerProfile, setSellerProfile] = useState<SellerProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   
@@ -351,7 +353,7 @@ export default function ShopCabinetPage() {
     if (user?.telegramId && !profileLoading) {
       loadData();
     }
-  }, [user, activeTab, coords?.lat, profileLoading]);
+  }, [user, activeTab, coords?.lat, profileLoading, shopRole]);
 
   useEffect(() => {
     if (statusFilter === 'all') {
@@ -390,6 +392,7 @@ export default function ShopCabinetPage() {
 
     if (isSuperAdmin && adminViewRole) {
       setShopRole(adminViewRole);
+      setShopRoles([adminViewRole]);
       setProfileLoading(false);
       return;
     }
@@ -407,25 +410,47 @@ export default function ShopCabinetPage() {
         const profile = res.data.profile;
         setSellerProfile(profile);
         
-        if (profile.shopRole) {
+        // Handle multiple roles
+        if (profile.roles && Array.isArray(profile.roles) && profile.roles.length > 0) {
+          setShopRoles(profile.roles as ShopRole[]);
+          const primaryIdx = profile.primaryRoleIndex || 0;
+          const primaryRole = profile.roles[Math.min(primaryIdx, profile.roles.length - 1)] as ShopRole;
+          setShopRole(primaryRole);
+        } else if (profile.shopRole) {
           setShopRole(profile.shopRole as ShopRole);
+          setShopRoles([profile.shopRole as ShopRole]);
         } else if (profile.role) {
           setShopRole(profile.role as ShopRole);
+          setShopRoles([profile.role as ShopRole]);
         } else if (profile.isFarmer) {
           setShopRole('FARMER');
+          setShopRoles(['FARMER']);
         } else {
           setShopRole('SHOP');
+          setShopRoles(['SHOP']);
         }
       }
     } catch (error) {
       console.error('Failed to load seller profile:', error);
       setShopRole('SHOP');
+      setShopRoles(['SHOP']);
     } finally {
       setProfileLoading(false);
     }
   };
 
+  // Use tabs for current selected role to ensure data loaders match displayed tabs
+  // When user switches roles, tabs update to match that role's capabilities
   const roleTabs = getTabsForRole(shopRole);
+  const hasMultipleRoles = shopRoles.length > 1;
+  
+  // When switching view role, update tabs and reset to products tab
+  // Data will reload automatically via useEffect dependency on shopRole
+  const handleRoleSwitch = (newRole: ShopRole) => {
+    setShopRole(newRole);
+    // Always reset to products tab when switching role to avoid mismatched data
+    setActiveTab('products');
+  };
 
   const getRoleConfig = (): RoleConfig => {
     return ROLE_CONFIGS[shopRole];
@@ -438,7 +463,7 @@ export default function ShopCabinetPage() {
     try {
       if (activeTab === 'products') {
         const [adsRes, notifRes] = await Promise.all([
-          http.get(`/api/farmer/dashboard-ads?sellerTelegramId=${user.telegramId}`),
+          http.get(`/api/farmer/dashboard-ads?sellerTelegramId=${user.telegramId}&role=${shopRole}`),
           http.get(`/api/farmer/notifications?sellerTelegramId=${user.telegramId}`),
         ]);
         
@@ -2359,21 +2384,55 @@ export default function ShopCabinetPage() {
             }}>
               <RoleIcon size={24} />
             </div>
-            <div style={{
-              background: roleBadge.bgColor,
-              color: roleBadge.color,
-              padding: '3px 8px',
-              borderRadius: 8,
-              fontSize: 10,
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 3,
-              whiteSpace: 'nowrap',
-            }} data-testid="role-badge">
-              <span>{roleBadge.emoji}</span>
-              <span>{roleBadge.label}</span>
-            </div>
+            {hasMultipleRoles ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'flex-end' }}>
+                {shopRoles.map((r) => {
+                  const badge = ROLE_BADGES[r];
+                  const isPrimary = r === shopRole;
+                  return (
+                    <div 
+                      key={r}
+                      onClick={() => handleRoleSwitch(r)}
+                      style={{
+                        background: badge.bgColor,
+                        color: badge.color,
+                        padding: '3px 6px',
+                        borderRadius: 6,
+                        fontSize: 9,
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        whiteSpace: 'nowrap',
+                        cursor: 'pointer',
+                        border: isPrimary ? `2px solid ${badge.color}` : '2px solid transparent',
+                        opacity: isPrimary ? 1 : 0.7,
+                      }} 
+                      data-testid={`role-badge-${r}`}
+                    >
+                      <span>{badge.emoji}</span>
+                      <span>{ROLE_LABELS[r].shortLabel}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{
+                background: roleBadge.bgColor,
+                color: roleBadge.color,
+                padding: '3px 8px',
+                borderRadius: 8,
+                fontSize: 10,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+                whiteSpace: 'nowrap',
+              }} data-testid="role-badge">
+                <span>{roleBadge.emoji}</span>
+                <span>{roleBadge.label}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -429,9 +429,13 @@ class HomeDynamicEngine {
 
   async fetchShops(lat, lng, radiusKm) {
     try {
+      // Support both single role and multiple roles using $in for array match
       const shops = await SellerProfile.find({
         isActive: true,
-        role: 'SHOP',
+        $or: [
+          { role: 'SHOP' },
+          { roles: { $in: ['SHOP'] } },
+        ],
         'location.geo': {
           $nearSphere: {
             $geometry: { type: 'Point', coordinates: [lng, lat] },
@@ -444,11 +448,12 @@ class HomeDynamicEngine {
 
       return shops.map(shop => ({
         id: shop._id.toString(),
-        name: shop.storeName || shop.displayName,
+        name: shop.storeName || shop.displayName || shop.name,
         logo: shop.storeLogo || shop.avatar,
         category: shop.categories?.[0] || 'Магазин',
-        rating: shop.rating || 0,
-        reviewCount: shop.reviewCount || 0,
+        rating: shop.rating || shop.ratings?.score || 0,
+        reviewCount: shop.reviewCount || shop.ratings?.count || 0,
+        roles: shop.roles || [shop.role],
       }));
     } catch (error) {
       console.error('[HomeDynamicEngine] fetchShops error:', error.message);
@@ -458,9 +463,13 @@ class HomeDynamicEngine {
 
   async fetchBloggers(lat, lng, radiusKm) {
     try {
+      // Support both single role and multiple roles using $in for array match
       const bloggers = await SellerProfile.find({
         isActive: true,
-        role: 'BLOGGER',
+        $or: [
+          { role: 'BLOGGER' },
+          { roles: { $in: ['BLOGGER'] } },
+        ],
         'location.geo': {
           $nearSphere: {
             $geometry: { type: 'Point', coordinates: [lng, lat] },
@@ -473,13 +482,46 @@ class HomeDynamicEngine {
 
       return bloggers.map(blogger => ({
         id: blogger._id.toString(),
-        name: blogger.storeName || blogger.displayName,
+        name: blogger.storeName || blogger.displayName || blogger.name,
         avatar: blogger.storeLogo || blogger.avatar,
         specialty: blogger.categories?.[0] || 'Авторский бренд',
         socialLinks: blogger.socialLinks || {},
+        roles: blogger.roles || [blogger.role],
       }));
     } catch (error) {
       console.error('[HomeDynamicEngine] fetchBloggers error:', error.message);
+      return [];
+    }
+  }
+
+  async fetchArtisans(lat, lng, radiusKm) {
+    try {
+      // Support both single role and multiple roles using $in for array match
+      const artisans = await SellerProfile.find({
+        isActive: true,
+        $or: [
+          { role: 'ARTISAN' },
+          { roles: { $in: ['ARTISAN'] } },
+        ],
+        'location.geo': {
+          $nearSphere: {
+            $geometry: { type: 'Point', coordinates: [lng, lat] },
+            $maxDistance: radiusKm * 1000,
+          },
+        },
+      })
+        .limit(this.maxItemsPerBlock)
+        .lean();
+
+      return artisans.map(artisan => ({
+        id: artisan._id.toString(),
+        name: artisan.storeName || artisan.displayName || artisan.name,
+        avatar: artisan.storeLogo || artisan.avatar,
+        specialty: artisan.categories?.[0] || 'Ремесленник',
+        roles: artisan.roles || [artisan.role],
+      }));
+    } catch (error) {
+      console.error('[HomeDynamicEngine] fetchArtisans error:', error.message);
       return [];
     }
   }

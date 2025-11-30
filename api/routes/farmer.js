@@ -915,7 +915,7 @@ router.get('/local-demand', async (req, res) => {
 
 router.get('/dashboard-ads', async (req, res) => {
   try {
-    const { sellerTelegramId, status, limit = 20, offset = 0 } = req.query;
+    const { sellerTelegramId, status, limit = 20, offset = 0, role } = req.query;
 
     if (!sellerTelegramId) {
       return res.status(400).json({
@@ -924,10 +924,19 @@ router.get('/dashboard-ads', async (req, res) => {
       });
     }
 
+    // Build match stage - support all seller roles
     const matchStage = {
       sellerTelegramId: parseInt(sellerTelegramId),
-      isFarmerAd: true,
     };
+    
+    // Role-based filtering with backwards compatibility
+    // Default to FARMER behavior (isFarmerAd=true) if no role specified
+    if (!role || role === 'FARMER') {
+      matchStage.isFarmerAd = true;
+    } else if (role === 'SHOP') {
+      matchStage.isFarmerAd = { $ne: true };
+    }
+    // For BLOGGER/ARTISAN, show all ads (no isFarmerAd filter)
 
     if (status && status !== 'all') {
       matchStage.status = status;
@@ -983,8 +992,16 @@ router.get('/dashboard-ads', async (req, res) => {
 
     const total = await Ad.countDocuments(matchStage);
 
+    // Use same filter for stats aggregation (with backwards compatibility)
+    const statsMatch = { sellerTelegramId: parseInt(sellerTelegramId) };
+    if (!role || role === 'FARMER') {
+      statsMatch.isFarmerAd = true;
+    } else if (role === 'SHOP') {
+      statsMatch.isFarmerAd = { $ne: true };
+    }
+    
     const stats = await Ad.aggregate([
-      { $match: { sellerTelegramId: parseInt(sellerTelegramId), isFarmerAd: true } },
+      { $match: statsMatch },
       {
         $group: {
           _id: '$status',

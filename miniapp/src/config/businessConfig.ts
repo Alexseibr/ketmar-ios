@@ -312,3 +312,111 @@ export function shouldShowSocialLinks(role: ShopRole): boolean {
 export function shouldTrackSocialClicks(role: ShopRole): boolean {
   return BUSINESS_CONFIG[role].trackSocialClicks;
 }
+
+// === Multi-Role Support Functions ===
+
+export function getTabsForRoles(roles: ShopRole[]): TabConfig[] {
+  if (!roles || roles.length === 0) return getTabsForRole('SHOP');
+  
+  const allTabKeys = new Set<TabType>();
+  roles.forEach(role => {
+    const config = BUSINESS_CONFIG[role];
+    config.tabs.forEach(tab => allTabKeys.add(tab));
+  });
+  
+  return ALL_TABS.filter(tab => allTabKeys.has(tab.key));
+}
+
+export function getFairsForRoles(roles: ShopRole[]): FairConfig[] {
+  if (!roles || roles.length === 0) return getFairsForRole('SHOP');
+  
+  const allFairIds = new Set<string>();
+  roles.forEach(role => {
+    const config = BUSINESS_CONFIG[role];
+    config.fairs.forEach(fairId => allFairIds.add(fairId));
+  });
+  
+  return ALL_FAIRS.filter(fair => allFairIds.has(fair.id));
+}
+
+export function getCategoriesForRoles(roles: ShopRole[]): CategoryGroup[] {
+  if (!roles || roles.length === 0) return getCategoriesForRole('SHOP');
+  
+  const allCategories: CategoryGroup[] = [];
+  const seenIds = new Set<string>();
+  
+  roles.forEach(role => {
+    const groups = BUSINESS_CONFIG[role].categoryGroups;
+    groups.forEach(group => {
+      if (!seenIds.has(group.id)) {
+        seenIds.add(group.id);
+        allCategories.push(group);
+      }
+    });
+  });
+  
+  return allCategories;
+}
+
+export function canAccessFeatureWithRoles(roles: ShopRole[], feature: keyof BusinessTypeConfig['features']): boolean {
+  if (!roles || roles.length === 0) return canAccessFeature('SHOP', feature);
+  return roles.some(role => BUSINESS_CONFIG[role].features[feature]);
+}
+
+export function shouldShowSocialLinksForRoles(roles: ShopRole[]): boolean {
+  if (!roles || roles.length === 0) return false;
+  return roles.some(role => BUSINESS_CONFIG[role].enableSocialLinks);
+}
+
+export function shouldTrackSocialClicksForRoles(roles: ShopRole[]): boolean {
+  if (!roles || roles.length === 0) return false;
+  return roles.some(role => BUSINESS_CONFIG[role].trackSocialClicks);
+}
+
+export function getMergedConfigForRoles(roles: ShopRole[]): BusinessTypeConfig {
+  if (!roles || roles.length === 0) return BUSINESS_CONFIG['SHOP'];
+  if (roles.length === 1) return BUSINESS_CONFIG[roles[0]];
+  
+  const allTabKeys = new Set<TabType>();
+  const allFairIds = new Set<string>();
+  const allCategoryGroups: CategoryGroup[] = [];
+  const seenGroupIds = new Set<string>();
+  let enableSocialLinks = false;
+  let trackSocialClicks = false;
+  const features = {
+    orders: false,
+    requests: false,
+    posts: false,
+    socialStats: false,
+    seasonStats: false,
+    farmerTips: false,
+  };
+  
+  roles.forEach(role => {
+    const config = BUSINESS_CONFIG[role];
+    config.tabs.forEach(tab => allTabKeys.add(tab));
+    config.fairs.forEach(fairId => allFairIds.add(fairId));
+    config.categoryGroups.forEach(group => {
+      if (!seenGroupIds.has(group.id)) {
+        seenGroupIds.add(group.id);
+        allCategoryGroups.push(group);
+      }
+    });
+    if (config.enableSocialLinks) enableSocialLinks = true;
+    if (config.trackSocialClicks) trackSocialClicks = true;
+    Object.keys(features).forEach(key => {
+      if (config.features[key as keyof typeof features]) {
+        features[key as keyof typeof features] = true;
+      }
+    });
+  });
+  
+  return {
+    tabs: Array.from(allTabKeys),
+    fairs: Array.from(allFairIds),
+    categoryGroups: allCategoryGroups,
+    enableSocialLinks,
+    trackSocialClicks,
+    features,
+  };
+}
