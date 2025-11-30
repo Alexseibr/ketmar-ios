@@ -350,7 +350,7 @@ export default function FeedCard({
           bottom: 0,
           left: 0,
           right: 0,
-          height: 320,
+          height: 360,
           background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)',
           pointerEvents: 'none',
         }}
@@ -361,7 +361,7 @@ export default function FeedCard({
         style={{
           position: 'absolute',
           left: 16,
-          bottom: 295,
+          bottom: 315,
           display: 'flex',
           alignItems: 'center',
           gap: 10,
@@ -424,7 +424,7 @@ export default function FeedCard({
         style={{
           position: 'absolute',
           left: 16,
-          bottom: 250,
+          bottom: 268,
           display: 'flex',
           flexWrap: 'wrap',
           gap: 6,
@@ -516,7 +516,7 @@ export default function FeedCard({
         style={{
           position: 'absolute',
           left: 16,
-          bottom: 210,
+          bottom: 228,
         }}
       >
         <span
@@ -538,7 +538,7 @@ export default function FeedCard({
           position: 'absolute',
           left: 16,
           right: 70,
-          bottom: 180,
+          bottom: 198,
           margin: 0,
           fontSize: 16,
           fontWeight: 600,
@@ -562,7 +562,7 @@ export default function FeedCard({
             position: 'absolute',
             left: 16,
             right: 70,
-            bottom: 140,
+            bottom: 158,
             margin: 0,
             fontSize: 13,
             lineHeight: 1.45,
@@ -584,7 +584,7 @@ export default function FeedCard({
           position: 'absolute',
           left: 16,
           right: 16,
-          bottom: 95,
+          bottom: 115,
           display: 'flex',
           alignItems: 'center',
           gap: 10,

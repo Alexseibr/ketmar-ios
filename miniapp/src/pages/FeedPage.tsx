@@ -43,11 +43,15 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
   return (
     <header
       style={{
-        background: 'rgba(255, 255, 255, 0.75)',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        background: 'rgba(255, 255, 255, 0.72)',
         backdropFilter: 'blur(24px) saturate(180%)',
         WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-        flexShrink: 0,
-        borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
       }}
     >
       {/* Top row: Logo + Notifications */}
@@ -1024,14 +1028,13 @@ export default function FeedPage() {
         className="feed-fullscreen"
         data-testid="feed-container"
         style={{
-          display: 'flex',
-          flexDirection: 'column',
+          position: 'relative',
           height: '100%',
           background: '#000',
           overflow: 'hidden',
         }}
       >
-        {/* Header with filters - TikTok style */}
+        {/* Fixed header overlay - фото заходит под него */}
         <FeedHeader 
           onNotificationsClick={handleNotificationsClick} 
           activeFilter={activeFilter} 
@@ -1043,7 +1046,11 @@ export default function FeedPage() {
           ref={scrollContainerRef}
           onScroll={handleScroll}
           style={{
-            flex: 1,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             overflowY: 'auto',
             overflowX: 'hidden',
             scrollSnapType: 'y mandatory',
