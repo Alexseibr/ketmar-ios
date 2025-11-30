@@ -1,5 +1,5 @@
 import { useState, useEffect, memo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import http from '@/api/http';
 
 interface CategoryItem {
@@ -115,7 +115,7 @@ interface GradientCategoryGridProps {
 }
 
 const GradientCategoryGrid = memo(({ userLat, userLng, radiusKm = 30 }: GradientCategoryGridProps) => {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [categoryCounts, setCategoryCounts] = useState<CategoryCounts>({});
   const [loading, setLoading] = useState(true);
 
@@ -146,7 +146,7 @@ const GradientCategoryGrid = memo(({ userLat, userLng, radiusKm = 30 }: Gradient
   }, [userLat, userLng, radiusKm]);
 
   const handleCategoryClick = (slug: string) => {
-    navigate(`/category/${slug}`);
+    setLocation(`/category/${slug}`);
   };
 
   const visibleCategories = CATEGORY_ITEMS.filter(cat => {
