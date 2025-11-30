@@ -225,7 +225,6 @@ export default function HomePage() {
   const [newAds, setNewAds] = useState<NewAdItem[]>([]);
   const [trendingAds, setTrendingAds] = useState<NewAdItem[]>([]);
   const [fairs, setFairs] = useState<SeasonalFair[]>([]);
-  const [freeAds, setFreeAds] = useState<NewAdItem[]>([]);
 
   useEffect(() => {
     if (!hasCompletedOnboarding && !coords && !debugZone) {
@@ -412,55 +411,6 @@ export default function HomePage() {
     
     fetchFairs();
   }, []);
-
-  // Fetch free giveaway ads
-  useEffect(() => {
-    const fetchFreeAds = async () => {
-      if (!coords && !debugZone) return;
-      
-      try {
-        const params = new URLSearchParams();
-        if (coords) {
-          params.set('lat', coords.lat.toString());
-          params.set('lng', coords.lng.toString());
-        }
-        params.set('radiusKm', (radiusKm || 30).toString());
-        params.set('limit', '20');
-        params.set('isFreeGiveaway', 'true');
-        
-        const response = await fetch(`/api/ads?${params.toString()}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.items && Array.isArray(data.items)) {
-            const normalizedAds: NewAdItem[] = data.items
-              .map((item: any) => {
-                const id = item._id?.toString() || item.id || '';
-                if (!id || !item.title) return null;
-                
-                return {
-                  _id: id,
-                  title: item.title,
-                  price: 0,
-                  photos: item.photos,
-                  photo: item.photo || item.photos?.[0],
-                  distanceKm: item.distanceKm,
-                  isFreeGiveaway: true,
-                  views: item.views || 0,
-                  favorites: item.favorites || 0,
-                };
-              })
-              .filter((item: NewAdItem | null): item is NewAdItem => item !== null);
-            
-            setFreeAds(normalizedAds.slice(0, 20));
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch free ads:', error);
-      }
-    };
-    
-    fetchFreeAds();
-  }, [coords, radiusKm, debugZone]);
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
@@ -922,78 +872,6 @@ export default function HomePage() {
                   <FairCard 
                     fair={fair} 
                     onClick={() => navigate(`/fair/${fair.code}`)}
-                  />
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          </section>
-        )}
-
-        {/* Free Giveaway Section - Отдам даром */}
-        {!loading && freeAds.length > 0 && (
-          <section style={{ marginBottom: 24 }}>
-            <div style={{
-              padding: '0 16px 12px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(52, 211, 153, 0.15) 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Gift size={18} color="#10B981" />
-                </div>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1F2937' }}>
-                    Отдам даром
-                  </h3>
-                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9CA3AF' }}>
-                    Бесплатные вещи рядом
-                  </p>
-                </div>
-              </div>
-              
-              <button
-                onClick={() => navigate('/feed?free=true')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#10B981',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 2,
-                }}
-                data-testid="button-see-all-free"
-              >
-                Все
-                <ChevronRight size={16} />
-              </button>
-            </div>
-
-            {/* Infinite Loop Swiper Carousel */}
-            <Swiper
-              modules={[Autoplay]}
-              spaceBetween={12}
-              slidesPerView="auto"
-              loop={freeAds.length >= 3}
-              freeMode={true}
-              style={{ paddingLeft: 16, paddingRight: 16 }}
-            >
-              {freeAds.map((ad) => (
-                <SwiperSlide key={ad._id} style={{ width: 'auto' }}>
-                  <FreeAdCard 
-                    ad={ad} 
-                    onClick={() => handleAdClick(ad._id)}
                   />
                 </SwiperSlide>
               ))}
