@@ -127,47 +127,32 @@ class GeoZoneClassifier {
   async getAdDensityMetrics(lat, lng) {
     try {
       const radiusKm = 5;
-      const radiusMeters = radiusKm * 1000;
+      // Use $geoWithin instead of $nearSphere for MongoDB Atlas compatibility
+      const geoQuery = {
+        $geoWithin: {
+          $centerSphere: [[lng, lat], radiusKm / 6378.1],
+        },
+      };
 
       const [totalAds, farmerAds, serviceAds, beautyAds] = await Promise.all([
         Ad.countDocuments({
           status: 'active',
-          'location.geo': {
-            $nearSphere: {
-              $geometry: { type: 'Point', coordinates: [lng, lat] },
-              $maxDistance: radiusMeters,
-            },
-          },
+          'location.geo': geoQuery,
         }),
         Ad.countDocuments({
           status: 'active',
           isFarmerAd: true,
-          'location.geo': {
-            $nearSphere: {
-              $geometry: { type: 'Point', coordinates: [lng, lat] },
-              $maxDistance: radiusMeters,
-            },
-          },
+          'location.geo': geoQuery,
         }),
         Ad.countDocuments({
           status: 'active',
           category: { $in: ['uslugi', 'remont', 'cleaning'] },
-          'location.geo': {
-            $nearSphere: {
-              $geometry: { type: 'Point', coordinates: [lng, lat] },
-              $maxDistance: radiusMeters,
-            },
-          },
+          'location.geo': geoQuery,
         }),
         Ad.countDocuments({
           status: 'active',
           category: { $in: ['beauty', 'barber', 'manicure'] },
-          'location.geo': {
-            $nearSphere: {
-              $geometry: { type: 'Point', coordinates: [lng, lat] },
-              $maxDistance: radiusMeters,
-            },
-          },
+          'location.geo': geoQuery,
         }),
       ]);
 

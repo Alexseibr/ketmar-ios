@@ -612,6 +612,7 @@ class HomeDynamicEngine {
   async fetchShops(lat, lng, radiusKm) {
     try {
       // Support both single role and multiple roles using $in for array match
+      // Use $geoWithin instead of $nearSphere for MongoDB Atlas compatibility
       const shops = await SellerProfile.find({
         isActive: true,
         $or: [
@@ -619,9 +620,8 @@ class HomeDynamicEngine {
           { roles: { $in: ['SHOP'] } },
         ],
         'location.geo': {
-          $nearSphere: {
-            $geometry: { type: 'Point', coordinates: [lng, lat] },
-            $maxDistance: radiusKm * 1000,
+          $geoWithin: {
+            $centerSphere: [[lng, lat], radiusKm / 6378.1],
           },
         },
       })
@@ -647,6 +647,7 @@ class HomeDynamicEngine {
   async fetchBloggers(lat, lng, radiusKm) {
     try {
       // Support both single role and multiple roles using $in for array match
+      // Use $geoWithin instead of $nearSphere for MongoDB Atlas compatibility
       const bloggers = await SellerProfile.find({
         isActive: true,
         $or: [
@@ -654,9 +655,8 @@ class HomeDynamicEngine {
           { roles: { $in: ['BLOGGER'] } },
         ],
         'location.geo': {
-          $nearSphere: {
-            $geometry: { type: 'Point', coordinates: [lng, lat] },
-            $maxDistance: radiusKm * 1000,
+          $geoWithin: {
+            $centerSphere: [[lng, lat], radiusKm / 6378.1],
           },
         },
       })
@@ -681,6 +681,7 @@ class HomeDynamicEngine {
   async fetchArtisans(lat, lng, radiusKm) {
     try {
       // Support both single role and multiple roles using $in for array match
+      // Use $geoWithin instead of $nearSphere for MongoDB Atlas compatibility
       const artisans = await SellerProfile.find({
         isActive: true,
         $or: [
@@ -688,9 +689,8 @@ class HomeDynamicEngine {
           { roles: { $in: ['ARTISAN'] } },
         ],
         'location.geo': {
-          $nearSphere: {
-            $geometry: { type: 'Point', coordinates: [lng, lat] },
-            $maxDistance: radiusKm * 1000,
+          $geoWithin: {
+            $centerSphere: [[lng, lat], radiusKm / 6378.1],
           },
         },
       })
@@ -782,11 +782,11 @@ class HomeDynamicEngine {
     try {
       const DemandStats = (await import('../models/DemandStats.js')).default;
       
+      // Use $geoWithin instead of $nearSphere for MongoDB Atlas compatibility
       const demands = await DemandStats.find({
         'location.geo': {
-          $nearSphere: {
-            $geometry: { type: 'Point', coordinates: [lng, lat] },
-            $maxDistance: radiusKm * 1000,
+          $geoWithin: {
+            $centerSphere: [[lng, lat], radiusKm / 6378.1],
           },
         },
       })
