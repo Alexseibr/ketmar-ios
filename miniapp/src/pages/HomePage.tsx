@@ -834,8 +834,8 @@ function CompactAdCard({
   accentColor: string;
 }) {
   const formatPrice = (price: number) => {
-    if (price === 0) return 'Даром';
-    return `${price.toLocaleString('ru-RU')} р.`;
+    if (price === 0) return 'Бесплатно';
+    return `${price.toLocaleString('ru-RU')} BYN`;
   };
 
   const photoUrl = ad.photos?.[0] ? getThumbnailUrl(ad.photos[0]) : NO_PHOTO_PLACEHOLDER;
@@ -844,20 +844,12 @@ function CompactAdCard({
   const hasDiscount = priceHistory.length > 0;
   const oldPrice = hasDiscount ? priceHistory[priceHistory.length - 1]?.oldPrice : null;
 
-  const isFresh = (() => {
-    if (!ad.createdAt) return false;
-    const createdDate = new Date(ad.createdAt);
-    const now = new Date();
-    const hoursDiff = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60);
-    return hoursDiff < 24;
-  })();
-
   return (
     <div
       onClick={onClick}
       style={{
-        minWidth: 140,
-        maxWidth: 140,
+        minWidth: 156,
+        maxWidth: 156,
         background: '#FFFFFF',
         borderRadius: 16,
         overflow: 'hidden',
@@ -865,18 +857,24 @@ function CompactAdCard({
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
         scrollSnapAlign: 'start',
         flexShrink: 0,
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
       }}
       data-testid={`ad-card-${ad._id}`}
     >
+      {/* Image */}
       <div style={{ 
         position: 'relative',
-        aspectRatio: '1',
-        background: '#F0F2F5',
+        width: '100%',
+        paddingTop: '100%',
+        background: '#F3F4F6',
       }}>
         <img
           src={photoUrl}
           alt={ad.title}
           style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
             width: '100%',
             height: '100%',
             objectFit: 'cover',
@@ -884,103 +882,98 @@ function CompactAdCard({
           loading="lazy"
         />
         
-        {isFresh && (
-          <div style={{
-            position: 'absolute',
-            top: 6,
-            left: 6,
-            background: '#10B981',
-            color: '#FFFFFF',
-            fontSize: 9,
-            fontWeight: 600,
-            padding: '3px 6px',
-            borderRadius: 6,
-          }}>
-            NEW
-          </div>
-        )}
-
+        {/* Free Badge */}
         {ad.isFreeGiveaway && (
           <div style={{
             position: 'absolute',
-            top: 6,
-            left: 6,
-            background: '#EC4899',
+            top: 8,
+            left: 8,
+            background: '#10B981',
             color: '#FFFFFF',
-            fontSize: 9,
+            fontSize: 10,
             fontWeight: 600,
-            padding: '3px 6px',
+            padding: '4px 8px',
             borderRadius: 6,
           }}>
-            FREE
+            Даром
           </div>
         )}
         
+        {/* Discount Badge */}
+        {oldPrice && oldPrice > ad.price && (
+          <div style={{
+            position: 'absolute',
+            top: 8,
+            left: 8,
+            background: '#EF4444',
+            color: '#FFFFFF',
+            fontSize: 10,
+            fontWeight: 600,
+            padding: '4px 8px',
+            borderRadius: 6,
+          }}>
+            -{Math.round(((oldPrice - ad.price) / oldPrice) * 100)}%
+          </div>
+        )}
+        
+        {/* Favorite Button */}
         <div style={{
           position: 'absolute',
-          top: 6,
-          right: 6,
+          top: 8,
+          right: 8,
         }}>
           <FavoriteButton 
             adId={ad._id} 
-            size={18}
+            size={20}
           />
         </div>
       </div>
       
-      <div style={{ padding: '10px' }}>
+      {/* Info */}
+      <div style={{ padding: '12px' }}>
+        {/* Title */}
         <div style={{
-          fontSize: 15,
-          fontWeight: 700,
-          color: ad.isFreeGiveaway ? '#EC4899' : '#1F2937',
-          marginBottom: 2,
-        }}>
-          {formatPrice(ad.price)}
-          {oldPrice && oldPrice > ad.price && (
-            <span style={{
-              fontSize: 11,
-              color: '#9CA3AF',
-              textDecoration: 'line-through',
-              marginLeft: 6,
-              fontWeight: 400,
-            }}>
-              {oldPrice.toLocaleString('ru-RU')} р.
-            </span>
-          )}
-        </div>
-        
-        <div style={{
-          fontSize: 12,
-          color: '#6B7280',
+          fontSize: 13,
+          fontWeight: 500,
+          color: '#1F2937',
           lineHeight: 1.3,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           display: '-webkit-box',
           WebkitLineClamp: 2,
           WebkitBoxOrient: 'vertical',
-          minHeight: 32,
+          minHeight: 34,
+          marginBottom: 8,
         }}>
           {ad.title}
         </div>
         
-        {ad.distanceKm !== undefined && ad.distanceKm > 0 && (
+        {/* Price Row */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 3,
-            fontSize: 10,
-            color: '#9CA3AF',
-            marginTop: 4,
+            fontSize: 15,
+            fontWeight: 700,
+            color: ad.isFreeGiveaway ? '#10B981' : '#1F2937',
           }}>
-            <Navigation size={10} />
-            <span>
-              {ad.distanceKm < 1 
-                ? `${Math.round(ad.distanceKm * 1000)} м`
-                : `${ad.distanceKm.toFixed(1)} км`
-              }
-            </span>
+            {formatPrice(ad.price)}
           </div>
-        )}
+          
+          {ad.distanceKm !== undefined && ad.distanceKm > 0 && (
+            <div style={{
+              fontSize: 11,
+              color: '#9CA3AF',
+            }}>
+              {ad.distanceKm < 1 
+                ? `${Math.round(ad.distanceKm * 1000)}м`
+                : `${ad.distanceKm.toFixed(1)}км`
+              }
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
