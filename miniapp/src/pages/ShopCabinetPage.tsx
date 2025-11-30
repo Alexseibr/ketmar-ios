@@ -496,10 +496,17 @@ export default function ShopCabinetPage() {
         }
       } else if (activeTab === 'demand') {
         if (coords?.lat && coords?.lng) {
-          const res = await http.get(`/api/farmer/local-demand?lat=${coords.lat}&lng=${coords.lng}&radiusKm=10`);
-          if (res.data.success) {
-            setDemandItems(res.data.data.items);
-            setDemandSummary(res.data.data.summary);
+          // Use role-specific demand endpoint
+          const res = await http.get(`/api/local-demand/seller?lat=${coords.lat}&lng=${coords.lng}&radius=10&role=${shopRole}`);
+          if (res.data.items) {
+            setDemandItems(res.data.items);
+            const roleLabels: Record<string, string> = {
+              FARMER: 'фермерские товары',
+              BLOGGER: 'товары авторов',
+              ARTISAN: 'изделия ручной работы',
+              SHOP: 'товары из рук в руки',
+            };
+            setDemandSummary(`Ищут ${roleLabels[shopRole] || 'товары'} в вашем районе`);
           }
         }
       } else if (activeTab === 'subscription') {
