@@ -61,24 +61,54 @@
       }
     </style>
     <script>
+      // Диагностика загрузки
+      window.__KETMAR_DEBUG__ = [];
+      window.__KETMAR_LOG__ = function(msg) {
+        window.__KETMAR_DEBUG__.push({ t: Date.now(), m: msg });
+        console.log('[KETMAR]', msg);
+      };
+      window.__KETMAR_LOG__('HTML loaded');
+      
       // Проверка доступности Telegram WebApp SDK
       window.addEventListener('DOMContentLoaded', function() {
+        window.__KETMAR_LOG__('DOMContentLoaded');
+        
+        // Проверяем Telegram SDK сразу
+        if (window.Telegram && window.Telegram.WebApp) {
+          window.__KETMAR_LOG__('Telegram SDK available');
+        } else {
+          window.__KETMAR_LOG__('Telegram SDK NOT available yet');
+        }
+        
         setTimeout(function() {
           if (!window.Telegram || !window.Telegram.WebApp) {
             console.error('Telegram WebApp SDK not loaded');
-            document.getElementById('error-screen').classList.add('show');
+            // Не показываем ошибку для обычного браузера - это нормально
+            // document.getElementById('error-screen').classList.add('show');
           } else {
-            console.log('✅ Telegram WebApp SDK loaded successfully');
+            window.__KETMAR_LOG__('Telegram SDK confirmed');
           }
         }, 2000);
       });
 
       // Глобальная обработка ошибок
       window.addEventListener('error', function(event) {
-        console.error('Global error:', event.error);
+        window.__KETMAR_LOG__('ERROR: ' + (event.error ? event.error.message : event.message));
+        console.error('Global error:', event.error || event.message);
+        
+        // Показываем ошибку пользователю
+        var errorScreen = document.getElementById('error-screen');
+        if (errorScreen) {
+          var msgDiv = errorScreen.querySelector('.error-message');
+          if (msgDiv && event.error) {
+            msgDiv.textContent = 'Ошибка: ' + event.error.message;
+          }
+          errorScreen.classList.add('show');
+        }
       });
 
       window.addEventListener('unhandledrejection', function(event) {
+        window.__KETMAR_LOG__('REJECTION: ' + (event.reason ? event.reason.message || event.reason : 'unknown'));
         console.error('Unhandled promise rejection:', event.reason);
       });
     </script>
