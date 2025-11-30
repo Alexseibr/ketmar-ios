@@ -55,6 +55,18 @@ interface HomeConfigResponse {
   };
 }
 
+// Type for new ads in horizontal carousel
+interface NewAdItem {
+  _id: string;
+  title: string;
+  price: number;
+  photos?: string[];
+  photo?: string;
+  distanceKm?: number;
+  isFreeGiveaway?: boolean;
+  priceHistory?: Array<{ oldPrice: number; date: string }>;
+}
+
 const SECTION_ICONS: Record<string, typeof Flame> = {
   fire: Flame,
   gift: Gift,
@@ -192,7 +204,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [locationName, setLocationName] = useState(() => t('location.your_area'));
   const [useZoneBased, setUseZoneBased] = useState(true);
-  const [newAds, setNewAds] = useState<AdPreview[]>([]);
+  const [newAds, setNewAds] = useState<NewAdItem[]>([]);
 
   useEffect(() => {
     if (!hasCompletedOnboarding && !coords && !debugZone) {
@@ -272,14 +284,32 @@ export default function HomePage() {
         }
         params.set('radiusKm', (radiusKm || 30).toString());
         params.set('limit', '15');
-        params.set('sortBy', 'createdAt');
-        params.set('sortOrder', 'desc');
+        params.set('sort', 'newest');
         
         const response = await fetch(`/api/ads?${params.toString()}`);
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.items) {
-            setNewAds(data.items.slice(0, 15));
+          if (data.items && Array.isArray(data.items)) {
+            // Normalize and validate items with required fields
+            const normalizedAds: NewAdItem[] = data.items
+              .map((item: any) => {
+                const id = item._id?.toString() || item.id || '';
+                if (!id || !item.title) return null;
+                
+                return {
+                  _id: id,
+                  title: item.title,
+                  price: item.price ?? 0,
+                  photos: item.photos,
+                  photo: item.photo || item.photos?.[0],
+                  distanceKm: item.distanceKm,
+                  isFreeGiveaway: item.isFreeGiveaway,
+                  priceHistory: item.priceHistory,
+                };
+              })
+              .filter((item: NewAdItem | null): item is NewAdItem => item !== null);
+            
+            setNewAds(normalizedAds.slice(0, 15));
           }
         }
       } catch (error) {
@@ -781,16 +811,13 @@ export default function HomePage() {
               msOverflowStyle: 'none',
               scrollbarWidth: 'none',
             }}>
-              {newAds.map((ad) => {
-                const adId = (ad as any)._id || (ad as any).id || '';
-                return (
-                  <NewAdCard 
-                    key={adId} 
-                    ad={{ ...ad, _id: adId } as any} 
-                    onClick={() => handleAdClick(adId)}
-                  />
-                );
-              })}
+              {newAds.map((ad) => (
+                <NewAdCard 
+                  key={ad._id} 
+                  ad={ad} 
+                  onClick={() => handleAdClick(ad._id)}
+                />
+              ))}
             </div>
           </section>
         )}
@@ -1101,7 +1128,7 @@ function NewAdCard({
   ad, 
   onClick,
 }: { 
-  ad: AdPreview & { photo?: string; distance?: number; _id: string }; 
+  ad: NewAdItem; 
   onClick: () => void;
 }) {
   const formatPrice = (price: number) => {
@@ -1110,7 +1137,7 @@ function NewAdCard({
   };
 
   const photoUrl = ad.photo || ad.photos?.[0] ? getThumbnailUrl(ad.photo || ad.photos?.[0] || '') : NO_PHOTO_PLACEHOLDER;
-  const distanceKm = ad.distanceKm ?? ad.distance;
+  const distanceKm = ad.distanceKm;
   
   const priceHistory = ad.priceHistory || [];
   const hasDiscount = priceHistory.length > 0;
