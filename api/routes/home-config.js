@@ -6,7 +6,7 @@ const router = Router();
 
 router.get('/', async (req, res) => {
   try {
-    const { lat, lng, radiusKm = 10, userId, zone: forceZone } = req.query;
+    const { lat, lng, radiusKm = 50, userId, zone: forceZone } = req.query;
 
     const userLat = parseFloat(lat);
     const userLng = parseFloat(lng);

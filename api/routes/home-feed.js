@@ -43,7 +43,7 @@ const PROMO_BANNERS = [
 
 router.get('/', async (req, res) => {
   try {
-    const { lat, lng, userId, radiusKm = 10 } = req.query;
+    const { lat, lng, userId, radiusKm = 50 } = req.query;
     
     const userLat = parseFloat(lat);
     const userLng = parseFloat(lng);
@@ -63,10 +63,13 @@ router.get('/', async (req, res) => {
       photos: { $exists: true, $ne: [] },
     };
 
+    const MIN_ADS_FOR_CAROUSEL = 4;
+    const DEFAULT_LIMIT = 30;
+
     let farmerAds, freeAds, discountAds, popularAds, newAds;
 
     if (hasLocation) {
-      const geoNearPipeline = (matchFilter, limit = 10) => [
+      const geoNearPipeline = (matchFilter, limit = DEFAULT_LIMIT) => [
         {
           $geoNear: {
             near: { type: 'Point', coordinates: [userLng, userLat] },
@@ -93,16 +96,51 @@ router.get('/', async (req, res) => {
           { $sort: { createdAt: -1 } },
         ]),
       ]);
+
+      // Fallback: если мало объявлений в радиусе, добираем из всей страны
+      const fillFromGlobal = async (localAds, filter, sortBy) => {
+        if (localAds.length >= MIN_ADS_FOR_CAROUSEL) return localAds;
+        
+        const existingIds = localAds.map(a => a._id.toString());
+        const needed = DEFAULT_LIMIT - localAds.length;
+        
+        const globalAds = await Ad.find({
+          ...baseQuery,
+          ...filter,
+          _id: { $nin: existingIds.map(id => id) },
+        })
+          .sort(sortBy)
+          .limit(needed)
+          .lean();
+
+        // Добавляем расстояние для глобальных объявлений
+        const globalWithDistance = globalAds.map(ad => {
+          if (ad.location?.lat && ad.location?.lng) {
+            ad.distanceMeters = haversineDistanceKm(userLat, userLng, ad.location.lat, ad.location.lng) * 1000;
+          }
+          return ad;
+        });
+
+        return [...localAds, ...globalWithDistance];
+      };
+
+      // Заполняем недостающие объявления из глобального поиска
+      [newAds, popularAds, freeAds] = await Promise.all([
+        fillFromGlobal(newAds, {}, { createdAt: -1 }),
+        fillFromGlobal(popularAds, {}, { views: -1, favorites: -1 }),
+        fillFromGlobal(freeAds, { isFreeGiveaway: true }, { createdAt: -1 }),
+      ]);
+
     } else {
       [farmerAds, freeAds, discountAds, popularAds, newAds] = await Promise.all([
         Ad.find({ ...baseQuery, isFarmerAd: true })
           .sort({ createdAt: -1 })
-          .limit(10)
+          .limit(DEFAULT_LIMIT)
           .lean(),
         
         Ad.find({ ...baseQuery, isFreeGiveaway: true })
           .sort({ createdAt: -1 })
-          .limit(10)
+          .limit(DEFAULT_LIMIT)
           .lean(),
         
         Ad.find({
@@ -110,17 +148,17 @@ router.get('/', async (req, res) => {
           'priceHistory.0': { $exists: true },
         })
           .sort({ createdAt: -1 })
-          .limit(10)
+          .limit(DEFAULT_LIMIT)
           .lean(),
         
         Ad.find(baseQuery)
           .sort({ views: -1, favorites: -1 })
-          .limit(10)
+          .limit(DEFAULT_LIMIT)
           .lean(),
         
         Ad.find(baseQuery)
           .sort({ createdAt: -1 })
-          .limit(10)
+          .limit(DEFAULT_LIMIT)
           .lean(),
       ]);
     }

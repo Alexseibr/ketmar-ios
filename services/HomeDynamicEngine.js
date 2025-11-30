@@ -269,7 +269,8 @@ const PROMO_BANNERS = [
 
 class HomeDynamicEngine {
   constructor() {
-    this.maxItemsPerBlock = 10;
+    this.maxItemsPerBlock = 30;
+    this.minItemsForCarousel = 4;
   }
 
   getCacheKey(lat, lng, zone) {
@@ -295,7 +296,7 @@ class HomeDynamicEngine {
   }
 
   async getHomeConfig(lat, lng, options = {}) {
-    const { radiusKm = 10, userId = null, forceZone = null } = options;
+    const { radiusKm = 50, userId = null, forceZone = null } = options;
 
     let zoneResult;
     if (forceZone && ['village', 'suburb', 'city_center'].includes(forceZone)) {
