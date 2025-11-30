@@ -355,7 +355,7 @@ export default function JobSeekersPage() {
       {data?.items.length ? (
         <div style={{
           position: 'fixed',
-          bottom: 80,
+          bottom: 100,
           left: 16,
           right: 16,
           zIndex: 10,
