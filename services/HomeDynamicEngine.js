@@ -557,6 +557,7 @@ class HomeDynamicEngine {
           hasDiscount: ad.priceHistory?.length > 0,
           badge,
           badgeType,
+          createdAt: ad.createdAt,
         };
       });
     } catch (error) {

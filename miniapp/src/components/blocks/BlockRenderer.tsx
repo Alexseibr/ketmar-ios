@@ -89,6 +89,28 @@ interface BlockItem {
   badge?: string;
   badgeType?: 'farmer' | 'garden' | 'free' | 'used';
   isHot?: boolean;
+  createdAt?: string | Date;
+}
+
+function formatTimeAgo(date: string | Date | undefined): string | null {
+  if (!date) return null;
+  
+  const now = Date.now();
+  const created = new Date(date).getTime();
+  const diffMs = now - created;
+  
+  if (diffMs < 0) return null;
+  
+  const minutes = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (minutes < 1) return 'только что';
+  if (minutes < 60) return `${minutes} мин`;
+  if (hours < 24) return `${hours} ч`;
+  if (days < 7) return `${days} д`;
+  if (days < 30) return `${Math.floor(days / 7)} нед`;
+  return `${Math.floor(days / 30)} мес`;
 }
 
 interface FilterOption {
@@ -678,19 +700,33 @@ function AdCard({
         }}>
           {item.title}
         </div>
-        {item.distance != null && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            marginTop: 4,
-            fontSize: zone === 'village' ? 12 : 11,
-            color: '#9CA3AF',
-          }}>
-            <MapPin size={zone === 'village' ? 14 : 12} />
-            {item.distance} км
-          </div>
-        )}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          marginTop: 4,
+          fontSize: zone === 'village' ? 11 : 10,
+          color: '#9CA3AF',
+        }}>
+          {item.distance != null && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <MapPin size={zone === 'village' ? 12 : 10} />
+              {item.distance} км
+            </span>
+          )}
+          {item.createdAt && (
+            <span style={{
+              padding: '2px 6px',
+              background: '#F3F4F6',
+              borderRadius: 4,
+              fontSize: zone === 'village' ? 10 : 9,
+              color: '#6B7280',
+              fontWeight: 500,
+            }}>
+              {formatTimeAgo(item.createdAt)}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

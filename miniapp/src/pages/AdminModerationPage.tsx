@@ -61,6 +61,46 @@ const moderationStatusConfig: Record<string, { bg: string; text: string; label: 
   rejected: { bg: '#FEE2E2', text: '#DC2626', label: 'Отклонено' },
 };
 
+function pluralize(n: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(n);
+  const lastTwo = abs % 100;
+  const lastOne = abs % 10;
+  
+  if (lastTwo >= 11 && lastTwo <= 14) return many;
+  if (lastOne === 1) return one;
+  if (lastOne >= 2 && lastOne <= 4) return few;
+  return many;
+}
+
+function formatTimeAgoDetailed(date: string | Date): string {
+  const now = Date.now();
+  const created = new Date(date).getTime();
+  const diffMs = now - created;
+  
+  if (diffMs < 0) return 'только что';
+  
+  const minutes = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (minutes < 1) return 'только что';
+  if (minutes < 60) {
+    const word = pluralize(minutes, 'минуту', 'минуты', 'минут');
+    return `${minutes} ${word} назад`;
+  }
+  if (hours < 24) {
+    const word = pluralize(hours, 'час', 'часа', 'часов');
+    return `${hours} ${word} назад`;
+  }
+  if (days === 1) return 'вчера';
+  if (days < 7) {
+    const word = pluralize(days, 'день', 'дня', 'дней');
+    return `${days} ${word} назад`;
+  }
+  
+  return new Date(date).toLocaleDateString('ru-RU');
+}
+
 export default function AdminModerationPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -530,13 +570,30 @@ export default function AdminModerationPage() {
                         </div>
                       )}
 
-                      {/* Views */}
+                      {/* Views & Time */}
                       <div style={{ 
                         fontSize: 11, 
                         color: '#9CA3AF',
                         marginBottom: 10,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
                       }}>
-                        👁 {ad.views || 0} просмотров • {new Date(ad.createdAt).toLocaleDateString('ru-RU')}
+                        <span>👁 {ad.views || 0} просмотров</span>
+                        <span style={{
+                          padding: '2px 8px',
+                          background: '#FEF3C7',
+                          color: '#92400E',
+                          borderRadius: 6,
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}>
+                          <Clock size={10} />
+                          {formatTimeAgoDetailed(ad.createdAt)}
+                        </span>
                       </div>
 
                       {/* Actions */}
