@@ -3,6 +3,12 @@ import Ad from '../../models/Ad.js';
 import AdView from '../../models/AdView.js';
 import Season from '../../models/Season.js';
 import { haversineDistanceKm } from '../../utils/distance.js';
+import { 
+  fetchNewAdsProgressive, 
+  fetchTrendingAdsProgressive, 
+  fetchFreeAdsProgressive,
+  fetchFarmerAdsProgressive,
+} from '../../utils/fetchAdsProgressiveRadius.js';
 
 const router = Router();
 
@@ -69,67 +75,20 @@ router.get('/', async (req, res) => {
     let farmerAds, freeAds, discountAds, popularAds, newAds;
 
     if (hasLocation) {
-      const geoNearPipeline = (matchFilter, limit = DEFAULT_LIMIT) => [
-        {
-          $geoNear: {
-            near: { type: 'Point', coordinates: [userLng, userLat] },
-            distanceField: 'distanceMeters',
-            maxDistance: radius * 1000,
-            spherical: true,
-            key: 'location.geo',
-            query: { ...baseQuery, ...matchFilter },
-          },
-        },
-        { $limit: limit },
-      ];
-
-      [farmerAds, freeAds, discountAds, popularAds, newAds] = await Promise.all([
-        Ad.aggregate(geoNearPipeline({ isFarmerAd: true })),
-        Ad.aggregate(geoNearPipeline({ isFreeGiveaway: true })),
-        Ad.aggregate(geoNearPipeline({ 'priceHistory.0': { $exists: true } })),
-        Ad.aggregate([
-          ...geoNearPipeline({}),
-          { $sort: { views: -1, favorites: -1 } },
-        ]),
-        Ad.aggregate([
-          ...geoNearPipeline({}),
-          { $sort: { createdAt: -1 } },
-        ]),
+      [farmerAds, freeAds, popularAds, newAds] = await Promise.all([
+        fetchFarmerAdsProgressive(userLat, userLng),
+        fetchFreeAdsProgressive(userLat, userLng),
+        fetchTrendingAdsProgressive(userLat, userLng),
+        fetchNewAdsProgressive(userLat, userLng),
       ]);
 
-      // Fallback: если мало объявлений в радиусе, добираем из всей страны
-      const fillFromGlobal = async (localAds, filter, sortBy) => {
-        if (localAds.length >= MIN_ADS_FOR_CAROUSEL) return localAds;
-        
-        const existingIds = localAds.map(a => a._id.toString());
-        const needed = DEFAULT_LIMIT - localAds.length;
-        
-        const globalAds = await Ad.find({
-          ...baseQuery,
-          ...filter,
-          _id: { $nin: existingIds.map(id => id) },
-        })
-          .sort(sortBy)
-          .limit(needed)
-          .lean();
-
-        // Добавляем расстояние для глобальных объявлений
-        const globalWithDistance = globalAds.map(ad => {
-          if (ad.location?.lat && ad.location?.lng) {
-            ad.distanceMeters = haversineDistanceKm(userLat, userLng, ad.location.lat, ad.location.lng) * 1000;
-          }
-          return ad;
-        });
-
-        return [...localAds, ...globalWithDistance];
-      };
-
-      // Заполняем недостающие объявления из глобального поиска
-      [newAds, popularAds, freeAds] = await Promise.all([
-        fillFromGlobal(newAds, {}, { createdAt: -1 }),
-        fillFromGlobal(popularAds, {}, { views: -1, favorites: -1 }),
-        fillFromGlobal(freeAds, { isFreeGiveaway: true }, { createdAt: -1 }),
-      ]);
+      discountAds = await Ad.find({
+        ...baseQuery,
+        'priceHistory.0': { $exists: true },
+      })
+        .sort({ createdAt: -1 })
+        .limit(DEFAULT_LIMIT)
+        .lean();
 
     } else {
       [farmerAds, freeAds, discountAds, popularAds, newAds] = await Promise.all([

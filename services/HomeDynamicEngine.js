@@ -3,6 +3,7 @@ import Ad from '../models/Ad.js';
 import SellerProfile from '../models/SellerProfile.js';
 import Season from '../models/Season.js';
 import ngeohash from 'ngeohash';
+import { fetchAdsProgressiveRadius } from '../utils/fetchAdsProgressiveRadius.js';
 
 const BLOCK_CACHE = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -385,18 +386,15 @@ class HomeDynamicEngine {
   }
 
   async fetchAds(lat, lng, radiusKm, config) {
-    const baseQuery = {
-      status: 'active',
-      photos: { $exists: true, $ne: [] },
-    };
+    const filter = {};
 
     if (config.categoryFilter) {
-      Object.assign(baseQuery, config.categoryFilter);
+      Object.assign(filter, config.categoryFilter);
     }
 
     if (config.searchTerms?.length) {
       const searchRegex = config.searchTerms.map(t => new RegExp(t, 'i'));
-      baseQuery.$or = [
+      filter.$or = [
         { title: { $in: searchRegex } },
         { description: { $in: searchRegex } },
       ];
@@ -405,36 +403,14 @@ class HomeDynamicEngine {
     const sortBy = config.sortBy || { createdAt: -1 };
 
     try {
-      const ads = await Ad.aggregate([
-        {
-          $geoNear: {
-            near: { type: 'Point', coordinates: [lng, lat] },
-            distanceField: 'distanceMeters',
-            maxDistance: radiusKm * 1000,
-            spherical: true,
-            key: 'location.geo',
-            query: baseQuery,
-          },
-        },
-        { $sort: sortBy },
-        { $limit: this.maxItemsPerBlock },
-        {
-          $project: {
-            _id: 1,
-            title: 1,
-            price: 1,
-            currency: 1,
-            photos: 1,
-            location: 1,
-            distanceMeters: 1,
-            views: 1,
-            favorites: 1,
-            isFarmerAd: 1,
-            isFreeGiveaway: 1,
-            priceHistory: 1,
-          },
-        },
-      ]);
+      const ads = await fetchAdsProgressiveRadius({
+        lat,
+        lng,
+        filter,
+        minItems: this.minItemsForCarousel,
+        maxItems: this.maxItemsPerBlock,
+        sortBy,
+      });
 
       return ads.map(ad => ({
         id: ad._id.toString(),
@@ -443,6 +419,7 @@ class HomeDynamicEngine {
         currency: ad.currency || 'BYN',
         photo: ad.photos?.[0] || null,
         distance: ad.distanceMeters ? Math.round(ad.distanceMeters / 100) / 10 : null,
+        distanceKm: ad.distanceKm,
         location: ad.location?.cityName || null,
         isFarmer: ad.isFarmerAd,
         isFree: ad.isFreeGiveaway,
