@@ -93,6 +93,11 @@ export interface CreateAdPayload {
   publishAt?: string;
   isFreeGiveaway?: boolean;
   giveawaySubcategoryId?: string;
+  demandContext?: {
+    query: string | null;
+    category?: string;
+    source: 'local_demand' | 'hot_search' | 'category_demand';
+  };
 }
 
 export async function fetchMyAds(sellerTelegramId: number) {

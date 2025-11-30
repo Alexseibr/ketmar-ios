@@ -78,6 +78,7 @@ interface BlockItem {
   link?: string;
   icon?: string;
   query?: string;
+  displayQuery?: string;
   count?: number;
   category?: string;
   rating?: number;
@@ -87,6 +88,7 @@ interface BlockItem {
   specialty?: string;
   badge?: string;
   badgeType?: 'farmer' | 'garden' | 'free' | 'used';
+  isHot?: boolean;
 }
 
 interface FilterOption {
@@ -97,13 +99,14 @@ interface FilterOption {
 }
 
 interface HomeBlock {
-  type: 'banners' | 'horizontal_list';
+  type: 'banners' | 'horizontal_list' | 'demand_chips';
   id: string;
   title?: string;
   subtitle?: string;
   icon?: string;
   accentColor?: string;
   link?: string;
+  instruction?: string;
   items: BlockItem[];
   filters?: FilterOption[] | null;
 }
@@ -175,6 +178,16 @@ export function BlockRenderer({ block, zone, uiConfig }: BlockRendererProps) {
 
   if (block.type === 'banners') {
     return <BannersBlock items={block.items} zone={zone} uiConfig={uiConfig} />;
+  }
+
+  if (block.type === 'demand_chips') {
+    return (
+      <DemandChipsBlock 
+        block={block} 
+        zone={zone}
+        onChipClick={(query, category) => navigate(`/create?demandQuery=${encodeURIComponent(query)}&demandCategory=${category || ''}`)}
+      />
+    );
   }
 
   if (block.id === 'second_hand') {
@@ -256,6 +269,125 @@ function BannersBlock({ items, zone, uiConfig }: { items: BlockItem[]; zone: Zon
           </SwiperSlide>
         ))}
       </Swiper>
+    </div>
+  );
+}
+
+function DemandChipsBlock({ 
+  block, 
+  zone,
+  onChipClick,
+}: { 
+  block: HomeBlock; 
+  zone: ZoneType;
+  onChipClick: (query: string, category?: string) => void;
+}) {
+  const IconComponent = block.icon ? ICONS[block.icon] || Search : Search;
+  const styles = ZONE_STYLES[zone];
+  
+  const iconBoxSize = zone === 'village' ? 42 : zone === 'city_center' ? 32 : 36;
+  const chipPadding = zone === 'village' ? '12px 18px' : zone === 'city_center' ? '8px 14px' : '10px 16px';
+  const chipFontSize = zone === 'village' ? 15 : zone === 'city_center' ? 13 : 14;
+  const chipGap = zone === 'village' ? 10 : 8;
+
+  return (
+    <div style={{ marginBottom: styles.sectionPadding }}>
+      <div 
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: `0 ${styles.sectionPadding}px`,
+          marginBottom: styles.headerGap,
+          gap: styles.headerGap,
+        }}
+      >
+        <div style={{
+          width: iconBoxSize,
+          height: iconBoxSize,
+          borderRadius: zone === 'village' ? 10 : 12,
+          background: `${block.accentColor || '#8B5CF6'}15`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: styles.shadowStrength,
+        }}>
+          <IconComponent size={styles.iconSize} color={block.accentColor || '#8B5CF6'} />
+        </div>
+        <div>
+          <div style={{ 
+            fontSize: styles.titleSize, 
+            fontWeight: 700, 
+            color: '#111827',
+            letterSpacing: zone === 'village' ? '0' : '-0.01em',
+          }}>
+            {block.title}
+          </div>
+          {block.subtitle && (
+            <div style={{ fontSize: styles.subtitleSize, color: '#6B7280' }}>
+              {block.subtitle}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {block.instruction && (
+        <div 
+          style={{
+            padding: `0 ${styles.sectionPadding}px`,
+            marginBottom: 12,
+            fontSize: zone === 'village' ? 13 : 12,
+            color: '#6B7280',
+            fontStyle: 'italic',
+          }}
+        >
+          {block.instruction}
+        </div>
+      )}
+
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: chipGap,
+        padding: `0 ${styles.sectionPadding}px`,
+      }}>
+        {block.items.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => onChipClick(item.query || item.displayQuery, item.category)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: chipPadding,
+              background: item.isHot 
+                ? 'linear-gradient(135deg, #8B5CF6 0%, #6366f1 100%)' 
+                : '#F3F4F6',
+              color: item.isHot ? '#FFF' : '#374151',
+              border: 'none',
+              borderRadius: 20,
+              fontSize: chipFontSize,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              boxShadow: item.isHot ? '0 2px 8px rgba(139, 92, 246, 0.3)' : 'none',
+            }}
+            data-testid={`chip-demand-${item.id}`}
+          >
+            {item.isHot && <Flame size={14} />}
+            {item.displayQuery || item.query}
+            {item.count && item.count >= 5 && (
+              <span style={{
+                background: item.isHot ? 'rgba(255,255,255,0.2)' : '#E5E7EB',
+                padding: '2px 6px',
+                borderRadius: 10,
+                fontSize: chipFontSize - 2,
+              }}>
+                {item.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

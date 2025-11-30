@@ -468,6 +468,30 @@ const adSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    
+    demandContext: {
+      query: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      category: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      source: {
+        type: String,
+        enum: ['local_demand', 'hot_search', 'category_demand', null],
+        default: null,
+      },
+      createdFromDemand: {
+        type: Boolean,
+        default: false,
+        index: true,
+      },
+    },
+    
     distance: {
       type: Number,
       default: null,

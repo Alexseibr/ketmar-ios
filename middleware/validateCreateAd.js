@@ -279,6 +279,18 @@ async function validateCreateAd(req, res, next) {
       console.log(`[AdLimit] User ${sellerTelegramId} exceeded daily limit. Ad sent to moderation.`);
     }
 
+    let demandContext = undefined;
+    if (payload.demandContext && isPlainObject(payload.demandContext)) {
+      const dc = payload.demandContext;
+      const validSources = ['local_demand', 'hot_search', 'category_demand'];
+      demandContext = {
+        query: dc.query ? normalizeString(dc.query) : null,
+        category: dc.category ? normalizeString(dc.category) : null,
+        source: validSources.includes(dc.source) ? dc.source : null,
+        createdFromDemand: true,
+      };
+    }
+
     const sanitized = {
       title,
       description: normalizeString(payload.description),
@@ -320,6 +332,7 @@ async function validateCreateAd(req, res, next) {
         : undefined,
       isLiveSpot: Boolean(payload.isLiveSpot),
       isFreeGiveaway,
+      demandContext,
       _limitExceeded: limitExceeded,
       _limitInfo: limitCheck,
     };
@@ -342,6 +355,9 @@ async function validateCreateAd(req, res, next) {
     }
     if (!sanitized.publishAt) {
       delete sanitized.publishAt;
+    }
+    if (!sanitized.demandContext) {
+      delete sanitized.demandContext;
     }
 
     req.validatedAdPayload = sanitized;

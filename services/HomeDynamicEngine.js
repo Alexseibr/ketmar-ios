@@ -12,6 +12,7 @@ const ZONE_BLOCK_PRIORITY = {
   village: [
     'banners',
     'darom',
+    'local_demand',
     'second_hand',
     'garden_help',
     'machinery',
@@ -25,6 +26,7 @@ const ZONE_BLOCK_PRIORITY = {
   suburb: [
     'banners',
     'darom',
+    'local_demand',
     'second_hand',
     'farmer',
     'garden_help',
@@ -41,6 +43,7 @@ const ZONE_BLOCK_PRIORITY = {
   city_center: [
     'banners',
     'darom',
+    'local_demand',
     'second_hand',
     'farmer',
     'tech_repair',
@@ -84,6 +87,16 @@ const BLOCK_CONFIGS = {
     },
     searchTerms: ['малина', 'клубника', 'черника', 'смородина', 'крыжовник', 'ежевика', 'голубика', 'яблоки', 'груши', 'вишня', 'черешня', 'слива', 'абрикос', 'персик', 'виноград', 'арбуз', 'дыня', 'картофель', 'картошка', 'морковь', 'свекла', 'капуста', 'помидоры', 'томаты', 'огурцы', 'перец', 'баклажаны', 'кабачки', 'тыква', 'лук', 'чеснок', 'укроп', 'петрушка', 'салат', 'редис', 'редька', 'мёд', 'мед', 'молоко', 'сметана', 'творог', 'сыр', 'масло', 'яйца', 'мясо', 'курица', 'свинина', 'говядина', 'баранина', 'кролик', 'утка', 'гусь', 'индейка', 'сало', 'грибы', 'орехи', 'варенье', 'соленья', 'консервы', 'компот', 'сок'],
     includeByKeywords: true,
+  },
+  local_demand: {
+    title: 'Что ищут рядом',
+    subtitle: 'Проверьте, что востребовано в вашем районе',
+    icon: 'search',
+    accentColor: '#8B5CF6',
+    blockType: 'demand_chips',
+    instruction: 'Нажмите на товар, чтобы разместить объявление',
+    allowedCategories: ['goods', 'garden', 'farmer', 'handmade', 'second_hand', 'kids', 'electronics', 'furniture', 'clothing', 'sports', 'home', 'auto'],
+    excludeCategories: ['uslugi', 'remont', 'master', 'electrician', 'plumber', 'services'],
   },
   services: {
     title: 'Услуги',
@@ -414,6 +427,8 @@ class HomeDynamicEngine {
 
         if (blockType === 'banners') {
           items = PROMO_BANNERS;
+        } else if (blockType === 'local_demand') {
+          items = await this.fetchLocalDemand(lat, lng, config);
         } else if (config.fetchType === 'shops') {
           items = await this.fetchShops(lat, lng, radiusKm);
         } else if (config.fetchType === 'bloggers') {
@@ -426,8 +441,14 @@ class HomeDynamicEngine {
           items = await this.fetchAds(lat, lng, radiusKm, config);
         }
 
+        const blockTypeOutput = blockType === 'banners' 
+          ? 'banners' 
+          : config.blockType === 'demand_chips' 
+            ? 'demand_chips' 
+            : 'horizontal_list';
+
         blocks.push({
-          type: blockType === 'banners' ? 'banners' : 'horizontal_list',
+          type: blockTypeOutput,
           id: blockType,
           title: config.title,
           subtitle: config.subtitle,
@@ -436,6 +457,7 @@ class HomeDynamicEngine {
           link: config.link,
           items: items.slice(0, this.maxItemsPerBlock),
           filters: config.filters || null,
+          instruction: config.instruction || null,
         });
       } catch (error) {
         console.error(`[HomeDynamicEngine] Error fetching block ${blockType}:`, error.message);
@@ -638,6 +660,73 @@ class HomeDynamicEngine {
       }));
     } catch (error) {
       console.error('[HomeDynamicEngine] fetchArtisans error:', error.message);
+      return [];
+    }
+  }
+
+  async fetchLocalDemand(lat, lng, config) {
+    try {
+      const DemandStats = (await import('../models/DemandStats.js')).default;
+      
+      const excludeCategories = config?.excludeCategories || ['uslugi', 'remont', 'master', 'electrician', 'plumber', 'services'];
+      const excludeTerms = ['ремонт', 'услуги', 'мастер', 'электрик', 'сантехник', 'уборка', 'клининг', 'вывоз', 'грузоперевозки'];
+      
+      const radiusSteps = [0.3, 1, 3, 5, 10, 20];
+      let demands = [];
+      
+      for (const radiusKm of radiusSteps) {
+        const geoHash = ngeohash.encode(lat, lng, radiusKm <= 1 ? 6 : radiusKm <= 5 ? 5 : 4);
+        const geoHashPrefix = geoHash.substring(0, radiusKm <= 1 ? 5 : radiusKm <= 5 ? 4 : 3);
+        
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        
+        const results = await DemandStats.find({
+          geoHash: { $regex: `^${geoHashPrefix}` },
+          period: { $in: ['day', 'week'] },
+          periodStart: { $gte: weekAgo },
+          searchesCount: { $gte: 2 },
+          detectedCategoryId: { $nin: excludeCategories },
+        })
+          .sort({ searchesCount: -1 })
+          .limit(12)
+          .lean();
+        
+        const filteredResults = results.filter(d => {
+          const query = (d.normalizedQuery || '').toLowerCase();
+          return !excludeTerms.some(term => query.includes(term));
+        });
+        
+        if (filteredResults.length >= 4) {
+          demands = filteredResults;
+          break;
+        }
+        
+        if (filteredResults.length > demands.length) {
+          demands = filteredResults;
+        }
+      }
+      
+      const uniqueQueries = new Map();
+      demands.forEach(d => {
+        const query = d.normalizedQuery;
+        if (!uniqueQueries.has(query) || d.searchesCount > uniqueQueries.get(query).searchesCount) {
+          uniqueQueries.set(query, d);
+        }
+      });
+      
+      return Array.from(uniqueQueries.values())
+        .slice(0, 8)
+        .map(d => ({
+          id: d._id.toString(),
+          query: d.normalizedQuery,
+          displayQuery: d.normalizedQuery.charAt(0).toUpperCase() + d.normalizedQuery.slice(1),
+          category: d.detectedCategoryId,
+          count: d.searchesCount,
+          isHot: d.isHighDemand || d.searchesCount >= 10,
+        }));
+    } catch (error) {
+      console.error('[HomeDynamicEngine] fetchLocalDemand error:', error.message);
       return [];
     }
   }

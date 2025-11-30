@@ -1,11 +1,11 @@
-import { useState, useEffect, useReducer, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useReducer, useRef, useCallback, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useUserStore } from '@/store/useUserStore';
 import { createAd, CreateAdPayload } from '@/api/ads';
 import { resolveGeoLocation, getPresetLocations, PresetLocation } from '@/api/geo';
 import { CategoryNode } from '@/types';
-import { ArrowLeft, MapPin, Loader2, Camera, X, Check, RefreshCw, Edit3, Info, Bell, GripVertical } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, Camera, X, Check, RefreshCw, Edit3, Info, Bell, GripVertical, Flame, TrendingUp } from 'lucide-react';
 import ImageUploader from '@/components/ImageUploader';
 import PriceHint from '@/components/PriceHint';
 import { SchedulePublishBlock } from '@/components/schedule/SchedulePublishBlock';
@@ -216,6 +216,7 @@ function draftReducer(state: DraftAd, action: WizardAction): DraftAd {
 
 export default function CreateAdPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const user = useUserStore((state) => state.user);
   const { formatCard } = useFormatPrice();
   const [currentStep, setCurrentStep] = useState(1);
@@ -224,11 +225,21 @@ export default function CreateAdPage() {
   const [error, setError] = useState('');
   const [photoStepResetKey, setPhotoStepResetKey] = useState(0);
 
+  const demandQuery = useMemo(() => searchParams.get('demandQuery'), [searchParams]);
+  const demandCategory = useMemo(() => searchParams.get('demandCategory'), [searchParams]);
+  const isDemandPrefill = !!demandQuery;
+
   const { data: categoriesData } = useQuery<CategoryNode[]>({
     queryKey: ['/api/categories'],
     staleTime: 1000 * 60 * 30,
   });
   const categories = categoriesData || [];
+
+  useEffect(() => {
+    if (demandQuery && !draft.info.title) {
+      dispatch({ type: 'SET_INFO', payload: { title: demandQuery } });
+    }
+  }, [demandQuery, draft.info.title]);
 
   useEffect(() => {
     if (user?.phone) {
@@ -321,6 +332,11 @@ export default function CreateAdPage() {
       contactUsername: draft.contacts.contactUsername || undefined,
       contactInstagram: draft.contacts.contactInstagram || undefined,
       publishAt: draft.publishAt ? draft.publishAt.toISOString() : undefined,
+      demandContext: isDemandPrefill ? {
+        query: demandQuery,
+        category: demandCategory || undefined,
+        source: 'local_demand',
+      } : undefined,
     };
 
     try {
@@ -380,12 +396,32 @@ export default function CreateAdPage() {
         </button>
       </div>
       <div style={{ background: '#fff', borderBottom: '1px solid #E5E7EB', padding: '12px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: isDemandPrefill ? 8 : 12 }}>
           <button onClick={handleBack} style={{ background: 'none', border: 'none', padding: 8, cursor: 'pointer' }} data-testid="button-back">
             <ArrowLeft size={24} color="#111827" />
           </button>
           <h2 style={{ fontSize: 18, fontWeight: 600, margin: 0 }}>Подача объявления</h2>
         </div>
+        {isDemandPrefill && (
+          <div 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 12px',
+              background: 'linear-gradient(135deg, #8B5CF6 0%, #6366f1 100%)',
+              borderRadius: 10,
+              marginBottom: 12,
+            }}
+            data-testid="badge-demand-prefill"
+          >
+            <TrendingUp size={16} color="#FFF" />
+            <span style={{ color: '#FFF', fontSize: 13, fontWeight: 600 }}>
+              Товар востребован в вашем районе
+            </span>
+            <Flame size={14} color="#FDE047" />
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 6 }}>
           {[1, 2, 3, 4, 5].map((step) => (
             <div key={step} style={{ flex: 1, height: 4, borderRadius: 2, background: step <= currentStep ? BRAND_BLUE : '#E5E7EB' }} />
