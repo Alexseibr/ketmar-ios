@@ -56,6 +56,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
     if (tg) {
       tg.ready();
       tg.expand();
+      
+      if ('disableVerticalSwipes' in tg) {
+        (tg as any).disableVerticalSwipes();
+      }
     }
   }, [isTelegram]);
 

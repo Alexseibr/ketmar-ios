@@ -101,6 +101,11 @@ export default function App() {
           tg.ready();
           tg.expand();
           
+          if ('disableVerticalSwipes' in tg) {
+            (tg as any).disableVerticalSwipes();
+            console.log('✅ Vertical swipes disabled - app won\'t close on scroll');
+          }
+          
           if ('enableClosingConfirmation' in tg) {
             (tg as any).enableClosingConfirmation();
           }
