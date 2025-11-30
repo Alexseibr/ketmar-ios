@@ -244,10 +244,31 @@ const sellerProfileSchema = new mongoose.Schema(
     }],
 
     // === Delivery & Roles ===
+    // Primary role (legacy - for backward compatibility)
     role: {
       type: String,
       enum: ['SHOP', 'FARMER', 'BLOGGER', 'ARTISAN'],
       default: 'SHOP',
+    },
+    // Multiple roles support - one seller can be BLOGGER + ARTISAN
+    roles: {
+      type: [{
+        type: String,
+        enum: ['SHOP', 'FARMER', 'BLOGGER', 'ARTISAN'],
+      }],
+      default: ['SHOP'],
+      validate: {
+        validator: function(arr) {
+          return arr && arr.length > 0 && arr.length <= 4;
+        },
+        message: 'Must have at least 1 role and max 4 roles',
+      },
+    },
+    // Primary role index for sorting/display
+    primaryRoleIndex: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     canDeliver: {
       type: Boolean,
@@ -288,6 +309,70 @@ sellerProfileSchema.index({ 'geo': '2dsphere' });
 sellerProfileSchema.index({ subscribersCount: -1 });
 sellerProfileSchema.index({ 'ratings.score': -1 });
 sellerProfileSchema.index({ createdAt: -1 });
+sellerProfileSchema.index({ roles: 1 });
+
+// Virtual for getting primary role from roles array
+sellerProfileSchema.virtual('primaryRole').get(function() {
+  if (this.roles && this.roles.length > 0) {
+    const idx = Math.min(this.primaryRoleIndex || 0, this.roles.length - 1);
+    return this.roles[idx];
+  }
+  return this.role || 'SHOP';
+});
+
+// Middleware to sync role field with roles array (backward compatibility)
+sellerProfileSchema.pre('save', function(next) {
+  // If roles is empty but role exists, initialize roles from role
+  if ((!this.roles || this.roles.length === 0) && this.role) {
+    this.roles = [this.role];
+  }
+  
+  // Sync role field with primary role from roles array
+  if (this.roles && this.roles.length > 0) {
+    const idx = Math.min(this.primaryRoleIndex || 0, this.roles.length - 1);
+    this.role = this.roles[idx];
+  }
+  
+  // Also sync legacy shopRole field if it exists
+  if (this.shopRole !== undefined) {
+    this.shopRole = this.role;
+  }
+  
+  next();
+});
+
+// Helper methods for roles
+sellerProfileSchema.methods.hasRole = function(role) {
+  return this.roles && this.roles.includes(role);
+};
+
+sellerProfileSchema.methods.addRole = function(role) {
+  if (!this.roles) this.roles = [];
+  if (!this.roles.includes(role)) {
+    this.roles.push(role);
+  }
+  return this;
+};
+
+sellerProfileSchema.methods.removeRole = function(role) {
+  if (this.roles && this.roles.length > 1) {
+    this.roles = this.roles.filter(r => r !== role);
+    // Adjust primaryRoleIndex if needed
+    if (this.primaryRoleIndex >= this.roles.length) {
+      this.primaryRoleIndex = 0;
+    }
+  }
+  return this;
+};
+
+sellerProfileSchema.methods.setPrimaryRole = function(role) {
+  const idx = this.roles ? this.roles.indexOf(role) : -1;
+  if (idx >= 0) {
+    this.primaryRoleIndex = idx;
+    this.role = role;
+  }
+  return this;
+};
 
 sellerProfileSchema.statics.generateSlug = async function(name) {
   const baseSlug = name

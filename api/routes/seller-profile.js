@@ -46,6 +46,8 @@ router.post('/', authMiddleware, async (req, res) => {
       deliveryInfo,
       tags,
       role,
+      roles,
+      primaryRoleIndex,
       canDeliver,
       deliveryRadiusKm,
       defaultDeliveryPrice,
@@ -63,6 +65,17 @@ router.post('/', authMiddleware, async (req, res) => {
     
     const slug = await SellerProfile.generateSlug(name);
     
+    // Handle multiple roles - accept either roles array or single role
+    const validRoles = ['SHOP', 'FARMER', 'BLOGGER', 'ARTISAN'];
+    let finalRoles = ['SHOP'];
+    
+    if (roles && Array.isArray(roles) && roles.length > 0) {
+      finalRoles = roles.filter(r => validRoles.includes(r));
+      if (finalRoles.length === 0) finalRoles = ['SHOP'];
+    } else if (role && validRoles.includes(role)) {
+      finalRoles = [role];
+    }
+    
     const profile = new SellerProfile({
       userId: user._id,
       telegramId: user.telegramId,
@@ -71,7 +84,7 @@ router.post('/', authMiddleware, async (req, res) => {
       avatar,
       banner,
       description: description?.trim(),
-      isFarmer: Boolean(isFarmer),
+      isFarmer: Boolean(isFarmer) || finalRoles.includes('FARMER'),
       phone: phone || user.phone,
       instagram,
       telegramUsername: telegramUsername || user.username,
@@ -85,7 +98,9 @@ router.post('/', authMiddleware, async (req, res) => {
       workingHours,
       deliveryInfo,
       tags: tags || [],
-      role: role || 'SHOP',
+      roles: finalRoles,
+      role: finalRoles[0],
+      primaryRoleIndex: primaryRoleIndex || 0,
       canDeliver: Boolean(canDeliver),
       deliveryRadiusKm: deliveryRadiusKm ?? null,
       defaultDeliveryPrice: defaultDeliveryPrice ?? null,
@@ -130,14 +145,37 @@ router.put('/', authMiddleware, async (req, res) => {
       'name', 'avatar', 'banner', 'description', 'isFarmer',
       'phone', 'instagram', 'telegramUsername', 'address',
       'city', 'cityCode', 'region', 'workingHours', 'deliveryInfo',
-      'showPhone', 'tags', 'role', 'canDeliver', 'deliveryRadiusKm',
+      'showPhone', 'tags', 'canDeliver', 'deliveryRadiusKm',
       'defaultDeliveryPrice', 'verificationLevel', 'baseLocation',
-      'isVerified',
+      'isVerified', 'primaryRoleIndex',
     ];
     
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         profile[field] = req.body[field];
+      }
+    }
+    
+    // Handle roles update separately with validation
+    if (req.body.roles !== undefined) {
+      const validRoles = ['SHOP', 'FARMER', 'BLOGGER', 'ARTISAN'];
+      if (Array.isArray(req.body.roles) && req.body.roles.length > 0) {
+        const filteredRoles = req.body.roles.filter(r => validRoles.includes(r));
+        if (filteredRoles.length > 0) {
+          profile.roles = filteredRoles;
+          // Sync isFarmer flag
+          profile.isFarmer = filteredRoles.includes('FARMER');
+        }
+      }
+    } else if (req.body.role !== undefined) {
+      // Legacy single role update
+      const validRoles = ['SHOP', 'FARMER', 'BLOGGER', 'ARTISAN'];
+      if (validRoles.includes(req.body.role)) {
+        // Add to roles if not present, set as primary
+        if (!profile.roles.includes(req.body.role)) {
+          profile.roles.push(req.body.role);
+        }
+        profile.setPrimaryRole(req.body.role);
       }
     }
     
@@ -253,6 +291,146 @@ router.put('/my/base-location', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('[SellerProfile] Update base location error:', error);
     return res.status(500).json({ success: false, error: 'server_error' });
+  }
+});
+
+// === Multiple Roles Management ===
+
+// Add a role to seller profile
+router.post('/my/roles', authMiddleware, async (req, res) => {
+  try {
+    const user = req.currentUser;
+    const profile = await SellerProfile.findOne({ userId: user._id });
+
+    if (!profile) {
+      return res.status(404).json({ success: false, error: 'not_found' });
+    }
+
+    const { role } = req.body;
+    const validRoles = ['SHOP', 'FARMER', 'BLOGGER', 'ARTISAN'];
+
+    if (!role || !validRoles.includes(role)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'invalid_role',
+        message: 'Недопустимая роль. Допустимые: SHOP, FARMER, BLOGGER, ARTISAN',
+      });
+    }
+
+    if (profile.roles && profile.roles.includes(role)) {
+      return res.json({ 
+        success: true, 
+        message: 'Роль уже добавлена',
+        roles: profile.roles,
+      });
+    }
+
+    profile.addRole(role);
+    
+    // Sync isFarmer flag
+    if (role === 'FARMER') {
+      profile.isFarmer = true;
+    }
+
+    await profile.save();
+
+    console.log(`[SellerProfile] Added role ${role} to store "${profile.name}"`);
+
+    res.json({ 
+      success: true, 
+      roles: profile.roles,
+      primaryRole: profile.primaryRole,
+    });
+  } catch (error) {
+    console.error('[SellerProfile] Add role error:', error);
+    res.status(500).json({ success: false, error: 'server_error' });
+  }
+});
+
+// Remove a role from seller profile
+router.delete('/my/roles/:role', authMiddleware, async (req, res) => {
+  try {
+    const user = req.currentUser;
+    const profile = await SellerProfile.findOne({ userId: user._id });
+
+    if (!profile) {
+      return res.status(404).json({ success: false, error: 'not_found' });
+    }
+
+    const { role } = req.params;
+
+    if (!profile.roles || !profile.roles.includes(role)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'role_not_found',
+        message: 'Эта роль не назначена',
+      });
+    }
+
+    if (profile.roles.length <= 1) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'last_role',
+        message: 'Нельзя удалить последнюю роль',
+      });
+    }
+
+    profile.removeRole(role);
+    
+    // Sync isFarmer flag
+    if (role === 'FARMER') {
+      profile.isFarmer = profile.roles.includes('FARMER');
+    }
+
+    await profile.save();
+
+    console.log(`[SellerProfile] Removed role ${role} from store "${profile.name}"`);
+
+    res.json({ 
+      success: true, 
+      roles: profile.roles,
+      primaryRole: profile.primaryRole,
+    });
+  } catch (error) {
+    console.error('[SellerProfile] Remove role error:', error);
+    res.status(500).json({ success: false, error: 'server_error' });
+  }
+});
+
+// Set primary role
+router.put('/my/roles/primary', authMiddleware, async (req, res) => {
+  try {
+    const user = req.currentUser;
+    const profile = await SellerProfile.findOne({ userId: user._id });
+
+    if (!profile) {
+      return res.status(404).json({ success: false, error: 'not_found' });
+    }
+
+    const { role } = req.body;
+
+    if (!profile.roles || !profile.roles.includes(role)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'role_not_found',
+        message: 'Эта роль не назначена',
+      });
+    }
+
+    profile.setPrimaryRole(role);
+    await profile.save();
+
+    console.log(`[SellerProfile] Set primary role ${role} for store "${profile.name}"`);
+
+    res.json({ 
+      success: true, 
+      roles: profile.roles,
+      primaryRole: profile.primaryRole,
+      primaryRoleIndex: profile.primaryRoleIndex,
+    });
+  } catch (error) {
+    console.error('[SellerProfile] Set primary role error:', error);
+    res.status(500).json({ success: false, error: 'server_error' });
   }
 });
 
