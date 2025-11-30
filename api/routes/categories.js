@@ -254,9 +254,28 @@ router.get(
     try {
       const Ad = (await import('../../models/Ad.js')).default;
       
-      // Aggregate counts by category
+      // Build base match query
+      const matchQuery = { status: 'active', categoryId: { $in: categorySlugs } };
+      
+      // Add geo filter if coordinates provided
+      const latNum = lat ? parseFloat(lat) : null;
+      const lngNum = lng ? parseFloat(lng) : null;
+      const radiusNum = parseFloat(radiusKm) || 30;
+      
+      if (latNum && lngNum && !isNaN(latNum) && !isNaN(lngNum)) {
+        // Use $geoWithin with $centerSphere (avoids index selection issues)
+        // centerSphere uses radians: distance / earth radius (6378.1 km)
+        const radiusInRadians = radiusNum / 6378.1;
+        matchQuery.location = {
+          $geoWithin: {
+            $centerSphere: [[lngNum, latNum], radiusInRadians],
+          },
+        };
+      }
+      
+      // Build aggregation pipeline
       const pipeline = [
-        { $match: { status: 'active', categoryId: { $in: categorySlugs } } },
+        { $match: matchQuery },
         { $group: { _id: '$categoryId', count: { $sum: 1 } } },
       ];
 
@@ -275,6 +294,8 @@ router.get(
       res.json({
         ok: true,
         counts,
+        geoFiltered: !!(latNum && lngNum),
+        radiusKm: radiusNum,
         total: Object.values(counts).reduce((a, b) => a + b, 0),
       });
     } catch (error) {
