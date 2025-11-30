@@ -129,6 +129,8 @@ function AdCard({ ad, onClick }: AdCardProps) {
             fontSize: 11,
             fontWeight: 600,
             zIndex: 10,
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
           }}
         >
           {badgeConfig.text}
@@ -185,12 +187,12 @@ function AdCard({ ad, onClick }: AdCardProps) {
         )}
       </div>
 
-      <div style={{ padding: 12 }}>
+      <div style={{ padding: '8px 10px 10px' }}>
         <h3
           data-testid={`second-hand-title-${ad._id}`}
           style={{
-            margin: '0 0 6px',
-            fontSize: 14,
+            margin: '0 0 4px',
+            fontSize: 13,
             fontWeight: 500,
             color: '#1F2937',
             overflow: 'hidden',
@@ -205,7 +207,7 @@ function AdCard({ ad, onClick }: AdCardProps) {
           data-testid={`second-hand-price-${ad._id}`}
           style={{
             margin: 0,
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: 700,
             color: '#F59E0B',
           }}

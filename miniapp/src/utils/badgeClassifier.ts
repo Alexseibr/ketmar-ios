@@ -62,27 +62,27 @@ const SERVICE_KEYWORDS = [
 export const BADGE_CONFIGS: Record<BadgeType, BadgeConfig> = {
   farmer: { 
     text: 'Фермер', 
-    background: '#22C55E', 
+    background: 'rgba(34, 197, 94, 0.85)', 
     color: '#FFFFFF',
   },
   garden: { 
     text: 'Из огорода', 
-    background: '#84CC16', 
+    background: 'rgba(132, 204, 22, 0.85)', 
     color: '#FFFFFF',
   },
   secondhand: { 
     text: 'Б/У', 
-    background: '#F59E0B', 
+    background: 'rgba(245, 158, 11, 0.85)', 
     color: '#FFFFFF',
   },
   free: { 
     text: 'Даром', 
-    background: '#EC4899', 
+    background: 'rgba(236, 72, 153, 0.85)', 
     color: '#FFFFFF',
   },
   service: { 
     text: 'Услуга', 
-    background: '#6366F1', 
+    background: 'rgba(99, 102, 241, 0.85)', 
     color: '#FFFFFF',
   },
 };
