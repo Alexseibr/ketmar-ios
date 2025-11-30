@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, MapPin, Star, Filter, Plus, Briefcase, Users, Clock, ChevronRight, Verified, Loader2 } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useUserStore } from '@/store/useUserStore';
 import useGeoStore from '@/store/useGeoStore';
 
@@ -68,7 +67,6 @@ const PRICE_UNIT_LABELS: Record<string, string> = {
 
 export default function ServicesWorkersPage() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const user = useUserStore((state) => state.user);
   const { coords, radiusKm } = useGeoStore();
 
