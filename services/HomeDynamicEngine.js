@@ -93,6 +93,16 @@ const BLOCK_CONFIGS = {
       price: { $gt: 0 },
     },
     sortBy: { createdAt: -1 },
+    filters: [
+      { id: 'all', label: 'Все', icon: 'grid' },
+      { id: 'electronics', label: 'Техника', icon: 'smartphone', keywords: ['телефон', 'ноутбук', 'планшет', 'компьютер', 'телевизор', 'наушники', 'колонка', 'iphone', 'samsung', 'xiaomi'] },
+      { id: 'furniture', label: 'Мебель', icon: 'sofa', keywords: ['диван', 'кровать', 'шкаф', 'стол', 'стул', 'комод', 'кресло', 'тумба', 'полка'] },
+      { id: 'clothing', label: 'Одежда', icon: 'shirt', keywords: ['куртка', 'платье', 'джинсы', 'пальто', 'обувь', 'кроссовки', 'сапоги', 'свитер', 'футболка'] },
+      { id: 'kids', label: 'Детям', icon: 'baby', keywords: ['коляска', 'детская', 'игрушки', 'кроватка', 'манеж', 'автокресло', 'велосипед детский', 'самокат'] },
+      { id: 'sports', label: 'Спорт', icon: 'dumbbell', keywords: ['велосипед', 'тренажер', 'гантели', 'лыжи', 'коньки', 'ролики', 'самокат', 'скейт', 'палатка'] },
+      { id: 'home', label: 'Для дома', icon: 'home', keywords: ['посуда', 'микроволновка', 'пылесос', 'стиральная', 'холодильник', 'плита', 'утюг', 'чайник'] },
+      { id: 'auto', label: 'Авто', icon: 'car', keywords: ['шины', 'диски', 'запчасти', 'аккумулятор', 'масло', 'автозапчасти', 'колеса'] },
+    ],
   },
   garden_help: {
     title: 'Помощь в огороде',
@@ -392,6 +402,7 @@ class HomeDynamicEngine {
           accentColor: config.accentColor,
           link: config.link,
           items: items.slice(0, this.maxItemsPerBlock),
+          filters: config.filters || null,
         });
       } catch (error) {
         console.error(`[HomeDynamicEngine] Error fetching block ${blockType}:`, error.message);

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { Gift, Tractor, Wrench, Shovel, Sparkles, Store, Palette, Flame, Search, Heart, Tag, Snowflake, Home, Calendar, ChevronRight, MapPin, Scissors, Hammer, Droplets, Trees, Leaf, Wheat, Star, Package, HandHeart, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Gift, Tractor, Wrench, Shovel, Sparkles, Store, Palette, Flame, Search, Heart, Tag, Snowflake, Home, Calendar, ChevronRight, MapPin, Scissors, Hammer, Droplets, Trees, Leaf, Wheat, Star, Package, HandHeart, Plus, Smartphone, Sofa, Shirt, Baby, Dumbbell, Car, LayoutGrid } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
@@ -86,6 +87,13 @@ interface BlockItem {
   specialty?: string;
 }
 
+interface FilterOption {
+  id: string;
+  label: string;
+  icon?: string;
+  keywords?: string[];
+}
+
 interface HomeBlock {
   type: 'banners' | 'horizontal_list';
   id: string;
@@ -95,6 +103,7 @@ interface HomeBlock {
   accentColor?: string;
   link?: string;
   items: BlockItem[];
+  filters?: FilterOption[] | null;
 }
 
 interface UIConfig {
@@ -135,6 +144,13 @@ const ICONS: Record<string, typeof Gift> = {
   star: Star,
   package: Package,
   hand: HandHeart,
+  grid: LayoutGrid,
+  smartphone: Smartphone,
+  sofa: Sofa,
+  shirt: Shirt,
+  baby: Baby,
+  dumbbell: Dumbbell,
+  car: Car,
 };
 
 export function BlockRenderer({ block, zone, uiConfig }: BlockRendererProps) {
@@ -854,11 +870,41 @@ function SecondHandBlock({
   onSeeAllClick: () => void;
   onPostClick: () => void;
 }) {
+  const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
+  const [activeFilter, setActiveFilter] = useState('all');
   const styles = ZONE_STYLES[zone];
   const accentColor = block.accentColor || '#F59E0B';
   const cardWidth = styles.cardWidth;
   const cardBorderRadius = styles.cardBorderRadius;
+
+  const filters = block.filters || [];
+  
+  const filteredItems = activeFilter === 'all' 
+    ? block.items 
+    : block.items.filter(item => {
+        const filter = filters.find(f => f.id === activeFilter);
+        if (!filter?.keywords) return true;
+        const title = (item.title || item.name || '').toLowerCase();
+        return filter.keywords.some(kw => title.includes(kw.toLowerCase()));
+      });
+
+  const handleFilterClick = (filterId: string) => {
+    setActiveFilter(filterId);
+  };
+
+  const handleSeeAllWithFilter = () => {
+    if (activeFilter === 'all') {
+      navigate('/feed?type=second_hand');
+    } else {
+      const filter = filters.find(f => f.id === activeFilter);
+      if (filter?.keywords?.length) {
+        navigate(`/feed?type=second_hand&q=${encodeURIComponent(filter.keywords[0])}`);
+      } else {
+        navigate('/feed?type=second_hand');
+      }
+    }
+  };
 
   return (
     <section style={{ marginBottom: 24 }}>
@@ -900,7 +946,7 @@ function SecondHandBlock({
         </div>
         
         <button
-          onClick={onSeeAllClick}
+          onClick={handleSeeAllWithFilter}
           style={{
             background: 'none',
             border: 'none',
@@ -919,15 +965,93 @@ function SecondHandBlock({
         </button>
       </div>
 
-      <Swiper
-        modules={[Autoplay]}
-        spaceBetween={styles.cardGap}
-        slidesPerView="auto"
-        loop={block.items.length >= 3}
-        freeMode={true}
-        style={{ paddingLeft: styles.sectionPadding, paddingRight: styles.sectionPadding }}
-      >
-        {block.items.map((item) => (
+      {filters.length > 0 && (
+        <div style={{ 
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          marginBottom: 12,
+        }}>
+          <div style={{
+            display: 'flex',
+            gap: 8,
+            padding: `0 ${styles.sectionPadding}px`,
+            minWidth: 'max-content',
+          }}>
+            {filters.map((filter) => {
+              const isActive = activeFilter === filter.id;
+              const FilterIcon = filter.icon ? ICONS[filter.icon] : null;
+              
+              return (
+                <button
+                  key={filter.id}
+                  onClick={() => handleFilterClick(filter.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: zone === 'village' ? '10px 16px' : '8px 14px',
+                    borderRadius: 20,
+                    border: 'none',
+                    background: isActive ? accentColor : '#F3F4F6',
+                    color: isActive ? '#FFF' : '#4B5563',
+                    fontSize: zone === 'village' ? 14 : 13,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s ease',
+                  }}
+                  data-testid={`filter-second-hand-${filter.id}`}
+                >
+                  {FilterIcon && <FilterIcon size={zone === 'village' ? 18 : 16} />}
+                  {filter.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {filteredItems.length === 0 ? (
+        <div style={{
+          padding: `20px ${styles.sectionPadding}px`,
+          textAlign: 'center',
+        }}>
+          <p style={{ color: '#9CA3AF', fontSize: 14, margin: '0 0 12px' }}>
+            Нет товаров в этой категории поблизости
+          </p>
+          <button
+            onClick={onPostClick}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: accentColor,
+              color: '#FFF',
+              border: 'none',
+              borderRadius: 10,
+              padding: '10px 20px',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+            data-testid="button-post-second-hand-empty"
+          >
+            <Plus size={18} />
+            Добавить первым
+          </button>
+        </div>
+      ) : (
+        <Swiper
+          modules={[Autoplay]}
+          spaceBetween={styles.cardGap}
+          slidesPerView="auto"
+          loop={filteredItems.length >= 3}
+          freeMode={true}
+          style={{ paddingLeft: styles.sectionPadding, paddingRight: styles.sectionPadding }}
+        >
+          {filteredItems.map((item) => (
           <SwiperSlide key={item.id} style={{ width: 'auto' }}>
             <div
               onClick={() => onItemClick(item.id)}
@@ -1079,8 +1203,9 @@ function SecondHandBlock({
               Быстро и бесплатно
             </div>
           </div>
-        </SwiperSlide>
-      </Swiper>
+          </SwiperSlide>
+        </Swiper>
+      )}
 
       <div style={{
         padding: `12px ${styles.sectionPadding}px 0`,
