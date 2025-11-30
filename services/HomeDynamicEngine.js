@@ -414,7 +414,7 @@ class HomeDynamicEngine {
     const result = {
       zone,
       confidence,
-      blocks: blocks.filter(b => b.items?.length > 0 || b.type === 'banners'),
+      blocks: blocks.filter(b => b.items?.length > 0 || b.type === 'banners' || b.type === 'banner_card'),
       meta: {
         generatedAt: new Date().toISOString(),
         location: { lat, lng },

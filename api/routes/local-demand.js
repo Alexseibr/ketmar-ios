@@ -6,30 +6,31 @@ import ngeohash from 'ngeohash';
 const router = express.Router();
 
 const STOP_WORDS = [
-  'наркотик', 'наркота', 'трава', 'травка', 'гашиш', 'марихуана', 'кокаин', 'героин', 'амфетамин', 'мефедрон', 'соль', 'спайс', 'лсд', 'экстази', 'метамфетамин', 'опиум', 'морфин', 'кодеин', 'метадон',
-  'блядь', 'бля', 'сука', 'хуй', 'хуя', 'хуе', 'пизд', 'ебать', 'ебан', 'ебло', 'еблан', 'ебал', 'ебаш', 'ёб', 'нахуй', 'пиздец', 'мудак', 'мудила', 'залупа', 'хер', 'манда', 'ёбан',
+  // Drugs
+  'наркотик', 'наркота', 'трава', 'травка', 'гашиш', 'марихуана', 'кокаин', 'героин', 'амфетамин', 
+  'мефедрон', 'соль', 'спайс', 'лсд', 'экстази', 'метамфетамин', 'опиум', 'морфин', 'кодеин', 'метадон',
+  // Profanity
+  'блядь', 'бля', 'сука', 'хуй', 'хуя', 'хуе', 'пизд', 'ебать', 'ебан', 'ебло', 'еблан', 'ебал', 
+  'ебаш', 'ёб', 'нахуй', 'пиздец', 'мудак', 'мудила', 'залупа', 'хер', 'манда', 'ёбан',
+  // Violence & weapons
   'убийство', 'убить', 'оружие', 'пистолет', 'автомат', 'бомба', 'взрывчатка', 'яд', 'отрава',
+  // Adult content
   'детское порно', 'порно', 'секс услуги', 'проститут', 'эскорт',
-  'краденое', 'украденн', 'ворован', 'паленое', 'левое', 'без документов',
-  'фальшив', 'поддельн',
-];
-
-const EXCLUDE_SERVICE_TERMS = [
+  // Stolen/fake goods
+  'краденое', 'украденн', 'ворован', 'паленое', 'левое', 'без документов', 'фальшив', 'поддельн',
+  // Services (excluded from demand - we only want goods)
   'ремонт', 'услуги', 'мастер', 'электрик', 'сантехник', 'уборка', 'клининг', 
   'вывоз', 'грузоперевозки', 'перевозки', 'покос', 'вспашка', 'под ключ', 
-  'монтаж', 'установка', 'демонтаж', 'строительство', 'отделка',
+  'монтаж', 'установка', 'демонтаж', 'строительство', 'отделка', 'сборка',
+  'доставка', 'такси', 'курьер', 'ремонт квартир', 'ремонт техники', 'починка',
+  'настройка', 'обслуживание', 'сервис', 'мастер на час', 'помощь', 'уход за садом',
+  'стрижка газона', 'вырубка', 'спил', 'благоустройство', 'земляные работы',
 ];
 
 function containsStopWords(text) {
   if (!text) return false;
   const lowerText = text.toLowerCase();
   return STOP_WORDS.some(word => lowerText.includes(word));
-}
-
-function containsServiceTerms(text) {
-  if (!text) return false;
-  const lowerText = text.toLowerCase();
-  return EXCLUDE_SERVICE_TERMS.some(term => lowerText.includes(term));
 }
 
 function normalizeQuery(query) {
@@ -84,7 +85,6 @@ router.get('/', async (req, res) => {
       
       if (!normalized || normalized.length < 2) continue;
       if (containsStopWords(normalized)) continue;
-      if (containsServiceTerms(normalized)) continue;
       
       if (!uniqueQueries.has(normalized)) {
         uniqueQueries.set(normalized, {
@@ -134,7 +134,6 @@ router.get('/', async (req, res) => {
         
         if (!normalized || normalized.length < 2) continue;
         if (containsStopWords(normalized)) continue;
-        if (containsServiceTerms(normalized)) continue;
         if (uniqueQueries.has(normalized)) continue;
         
         uniqueQueries.set(normalized, {
