@@ -496,9 +496,27 @@ function HorizontalListBlock({
         msOverflowStyle: 'none',
         scrollbarWidth: 'none',
       }}>
-        {block.items.map((item) => {
+        {block.items.map((item, index) => {
+          const elements: JSX.Element[] = [];
+          
+          const CTA_INTERVAL = 8;
+          const showCTA = !isShopBlock && !isDemandBlock && !isFairBlock && index > 0 && index % CTA_INTERVAL === 0;
+          
+          if (showCTA) {
+            const ctaType: CTAType = block.id === 'darom' ? 'giveaway' : (index % (CTA_INTERVAL * 2) === 0) ? 'sell' : 'giveaway';
+            elements.push(
+              <CTACard
+                key={`cta-${index}`}
+                type={ctaType}
+                width={cardWidth}
+                borderRadius={cardBorderRadius}
+                zone={zone}
+              />
+            );
+          }
+          
           if (isShopBlock) {
-            return (
+            elements.push(
               <ShopCard 
                 key={item.id} 
                 item={item} 
@@ -508,9 +526,8 @@ function HorizontalListBlock({
                 zone={zone}
               />
             );
-          }
-          if (isDemandBlock) {
-            return (
+          } else if (isDemandBlock) {
+            elements.push(
               <DemandCard 
                 key={item.id} 
                 item={item} 
@@ -519,9 +536,8 @@ function HorizontalListBlock({
                 accentColor={block.accentColor}
               />
             );
-          }
-          if (isFairBlock) {
-            return (
+          } else if (isFairBlock) {
+            elements.push(
               <FairCard 
                 key={item.id} 
                 item={item} 
@@ -529,20 +545,23 @@ function HorizontalListBlock({
                 borderRadius={cardBorderRadius}
               />
             );
+          } else {
+            elements.push(
+              <AdCard 
+                key={item.id} 
+                item={item} 
+                width={cardWidth}
+                borderRadius={cardBorderRadius}
+                titleSize={itemTitleSize}
+                zone={zone}
+                uiConfig={uiConfig}
+                userId={user?.telegramId}
+                onClick={() => onItemClick(item.id)}
+              />
+            );
           }
-          return (
-            <AdCard 
-              key={item.id} 
-              item={item} 
-              width={cardWidth}
-              borderRadius={cardBorderRadius}
-              titleSize={itemTitleSize}
-              zone={zone}
-              uiConfig={uiConfig}
-              userId={user?.telegramId}
-              onClick={() => onItemClick(item.id)}
-            />
-          );
+          
+          return elements;
         })}
       </div>
     </div>
@@ -672,6 +691,103 @@ function AdCard({
             {item.distance} км
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+type CTAType = 'sell' | 'giveaway';
+
+const CTA_CONFIGS: Record<CTAType, { title: string; subtitle: string; color: string; bgColor: string; borderColor: string; link: string }> = {
+  sell: {
+    title: 'Продать своё',
+    subtitle: 'Быстро и бесплатно',
+    color: '#F59E0B',
+    bgColor: '#FFFBEB',
+    borderColor: '#FCD34D',
+    link: '/create',
+  },
+  giveaway: {
+    title: 'Отдам даром',
+    subtitle: 'Одно фото — и готово',
+    color: '#EC4899',
+    bgColor: '#FDF2F8',
+    borderColor: '#F9A8D4',
+    link: '/create-giveaway',
+  },
+};
+
+function CTACard({
+  type,
+  width,
+  borderRadius,
+  zone,
+}: {
+  type: CTAType;
+  width: number;
+  borderRadius: number;
+  zone: ZoneType;
+}) {
+  const navigate = useNavigate();
+  const config = CTA_CONFIGS[type];
+  const styles = ZONE_STYLES[zone];
+  
+  const iconSize = zone === 'village' ? 32 : zone === 'city_center' ? 24 : 28;
+  const titleSize = zone === 'village' ? 16 : zone === 'city_center' ? 13 : 14;
+  const subtitleSize = zone === 'village' ? 13 : zone === 'city_center' ? 11 : 12;
+
+  return (
+    <div
+      onClick={() => navigate(config.link)}
+      style={{
+        minWidth: width,
+        maxWidth: width,
+        scrollSnapAlign: 'start',
+        cursor: 'pointer',
+      }}
+      data-testid={`card-cta-${type}`}
+    >
+      <div style={{
+        width: '100%',
+        aspectRatio: zone === 'city_center' ? '4/5' : '1',
+        borderRadius,
+        background: config.bgColor,
+        border: `2px dashed ${config.borderColor}`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        boxSizing: 'border-box',
+      }}>
+        <div style={{
+          width: zone === 'village' ? 56 : zone === 'city_center' ? 40 : 48,
+          height: zone === 'village' ? 56 : zone === 'city_center' ? 40 : 48,
+          borderRadius: '50%',
+          background: `${config.color}20`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: zone === 'village' ? 14 : 10,
+        }}>
+          <Plus size={iconSize} color={config.color} strokeWidth={2.5} />
+        </div>
+        <div style={{
+          fontSize: titleSize,
+          fontWeight: 700,
+          color: config.color,
+          textAlign: 'center',
+          marginBottom: 4,
+        }}>
+          {config.title}
+        </div>
+        <div style={{
+          fontSize: subtitleSize,
+          color: '#6B7280',
+          textAlign: 'center',
+        }}>
+          {config.subtitle}
+        </div>
       </div>
     </div>
   );
