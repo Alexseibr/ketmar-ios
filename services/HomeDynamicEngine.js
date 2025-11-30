@@ -92,8 +92,11 @@ const BLOCK_CONFIGS = {
     categoryFilter: { 
       isFreeGiveaway: { $ne: true },
       isFarmerAd: { $ne: true },
+      isService: { $ne: true },
       price: { $gt: 0 },
+      category: { $nin: ['uslugi', 'remont', 'master', 'electrician', 'plumber', 'cleaning', 'klining', 'uborka', 'gruzoperevozki', 'perevozki', 'vyvoz', 'santehnik', 'elektrik', 'services'] },
     },
+    excludeTerms: ['электрик', 'сантехник', 'уборка', 'клининг', 'вывоз', 'грузоперевозки', 'перевозки', 'ремонт квартир', 'услуги', 'мастер на час', 'покос', 'вспашка', 'уход за садом', 'под ключ', 'монтаж', 'установка', 'демонтаж'],
     sortBy: { createdAt: -1 },
     filters: [
       { id: 'all', label: 'Все', icon: 'grid' },
@@ -444,6 +447,15 @@ class HomeDynamicEngine {
         { title: { $in: searchRegex } },
         { description: { $in: searchRegex } },
       ];
+    }
+
+    if (config.excludeTerms?.length) {
+      const excludeRegex = config.excludeTerms.map(t => new RegExp(t, 'i'));
+      filter.$and = filter.$and || [];
+      filter.$and.push(
+        { title: { $nin: excludeRegex } },
+        { description: { $nin: excludeRegex } }
+      );
     }
 
     const sortBy = config.sortBy || { createdAt: -1 };
