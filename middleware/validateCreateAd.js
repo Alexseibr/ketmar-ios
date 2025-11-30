@@ -106,9 +106,19 @@ async function validateCreateAd(req, res, next) {
       return res.status(400).json({ error: 'Поле subcategoryId обязательно' });
     }
 
-    const price = parsePositiveNumber(payload.price);
-    if (!price) {
-      return res.status(400).json({ error: 'Поле price должно быть положительным числом' });
+    // For free giveaway ads, price can be 0
+    const isFreeGiveawayCheck = Boolean(payload.isFreeGiveaway) || normalizeSlug(payload.categoryId) === 'darom';
+    let price;
+    if (isFreeGiveawayCheck) {
+      price = Number(payload.price);
+      if (!Number.isFinite(price) || price < 0) {
+        price = 0; // Default to 0 for free giveaway
+      }
+    } else {
+      price = parsePositiveNumber(payload.price);
+      if (!price) {
+        return res.status(400).json({ error: 'Поле price должно быть положительным числом' });
+      }
     }
 
     const sellerTelegramId = parsePositiveNumber(payload.sellerTelegramId);
