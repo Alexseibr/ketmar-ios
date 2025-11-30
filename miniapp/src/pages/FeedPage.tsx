@@ -43,10 +43,11 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
   return (
     <header
       style={{
-        background: 'rgba(0, 0, 0, 0.85)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        background: 'rgba(255, 255, 255, 0.75)',
+        backdropFilter: 'blur(24px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(180%)',
         flexShrink: 0,
+        borderBottom: '1px solid rgba(0, 0, 0, 0.06)',
       }}
     >
       {/* Top row: Logo + Notifications */}
@@ -55,7 +56,7 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '16px 16px 10px',
+          padding: '14px 16px 10px',
         }}
       >
         <h1
@@ -63,15 +64,15 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
           data-testid="link-home-logo"
           style={{
             margin: 0,
-            fontSize: 24,
+            fontSize: 22,
             fontWeight: 800,
-            color: '#fff',
+            color: '#1F2937',
             letterSpacing: '-0.5px',
             cursor: 'pointer',
             transition: 'opacity 0.2s ease',
           }}
           onTouchStart={(e) => {
-            e.currentTarget.style.opacity = '0.7';
+            e.currentTarget.style.opacity = '0.6';
           }}
           onTouchEnd={(e) => {
             e.currentTarget.style.opacity = '1';
@@ -83,11 +84,11 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
           onClick={onNotificationsClick}
           data-testid="button-notifications"
           style={{
-            width: 44,
-            height: 44,
+            width: 42,
+            height: 42,
             borderRadius: '50%',
             border: 'none',
-            background: 'rgba(255,255,255,0.12)',
+            background: 'rgba(0, 0, 0, 0.06)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -95,7 +96,7 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
             transition: 'background 0.2s ease',
           }}
         >
-          <Bell size={22} color="#fff" />
+          <Bell size={20} color="#374151" />
         </button>
       </div>
       
@@ -104,7 +105,7 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
         style={{
           display: 'flex',
           gap: 8,
-          padding: '10px 16px 16px',
+          padding: '8px 16px 14px',
           overflowX: 'auto',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -115,26 +116,27 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
           return (
             <motion.button
               key={filter.id}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => onFilterChange(filter.id)}
               data-testid={`filter-${filter.id}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                padding: '10px 16px',
-                borderRadius: 22,
-                border: 'none',
-                background: isActive ? '#fff' : 'rgba(255,255,255,0.12)',
-                color: isActive ? '#000' : 'rgba(255,255,255,0.9)',
-                fontSize: 14,
+                padding: '9px 14px',
+                borderRadius: 20,
+                border: isActive ? 'none' : '1px solid rgba(0, 0, 0, 0.1)',
+                background: isActive ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.6)',
+                color: isActive ? '#1F2937' : '#6B7280',
+                fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
                 transition: 'all 0.2s ease',
+                boxShadow: isActive ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none',
               }}
             >
-              <span style={{ color: isActive ? filter.color : 'inherit' }}>
+              <span style={{ color: isActive ? filter.color : '#9CA3AF' }}>
                 {filter.icon}
               </span>
               {filter.label}
