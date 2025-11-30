@@ -907,6 +907,8 @@ router.get('/second-hand', async (req, res, next) => {
             condition: 1,
             createdAt: 1,
             distanceKm: 1,
+            isFarmerAd: 1,
+            isFreeGiveaway: 1,
           }
         }
       ]);
@@ -914,7 +916,7 @@ router.get('/second-hand', async (req, res, next) => {
       // Без гео-координат - сортировка по дате
       total = await Ad.countDocuments(baseFilter);
       items = await Ad.find(baseFilter)
-        .select('_id title price currency photos location categoryId subcategoryId condition createdAt')
+        .select('_id title price currency photos location categoryId subcategoryId condition createdAt isFarmerAd isFreeGiveaway')
         .sort({ createdAt: -1 })
         .skip(offsetNum)
         .limit(limitNum)

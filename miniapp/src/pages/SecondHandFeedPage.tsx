@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Package, Heart, MapPin, Loader2 } from 'lucide-react';
 import ScreenLayout from '@/components/layout/ScreenLayout';
@@ -7,9 +7,12 @@ import { useUserStore, useIsFavorite } from '@/store/useUserStore';
 import http from '@/api/http';
 import { AdPreview } from '@/types';
 import { NO_PHOTO_PLACEHOLDER, getThumbnailUrl } from '@/constants/placeholders';
+import { getBadgeConfig } from '@/utils/badgeClassifier';
 
 interface SecondHandAd extends AdPreview {
   distanceKm?: number;
+  isFarmerAd?: boolean;
+  isFreeGiveaway?: boolean;
 }
 
 interface SecondHandResponse {
@@ -51,6 +54,9 @@ function AdCard({ ad, onClick }: AdCardProps) {
   const photo = ad.photos && ad.photos.length > 0 
     ? getThumbnailUrl(ad.photos[0]) 
     : NO_PHOTO_PLACEHOLDER;
+
+  // Определяем конфигурацию бейджа на основе данных объявления
+  const badgeConfig = getBadgeConfig(ad);
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -115,8 +121,8 @@ function AdCard({ ad, onClick }: AdCardProps) {
             position: 'absolute',
             top: 8,
             left: 8,
-            background: '#F59E0B',
-            color: '#FFFFFF',
+            background: badgeConfig.background,
+            color: badgeConfig.color,
             padding: '4px 10px',
             borderRadius: 8,
             fontSize: 11,
@@ -124,7 +130,7 @@ function AdCard({ ad, onClick }: AdCardProps) {
             zIndex: 10,
           }}
         >
-          Б/У
+          {badgeConfig.text}
         </div>
         
         <button
