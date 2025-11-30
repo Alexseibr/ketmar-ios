@@ -490,9 +490,9 @@ export default function HomePage() {
         {/* Category Grid with Gradients & Emoji Icons */}
         <section style={{ padding: '16px 4px 20px' }}>
           <GradientCategoryGrid 
-            userLat={savedLocation?.latitude}
-            userLng={savedLocation?.longitude}
-            radiusKm={30}
+            userLat={coords?.lat}
+            userLng={coords?.lng}
+            radiusKm={radiusKm || 30}
           />
         </section>
 
