@@ -22,6 +22,75 @@ import AdStatsService from '../../services/AdStatsService.js';
 
 const router = Router();
 
+const ZONE_CATEGORY_FILTERS = {
+  village: {
+    exclude: ['beauty', 'manicure', 'barber', 'kosmetika', 'cleaning', 'klining', 'nail-service'],
+    include: ['farmer-market', 'farmer-vegetables', 'farmer-fruits', 'farmer-dairy', 'farmer-meat', 'farmer-honey', 'selhoztekhnika', 'tekhnika', 'zapchasti', 'ogorod', 'darom', 'sad-ogorod', 'sad-ogorod-tekhnika'],
+  },
+  suburb: {
+    exclude: ['selhoztekhnika', 'tractor', 'zapchasti-mtz'],
+    include: ['uslugi', 'remont', 'master', 'cleaning', 'klining', 'sad-ogorod', 'garden', 'elektrika'],
+  },
+  city_center: {
+    exclude: ['selhoztekhnika', 'tractor', 'zapchasti-mtz', 'machinery', 'farmer-feed'],
+    include: ['beauty', 'nail-service', 'manicure', 'klining', 'handmade', 'author-brand', 'blogger', 'odezhda', 'obuv'],
+  },
+};
+
+function applyZoneFilter(filters, zone, options = {}) {
+  if (!zone || !ZONE_CATEGORY_FILTERS[zone]) {
+    return { filters, boostCategories: [] };
+  }
+
+  const zoneConfig = ZONE_CATEGORY_FILTERS[zone];
+  const updatedFilters = { ...filters };
+  const excludeSet = new Set(zoneConfig.exclude || []);
+  const boostCategories = zoneConfig.include || [];
+
+  if (excludeSet.size > 0) {
+    const existingCategory = updatedFilters.categoryId;
+    
+    if (!existingCategory) {
+      updatedFilters.categoryId = { $nin: Array.from(excludeSet) };
+    } else if (typeof existingCategory === 'string') {
+      if (excludeSet.has(existingCategory)) {
+        return null;
+      }
+    } else if (existingCategory.$in) {
+      const filteredIn = existingCategory.$in.filter(cat => !excludeSet.has(cat));
+      if (filteredIn.length === 0) {
+        return null;
+      }
+      updatedFilters.categoryId = { ...existingCategory, $in: filteredIn };
+    } else if (existingCategory.$nin) {
+      const mergedNin = [...new Set([...existingCategory.$nin, ...excludeSet])];
+      updatedFilters.categoryId = { ...existingCategory, $nin: mergedNin };
+    } else if (typeof existingCategory === 'object') {
+      updatedFilters.categoryId = { ...existingCategory, $nin: Array.from(excludeSet) };
+    }
+  }
+
+  return { filters: updatedFilters, boostCategories };
+}
+
+function getZoneSortPipeline(boostCategories, baseSort) {
+  if (!boostCategories || boostCategories.length === 0) {
+    return { $sort: baseSort };
+  }
+
+  return {
+    $addFields: {
+      zonePriority: {
+        $cond: {
+          if: { $in: ['$categoryId', boostCategories] },
+          then: 0,
+          else: 1
+        }
+      }
+    }
+  };
+}
+
 const SEASON_SHORT_LIFETIME = {
   march8_tulips: 3,
 };
@@ -245,8 +314,30 @@ async function aggregateNearbyAds({ latNumber, lngNumber, radiusKm, limit, baseF
 
 router.get('/', async (req, res, next) => {
   try {
-    const { filters, sort, page, limit, sortBy } = buildAdQuery(req.query);
-    const skip = (page - 1) * limit;
+    const { filter, limit, offset } = buildAdQuery(req.query);
+    let filters = filter;
+    const page = Math.floor(offset / limit) + 1;
+    const skip = offset;
+    const sort = { createdAt: -1 };
+    const sortBy = req.query.sortBy;
+
+    const zone = req.query.zone;
+    let boostCategories = [];
+    if (zone && ['village', 'suburb', 'city_center'].includes(zone)) {
+      const zoneResult = applyZoneFilter(filters, zone);
+      if (zoneResult === null) {
+        return res.json({
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+          items: [],
+          zone,
+        });
+      }
+      filters = zoneResult.filters;
+      boostCategories = zoneResult.boostCategories;
+    }
 
     const latNumber = Number(req.query.lat);
     const lngNumber = Number(req.query.lng);
@@ -302,10 +393,34 @@ router.get('/', async (req, res, next) => {
     }
 
     const total = await Ad.countDocuments(filters);
-    const items = await Ad.find(filters)
-      .sort(sort)
-      .skip(skip)
-      .limit(limit);
+    
+    let items;
+    if (boostCategories.length > 0) {
+      const pipeline = [
+        { $match: filters },
+        {
+          $addFields: {
+            zonePriority: {
+              $cond: {
+                if: { $in: ['$categoryId', boostCategories] },
+                then: 0,
+                else: 1
+              }
+            }
+          }
+        },
+        { $sort: { zonePriority: 1, ...sort } },
+        { $skip: skip },
+        { $limit: limit },
+        { $project: { zonePriority: 0 } }
+      ];
+      items = await Ad.aggregate(pipeline);
+    } else {
+      items = await Ad.find(filters)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit);
+    }
 
     return res.json({
       page,
@@ -313,6 +428,7 @@ router.get('/', async (req, res, next) => {
       total,
       totalPages: total === 0 ? 0 : Math.ceil(total / limit),
       items,
+      zone: zone || undefined,
     });
   } catch (error) {
     next(error);

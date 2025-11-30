@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Gift, Tractor, Wrench, Shovel, Sparkles, Store, Palette, Flame, Search, Heart, Tag, Snowflake, Home, Calendar, ChevronRight, MapPin } from 'lucide-react';
+import { Gift, Tractor, Wrench, Shovel, Sparkles, Store, Palette, Flame, Search, Heart, Tag, Snowflake, Home, Calendar, ChevronRight, MapPin, Scissors, Hammer, Droplets, Trees, Leaf, Wheat, Star, Package } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
@@ -9,6 +9,54 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 
 export type ZoneType = 'village' | 'suburb' | 'city_center';
+
+const ZONE_STYLES = {
+  village: {
+    cardWidth: 170,
+    cardBorderRadius: 12,
+    titleSize: 18,
+    subtitleSize: 13,
+    itemTitleSize: 15,
+    priceSize: 16,
+    sectionPadding: 20,
+    iconSize: 24,
+    headerGap: 12,
+    cardGap: 14,
+    buttonPadding: '14px 24px',
+    shadowStrength: 'none',
+    borderStyle: '1px solid #E5E7EB',
+  },
+  suburb: {
+    cardWidth: 155,
+    cardBorderRadius: 14,
+    titleSize: 17,
+    subtitleSize: 12,
+    itemTitleSize: 14,
+    priceSize: 15,
+    sectionPadding: 16,
+    iconSize: 22,
+    headerGap: 10,
+    cardGap: 12,
+    buttonPadding: '12px 20px',
+    shadowStrength: '0 1px 3px rgba(0,0,0,0.08)',
+    borderStyle: '1px solid #E5E7EB',
+  },
+  city_center: {
+    cardWidth: 145,
+    cardBorderRadius: 16,
+    titleSize: 16,
+    subtitleSize: 12,
+    itemTitleSize: 13,
+    priceSize: 14,
+    sectionPadding: 14,
+    iconSize: 20,
+    headerGap: 8,
+    cardGap: 10,
+    buttonPadding: '10px 16px',
+    shadowStrength: '0 2px 8px rgba(0,0,0,0.06)',
+    borderStyle: 'none',
+  },
+};
 
 interface BlockItem {
   id: string;
@@ -78,9 +126,14 @@ const ICONS: Record<string, typeof Gift> = {
   snowflake: Snowflake,
   home: Home,
   calendar: Calendar,
-  lipstick: Sparkles,
-  grass: Shovel,
-  hammer: Wrench,
+  lipstick: Scissors,
+  grass: Leaf,
+  hammer: Hammer,
+  droplets: Droplets,
+  trees: Trees,
+  wheat: Wheat,
+  star: Star,
+  package: Package,
 };
 
 export function BlockRenderer({ block, zone, uiConfig }: BlockRendererProps) {
@@ -179,49 +232,54 @@ function HorizontalListBlock({
 }) {
   const user = useUserStore((state) => state.user);
   const IconComponent = block.icon ? ICONS[block.icon] || Sparkles : Sparkles;
+  const styles = ZONE_STYLES[zone];
 
-  const cardWidth = zone === 'village' ? 160 : zone === 'city_center' ? 140 : 150;
-  const cardBorderRadius = zone === 'village' ? 12 : 16;
-  const titleSize = zone === 'village' ? 17 : 16;
-  const itemTitleSize = zone === 'village' ? 14 : 13;
+  const cardWidth = styles.cardWidth;
+  const cardBorderRadius = styles.cardBorderRadius;
+  const titleSize = styles.titleSize;
+  const itemTitleSize = styles.itemTitleSize;
 
   const isShopBlock = block.id === 'local_shops' || block.id === 'author_brands';
   const isDemandBlock = block.id === 'demand';
   const isFairBlock = block.id === 'seasonal_fairs';
 
+  const iconBoxSize = zone === 'village' ? 42 : zone === 'city_center' ? 32 : 36;
+
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: styles.sectionPadding }}>
       <div 
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '0 16px',
-          marginBottom: 12,
+          padding: `0 ${styles.sectionPadding}px`,
+          marginBottom: styles.headerGap,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: styles.headerGap }}>
           <div style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
+            width: iconBoxSize,
+            height: iconBoxSize,
+            borderRadius: zone === 'village' ? 10 : zone === 'city_center' ? 12 : 10,
             background: `${block.accentColor || '#6366f1'}15`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            boxShadow: styles.shadowStrength,
           }}>
-            <IconComponent size={20} color={block.accentColor || '#6366f1'} />
+            <IconComponent size={styles.iconSize} color={block.accentColor || '#6366f1'} />
           </div>
           <div>
             <div style={{ 
               fontSize: titleSize, 
               fontWeight: 700, 
-              color: '#111827' 
+              color: '#111827',
+              letterSpacing: zone === 'village' ? '0' : '-0.01em',
             }}>
               {block.title}
             </div>
             {block.subtitle && (
-              <div style={{ fontSize: 12, color: '#6B7280' }}>
+              <div style={{ fontSize: styles.subtitleSize, color: '#6B7280' }}>
                 {block.subtitle}
               </div>
             )}
@@ -234,28 +292,29 @@ function HorizontalListBlock({
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              background: 'none',
+              background: zone === 'city_center' ? `${block.accentColor || '#6366f1'}10` : 'none',
               border: 'none',
               color: block.accentColor || '#6366f1',
-              fontSize: 13,
+              fontSize: zone === 'village' ? 14 : 13,
               fontWeight: 600,
               cursor: 'pointer',
-              padding: 0,
+              padding: zone === 'city_center' ? '6px 12px' : 0,
+              borderRadius: zone === 'city_center' ? 20 : 0,
             }}
             data-testid={`link-see-all-${block.id}`}
           >
             Все
-            <ChevronRight size={16} />
+            <ChevronRight size={zone === 'village' ? 18 : 16} />
           </button>
         )}
       </div>
 
       <div style={{
         display: 'flex',
-        gap: 12,
+        gap: styles.cardGap,
         overflowX: 'auto',
-        paddingLeft: 16,
-        paddingRight: 16,
+        paddingLeft: styles.sectionPadding,
+        paddingRight: styles.sectionPadding,
         paddingBottom: 4,
         scrollSnapType: 'x mandatory',
         WebkitOverflowScrolling: 'touch',
@@ -339,6 +398,9 @@ function AdCard({
     : NO_PHOTO_PLACEHOLDER;
 
   const showAnimations = uiConfig.animations;
+  const styles = ZONE_STYLES[zone];
+  const badgeSize = zone === 'village' ? 12 : 10;
+  const badgePadding = zone === 'village' ? '4px 10px' : '3px 8px';
 
   return (
     <div
@@ -355,10 +417,11 @@ function AdCard({
       <div style={{
         position: 'relative',
         width: '100%',
-        aspectRatio: '1',
+        aspectRatio: zone === 'city_center' ? '4/5' : '1',
         borderRadius,
         overflow: 'hidden',
         background: '#F3F4F6',
+        boxShadow: styles.shadowStrength,
       }}>
         <img
           src={photoUrl}
@@ -378,9 +441,9 @@ function AdCard({
             left: 8,
             background: '#ec4899',
             color: '#fff',
-            fontSize: 10,
+            fontSize: badgeSize,
             fontWeight: 700,
-            padding: '3px 8px',
+            padding: badgePadding,
             borderRadius: 6,
           }}>
             ДАРОМ
@@ -394,9 +457,9 @@ function AdCard({
             left: 8,
             background: '#059669',
             color: '#fff',
-            fontSize: 10,
+            fontSize: badgeSize,
             fontWeight: 700,
-            padding: '3px 8px',
+            padding: badgePadding,
             borderRadius: 6,
           }}>
             ФЕРМЕР
@@ -410,9 +473,9 @@ function AdCard({
             left: 8,
             background: '#f59e0b',
             color: '#fff',
-            fontSize: 10,
+            fontSize: badgeSize,
             fontWeight: 700,
-            padding: '3px 8px',
+            padding: badgePadding,
             borderRadius: 6,
           }}>
             СКИДКА
@@ -423,15 +486,15 @@ function AdCard({
           <div style={{ position: 'absolute', top: 8, right: 8 }}>
             <FavoriteButton 
               adId={item.id} 
-              size={20}
+              size={zone === 'village' ? 24 : 20}
             />
           </div>
         )}
       </div>
 
-      <div style={{ marginTop: 8 }}>
+      <div style={{ marginTop: zone === 'village' ? 10 : 8 }}>
         <div style={{
-          fontSize: zone === 'village' ? 15 : 14,
+          fontSize: styles.priceSize,
           fontWeight: 700,
           color: item.isFree ? '#ec4899' : '#111827',
         }}>
@@ -453,10 +516,10 @@ function AdCard({
             alignItems: 'center',
             gap: 4,
             marginTop: 4,
-            fontSize: 11,
+            fontSize: zone === 'village' ? 12 : 11,
             color: '#9CA3AF',
           }}>
-            <MapPin size={12} />
+            <MapPin size={zone === 'village' ? 14 : 12} />
             {item.distance} км
           </div>
         )}
