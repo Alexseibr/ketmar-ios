@@ -907,27 +907,24 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Horizontal Scroll Carousel */}
-            <div style={{
-              display: 'flex',
-              gap: 12,
-              overflowX: 'auto',
-              paddingLeft: 16,
-              paddingRight: 16,
-              paddingBottom: 8,
-              scrollSnapType: 'x mandatory',
-              WebkitOverflowScrolling: 'touch',
-              msOverflowStyle: 'none',
-              scrollbarWidth: 'none',
-            }}>
+            {/* Infinite Loop Swiper Carousel */}
+            <Swiper
+              modules={[Autoplay]}
+              spaceBetween={12}
+              slidesPerView="auto"
+              loop={fairs.length >= 3}
+              freeMode={true}
+              style={{ paddingLeft: 16, paddingRight: 16 }}
+            >
               {fairs.map((fair) => (
-                <FairCard 
-                  key={fair._id} 
-                  fair={fair} 
-                  onClick={() => navigate(`/fair/${fair.code}`)}
-                />
+                <SwiperSlide key={fair._id} style={{ width: 'auto' }}>
+                  <FairCard 
+                    fair={fair} 
+                    onClick={() => navigate(`/fair/${fair.code}`)}
+                  />
+                </SwiperSlide>
               ))}
-            </div>
+            </Swiper>
           </section>
         )}
 
@@ -982,27 +979,24 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Horizontal Scroll Carousel */}
-            <div style={{
-              display: 'flex',
-              gap: 12,
-              overflowX: 'auto',
-              paddingLeft: 16,
-              paddingRight: 16,
-              paddingBottom: 8,
-              scrollSnapType: 'x mandatory',
-              WebkitOverflowScrolling: 'touch',
-              msOverflowStyle: 'none',
-              scrollbarWidth: 'none',
-            }}>
+            {/* Infinite Loop Swiper Carousel */}
+            <Swiper
+              modules={[Autoplay]}
+              spaceBetween={12}
+              slidesPerView="auto"
+              loop={freeAds.length >= 3}
+              freeMode={true}
+              style={{ paddingLeft: 16, paddingRight: 16 }}
+            >
               {freeAds.map((ad) => (
-                <FreeAdCard 
-                  key={ad._id} 
-                  ad={ad} 
-                  onClick={() => handleAdClick(ad._id)}
-                />
+                <SwiperSlide key={ad._id} style={{ width: 'auto' }}>
+                  <FreeAdCard 
+                    ad={ad} 
+                    onClick={() => handleAdClick(ad._id)}
+                  />
+                </SwiperSlide>
               ))}
-            </div>
+            </Swiper>
           </section>
         )}
 
@@ -1090,27 +1084,24 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Horizontal Scroll Carousel */}
-            <div style={{
-              display: 'flex',
-              gap: 12,
-              overflowX: 'auto',
-              paddingLeft: 16,
-              paddingRight: 16,
-              paddingBottom: 8,
-              scrollSnapType: 'x mandatory',
-              WebkitOverflowScrolling: 'touch',
-              msOverflowStyle: 'none',
-              scrollbarWidth: 'none',
-            }}>
+            {/* Infinite Loop Swiper Carousel */}
+            <Swiper
+              modules={[Autoplay]}
+              spaceBetween={12}
+              slidesPerView="auto"
+              loop={newAds.length >= 3}
+              freeMode={true}
+              style={{ paddingLeft: 16, paddingRight: 16 }}
+            >
               {newAds.map((ad) => (
-                <NewAdCard 
-                  key={ad._id} 
-                  ad={ad} 
-                  onClick={() => handleAdClick(ad._id)}
-                />
+                <SwiperSlide key={ad._id} style={{ width: 'auto' }}>
+                  <NewAdCard 
+                    ad={ad} 
+                    onClick={() => handleAdClick(ad._id)}
+                  />
+                </SwiperSlide>
               ))}
-            </div>
+            </Swiper>
           </section>
         )}
 
@@ -1165,27 +1156,24 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Horizontal Scroll Carousel */}
-            <div style={{
-              display: 'flex',
-              gap: 12,
-              overflowX: 'auto',
-              paddingLeft: 16,
-              paddingRight: 16,
-              paddingBottom: 8,
-              scrollSnapType: 'x mandatory',
-              WebkitOverflowScrolling: 'touch',
-              msOverflowStyle: 'none',
-              scrollbarWidth: 'none',
-            }}>
+            {/* Infinite Loop Swiper Carousel */}
+            <Swiper
+              modules={[Autoplay]}
+              spaceBetween={12}
+              slidesPerView="auto"
+              loop={trendingAds.length >= 3}
+              freeMode={true}
+              style={{ paddingLeft: 16, paddingRight: 16 }}
+            >
               {trendingAds.map((ad) => (
-                <TrendingAdCard 
-                  key={ad._id} 
-                  ad={ad} 
-                  onClick={() => handleAdClick(ad._id)}
-                />
+                <SwiperSlide key={ad._id} style={{ width: 'auto' }}>
+                  <TrendingAdCard 
+                    ad={ad} 
+                    onClick={() => handleAdClick(ad._id)}
+                  />
+                </SwiperSlide>
               ))}
-            </div>
+            </Swiper>
           </section>
         )}
 
@@ -1604,7 +1592,7 @@ function NewAdCard({
         </div>
         
         {/* Distance Badge */}
-        {distanceKm !== undefined && distanceKm > 0 && (
+        {distanceKm !== undefined && (
           <div style={{
             position: 'absolute',
             bottom: 8,
@@ -1777,30 +1765,30 @@ function TrendingAdCard({
           />
         </div>
         
-        {/* Views Badge */}
-        <div style={{
-          position: 'absolute',
-          bottom: 8,
-          left: 8,
-          background: 'rgba(0, 0, 0, 0.6)',
-          backdropFilter: 'blur(4px)',
-          color: '#FFFFFF',
-          fontSize: 10,
-          fontWeight: 500,
-          padding: '4px 8px',
-          borderRadius: 6,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 4,
-        }}>
-          👁 {views}
-          {favorites > 0 && (
-            <>
-              <span style={{ opacity: 0.5 }}>•</span>
-              ❤️ {favorites}
-            </>
-          )}
-        </div>
+        {/* Distance Badge */}
+        {distanceKm !== undefined && (
+          <div style={{
+            position: 'absolute',
+            bottom: 8,
+            left: 8,
+            background: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
+            color: '#FFFFFF',
+            fontSize: 10,
+            fontWeight: 500,
+            padding: '4px 8px',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            <MapPin size={10} />
+            {distanceKm < 1 
+              ? `${Math.round(distanceKm * 1000)}м`
+              : `${distanceKm.toFixed(1)}км`
+            }
+          </div>
+        )}
       </div>
       
       {/* Content */}
