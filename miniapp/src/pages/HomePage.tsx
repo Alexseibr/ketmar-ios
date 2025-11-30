@@ -192,6 +192,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [locationName, setLocationName] = useState(() => t('location.your_area'));
   const [useZoneBased, setUseZoneBased] = useState(true);
+  const [newAds, setNewAds] = useState<AdPreview[]>([]);
 
   useEffect(() => {
     if (!hasCompletedOnboarding && !coords && !debugZone) {
@@ -257,6 +258,37 @@ export default function HomePage() {
   useEffect(() => {
     fetchHomeFeed();
   }, [fetchHomeFeed]);
+
+  // Fetch new ads nearby
+  useEffect(() => {
+    const fetchNewAds = async () => {
+      if (!coords && !debugZone) return;
+      
+      try {
+        const params = new URLSearchParams();
+        if (coords) {
+          params.set('lat', coords.lat.toString());
+          params.set('lng', coords.lng.toString());
+        }
+        params.set('radiusKm', (radiusKm || 30).toString());
+        params.set('limit', '15');
+        params.set('sortBy', 'createdAt');
+        params.set('sortOrder', 'desc');
+        
+        const response = await fetch(`/api/ads?${params.toString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.items) {
+            setNewAds(data.items.slice(0, 15));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch new ads:', error);
+      }
+    };
+    
+    fetchNewAds();
+  }, [coords, radiusKm, debugZone]);
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
@@ -685,6 +717,84 @@ export default function HomePage() {
           />
         ))}
 
+        {/* New Ads Nearby - Horizontal Carousel */}
+        {!loading && newAds.length > 0 && (
+          <section style={{ marginBottom: 24 }}>
+            <div style={{
+              padding: '0 16px 12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Sparkles size={18} color="#3B82F6" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1F2937' }}>
+                    Новые объявления
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9CA3AF' }}>
+                    Рядом с вами
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => navigate('/feed')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#3B82F6',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}
+                data-testid="button-see-all-new-ads"
+              >
+                Все
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            {/* Horizontal Scroll Carousel */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              overflowX: 'auto',
+              paddingLeft: 16,
+              paddingRight: 16,
+              paddingBottom: 8,
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+            }}>
+              {newAds.map((ad) => {
+                const adId = (ad as any)._id || (ad as any).id || '';
+                return (
+                  <NewAdCard 
+                    key={adId} 
+                    ad={{ ...ad, _id: adId } as any} 
+                    onClick={() => handleAdClick(adId)}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        )}
+
         {/* Empty State */}
         {!loading && listBlocks.length === 0 && !coords && (
           <div style={{
@@ -978,6 +1088,193 @@ function CompactAdCard({
                 ? `${Math.round(distanceKm * 1000)}м`
                 : `${distanceKm.toFixed(1)}км`
               }
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// New Ad Card - Yandex.Eda style card for horizontal carousel
+function NewAdCard({ 
+  ad, 
+  onClick,
+}: { 
+  ad: AdPreview & { photo?: string; distance?: number; _id: string }; 
+  onClick: () => void;
+}) {
+  const formatPrice = (price: number) => {
+    if (price === 0) return 'Бесплатно';
+    return `${price.toLocaleString('ru-RU')} BYN`;
+  };
+
+  const photoUrl = ad.photo || ad.photos?.[0] ? getThumbnailUrl(ad.photo || ad.photos?.[0] || '') : NO_PHOTO_PLACEHOLDER;
+  const distanceKm = ad.distanceKm ?? ad.distance;
+  
+  const priceHistory = ad.priceHistory || [];
+  const hasDiscount = priceHistory.length > 0;
+  const oldPrice = hasDiscount ? priceHistory[priceHistory.length - 1]?.oldPrice : null;
+  const discountPercent = oldPrice && oldPrice > ad.price ? Math.round(((oldPrice - ad.price) / oldPrice) * 100) : 0;
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        minWidth: 156,
+        maxWidth: 156,
+        background: '#FFFFFF',
+        borderRadius: 16,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+        scrollSnapAlign: 'start',
+        flexShrink: 0,
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+      }}
+      onTouchStart={(e) => {
+        e.currentTarget.style.transform = 'scale(0.98)';
+      }}
+      onTouchEnd={(e) => {
+        e.currentTarget.style.transform = 'scale(1)';
+      }}
+      data-testid={`new-ad-card-${ad._id}`}
+    >
+      {/* Image Container */}
+      <div style={{ 
+        position: 'relative',
+        width: '100%',
+        paddingTop: '100%',
+        background: '#F3F4F6',
+      }}>
+        <img
+          src={photoUrl}
+          alt={ad.title}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+          loading="lazy"
+        />
+        
+        {/* Free Badge */}
+        {ad.isFreeGiveaway && (
+          <div style={{
+            position: 'absolute',
+            top: 8,
+            left: 8,
+            background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+            color: '#FFFFFF',
+            fontSize: 10,
+            fontWeight: 700,
+            padding: '4px 10px',
+            borderRadius: 8,
+            boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)',
+          }}>
+            ДАРОМ
+          </div>
+        )}
+        
+        {/* Discount Badge */}
+        {discountPercent > 0 && !ad.isFreeGiveaway && (
+          <div style={{
+            position: 'absolute',
+            top: 8,
+            left: 8,
+            background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+            color: '#FFFFFF',
+            fontSize: 10,
+            fontWeight: 700,
+            padding: '4px 10px',
+            borderRadius: 8,
+            boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)',
+          }}>
+            -{discountPercent}%
+          </div>
+        )}
+        
+        {/* Favorite Button */}
+        <div style={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+        }}>
+          <FavoriteButton 
+            adId={ad._id} 
+            size={20}
+          />
+        </div>
+        
+        {/* Distance Badge */}
+        {distanceKm !== undefined && distanceKm > 0 && (
+          <div style={{
+            position: 'absolute',
+            bottom: 8,
+            left: 8,
+            background: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
+            color: '#FFFFFF',
+            fontSize: 10,
+            fontWeight: 500,
+            padding: '4px 8px',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            <MapPin size={10} />
+            {distanceKm < 1 
+              ? `${Math.round(distanceKm * 1000)}м`
+              : `${distanceKm.toFixed(1)}км`
+            }
+          </div>
+        )}
+      </div>
+      
+      {/* Content - Title First (Yandex.Eda style) */}
+      <div style={{ padding: '12px' }}>
+        {/* Title */}
+        <div style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: '#1F2937',
+          lineHeight: 1.3,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          minHeight: 34,
+          marginBottom: 8,
+        }}>
+          {ad.title}
+        </div>
+        
+        {/* Price Row */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 6,
+        }}>
+          <div style={{
+            fontSize: 16,
+            fontWeight: 700,
+            color: ad.isFreeGiveaway ? '#10B981' : '#1F2937',
+          }}>
+            {formatPrice(ad.price)}
+          </div>
+          
+          {oldPrice && oldPrice > ad.price && (
+            <div style={{
+              fontSize: 12,
+              color: '#9CA3AF',
+              textDecoration: 'line-through',
+            }}>
+              {oldPrice.toLocaleString('ru-RU')}
             </div>
           )}
         </div>
