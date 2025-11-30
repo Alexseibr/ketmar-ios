@@ -65,6 +65,8 @@ interface NewAdItem {
   distanceKm?: number;
   isFreeGiveaway?: boolean;
   priceHistory?: Array<{ oldPrice: number; date: string }>;
+  views?: number;
+  favorites?: number;
 }
 
 const SECTION_ICONS: Record<string, typeof Flame> = {
@@ -205,6 +207,7 @@ export default function HomePage() {
   const [locationName, setLocationName] = useState(() => t('location.your_area'));
   const [useZoneBased, setUseZoneBased] = useState(true);
   const [newAds, setNewAds] = useState<NewAdItem[]>([]);
+  const [trendingAds, setTrendingAds] = useState<NewAdItem[]>([]);
 
   useEffect(() => {
     if (!hasCompletedOnboarding && !coords && !debugZone) {
@@ -271,7 +274,7 @@ export default function HomePage() {
     fetchHomeFeed();
   }, [fetchHomeFeed]);
 
-  // Fetch new ads nearby
+  // Fetch new ads nearby (30 items for longer scroll)
   useEffect(() => {
     const fetchNewAds = async () => {
       if (!coords && !debugZone) return;
@@ -283,7 +286,7 @@ export default function HomePage() {
           params.set('lng', coords.lng.toString());
         }
         params.set('radiusKm', (radiusKm || 30).toString());
-        params.set('limit', '15');
+        params.set('limit', '30');
         params.set('sort', 'newest');
         
         const response = await fetch(`/api/ads?${params.toString()}`);
@@ -305,11 +308,13 @@ export default function HomePage() {
                   distanceKm: item.distanceKm,
                   isFreeGiveaway: item.isFreeGiveaway,
                   priceHistory: item.priceHistory,
+                  views: item.views || 0,
+                  favorites: item.favorites || 0,
                 };
               })
               .filter((item: NewAdItem | null): item is NewAdItem => item !== null);
             
-            setNewAds(normalizedAds.slice(0, 15));
+            setNewAds(normalizedAds.slice(0, 30));
           }
         }
       } catch (error) {
@@ -318,6 +323,57 @@ export default function HomePage() {
     };
     
     fetchNewAds();
+  }, [coords, radiusKm, debugZone]);
+
+  // Fetch trending ads (sorted by views/favorites)
+  useEffect(() => {
+    const fetchTrendingAds = async () => {
+      if (!coords && !debugZone) return;
+      
+      try {
+        const params = new URLSearchParams();
+        if (coords) {
+          params.set('lat', coords.lat.toString());
+          params.set('lng', coords.lng.toString());
+        }
+        params.set('radiusKm', (radiusKm || 50).toString());
+        params.set('limit', '30');
+        
+        const response = await fetch(`/api/ads?${params.toString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.items && Array.isArray(data.items)) {
+            // Normalize and sort by popularity (views + favorites)
+            const normalizedAds: NewAdItem[] = data.items
+              .map((item: any) => {
+                const id = item._id?.toString() || item.id || '';
+                if (!id || !item.title) return null;
+                
+                return {
+                  _id: id,
+                  title: item.title,
+                  price: item.price ?? 0,
+                  photos: item.photos,
+                  photo: item.photo || item.photos?.[0],
+                  distanceKm: item.distanceKm,
+                  isFreeGiveaway: item.isFreeGiveaway,
+                  priceHistory: item.priceHistory,
+                  views: item.views || 0,
+                  favorites: item.favorites || 0,
+                };
+              })
+              .filter((item: NewAdItem | null): item is NewAdItem => item !== null)
+              .sort((a, b) => ((b.views || 0) + (b.favorites || 0) * 3) - ((a.views || 0) + (a.favorites || 0) * 3));
+            
+            setTrendingAds(normalizedAds.slice(0, 25));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch trending ads:', error);
+      }
+    };
+    
+    fetchTrendingAds();
   }, [coords, radiusKm, debugZone]);
 
   const handleOnboardingComplete = () => {
@@ -822,6 +878,81 @@ export default function HomePage() {
           </section>
         )}
 
+        {/* Trending Ads - Horizontal Carousel */}
+        {!loading && trendingAds.length > 0 && (
+          <section style={{ marginBottom: 24 }}>
+            <div style={{
+              padding: '0 16px 12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Flame size={18} color="#EF4444" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1F2937' }}>
+                    В тренде
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9CA3AF' }}>
+                    Популярные сейчас
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => navigate('/feed?sort=popular')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#EF4444',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}
+                data-testid="button-see-all-trending"
+              >
+                Все
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            {/* Horizontal Scroll Carousel */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              overflowX: 'auto',
+              paddingLeft: 16,
+              paddingRight: 16,
+              paddingBottom: 8,
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+            }}>
+              {trendingAds.map((ad) => (
+                <TrendingAdCard 
+                  key={ad._id} 
+                  ad={ad} 
+                  onClick={() => handleAdClick(ad._id)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Empty State */}
         {!loading && listBlocks.length === 0 && !coords && (
           <div style={{
@@ -1302,6 +1433,183 @@ function NewAdCard({
               textDecoration: 'line-through',
             }}>
               {oldPrice.toLocaleString('ru-RU')}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Trending Ad Card - shows views count with fire icon
+function TrendingAdCard({ 
+  ad, 
+  onClick,
+}: { 
+  ad: NewAdItem; 
+  onClick: () => void;
+}) {
+  const formatPrice = (price: number) => {
+    if (price === 0) return 'Бесплатно';
+    return `${price.toLocaleString('ru-RU')} BYN`;
+  };
+
+  const photoUrl = ad.photo || ad.photos?.[0] ? getThumbnailUrl(ad.photo || ad.photos?.[0] || '') : NO_PHOTO_PLACEHOLDER;
+  const distanceKm = ad.distanceKm;
+  const views = ad.views || 0;
+  const favorites = ad.favorites || 0;
+  
+  const priceHistory = ad.priceHistory || [];
+  const hasDiscount = priceHistory.length > 0;
+  const oldPrice = hasDiscount ? priceHistory[priceHistory.length - 1]?.oldPrice : null;
+  const discountPercent = oldPrice && oldPrice > ad.price ? Math.round(((oldPrice - ad.price) / oldPrice) * 100) : 0;
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        minWidth: 156,
+        maxWidth: 156,
+        background: '#FFFFFF',
+        borderRadius: 16,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+        scrollSnapAlign: 'start',
+        flexShrink: 0,
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+        border: '1px solid rgba(239, 68, 68, 0.15)',
+      }}
+      onTouchStart={(e) => {
+        e.currentTarget.style.transform = 'scale(0.98)';
+      }}
+      onTouchEnd={(e) => {
+        e.currentTarget.style.transform = 'scale(1)';
+      }}
+      data-testid={`trending-ad-card-${ad._id}`}
+    >
+      {/* Image Container */}
+      <div style={{ 
+        position: 'relative',
+        width: '100%',
+        paddingTop: '100%',
+        background: '#F3F4F6',
+      }}>
+        <img
+          src={photoUrl}
+          alt={ad.title}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+          loading="lazy"
+        />
+        
+        {/* Hot Badge */}
+        <div style={{
+          position: 'absolute',
+          top: 8,
+          left: 8,
+          background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+          color: '#FFFFFF',
+          fontSize: 10,
+          fontWeight: 700,
+          padding: '4px 8px',
+          borderRadius: 8,
+          boxShadow: '0 2px 4px rgba(239, 68, 68, 0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 3,
+        }}>
+          <Flame size={10} />
+          HOT
+        </div>
+        
+        {/* Favorite Button */}
+        <div style={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+        }}>
+          <FavoriteButton 
+            adId={ad._id} 
+            size={20}
+          />
+        </div>
+        
+        {/* Views Badge */}
+        <div style={{
+          position: 'absolute',
+          bottom: 8,
+          left: 8,
+          background: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(4px)',
+          color: '#FFFFFF',
+          fontSize: 10,
+          fontWeight: 500,
+          padding: '4px 8px',
+          borderRadius: 6,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+        }}>
+          👁 {views}
+          {favorites > 0 && (
+            <>
+              <span style={{ opacity: 0.5 }}>•</span>
+              ❤️ {favorites}
+            </>
+          )}
+        </div>
+      </div>
+      
+      {/* Content */}
+      <div style={{ padding: '12px' }}>
+        {/* Title */}
+        <div style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: '#1F2937',
+          lineHeight: 1.3,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          minHeight: 34,
+          marginBottom: 8,
+        }}>
+          {ad.title}
+        </div>
+        
+        {/* Price Row */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 6,
+        }}>
+          <div style={{
+            fontSize: 16,
+            fontWeight: 700,
+            color: ad.isFreeGiveaway ? '#10B981' : '#1F2937',
+          }}>
+            {formatPrice(ad.price)}
+          </div>
+          
+          {discountPercent > 0 && (
+            <div style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: '#EF4444',
+              background: 'rgba(239, 68, 68, 0.1)',
+              padding: '2px 6px',
+              borderRadius: 4,
+            }}>
+              -{discountPercent}%
             </div>
           )}
         </div>
