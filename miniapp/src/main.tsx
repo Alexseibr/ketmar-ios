@@ -10,6 +10,8 @@ declare global {
   }
 }
 
+console.log('[MAIN] Script loaded at top level');
+
 const log = (msg: string) => {
   console.log('[Main]', msg);
   window.__KETMAR_LOG__?.(`[React] ${msg}`);
@@ -22,10 +24,17 @@ log(`Root element: ${root ? 'found' : 'NOT FOUND'}`);
 
 if (!root) {
   log('ERROR: Root element not found!');
+  const err = document.createElement('div');
+  err.innerHTML = '<h1 style="color:red">Root not found!</h1>';
+  document.body.appendChild(err);
 } else {
   log('Creating React root...');
   try {
-    ReactDOM.createRoot(root).render(
+    const reactRoot = ReactDOM.createRoot(root);
+    
+    log('Rendering App component...');
+    
+    reactRoot.render(
       <React.StrictMode>
         <BrowserRouter basename="/miniapp">
           <App />
@@ -34,7 +43,17 @@ if (!root) {
     );
     log('React render called successfully');
   } catch (err) {
-    log(`React render ERROR: ${err instanceof Error ? err.message : String(err)}`);
+    const msg = err instanceof Error ? err.message : String(err);
+    log(`React render ERROR: ${msg}`);
+    console.error('React render error:', err);
+    
+    const errorDiv = document.createElement('div');
+    errorDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:20px;background:red;color:white;z-index:99999';
+    errorDiv.innerHTML = `<strong>React Error:</strong> ${msg}`;
+    document.body.appendChild(errorDiv);
+    
     throw err;
   }
 }
+
+console.log('[MAIN] Script finished');
