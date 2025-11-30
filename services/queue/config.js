@@ -7,7 +7,9 @@
 
 import IORedis from 'ioredis';
 
-const REDIS_URL = process.env.REDIS_URL || null;
+// Temporarily disable Redis due to connection issues
+// const REDIS_URL = process.env.REDIS_URL || null;
+const REDIS_URL = null; // TEMP: disabled until Redis service is fixed
 
 let redisConnection = null;
 

@@ -162,8 +162,10 @@ function getBlockLink(blockId: string): string | undefined {
 }
 
 export default function HomePage() {
+  console.log('[HomePage] Starting render...');
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  console.log('[HomePage] Hooks initialized');
   
   const user = useUserStore((state) => state.user);
   const { 
