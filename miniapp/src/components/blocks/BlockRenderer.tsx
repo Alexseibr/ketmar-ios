@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Gift, Tractor, Wrench, Shovel, Sparkles, Store, Palette, Flame, Search, Heart, Tag, Snowflake, Home, Calendar, ChevronRight, MapPin, Scissors, Hammer, Droplets, Trees, Leaf, Wheat, Star, Package, HandHeart, Plus, Smartphone, Sofa, Shirt, Baby, Dumbbell, Car, LayoutGrid } from 'lucide-react';
+import { Gift, Tractor, Wrench, Shovel, Sparkles, Store, Palette, Flame, Search, Heart, Tag, Snowflake, Home, Calendar, ChevronRight, MapPin, Scissors, Hammer, Droplets, Trees, Leaf, Wheat, Star, Package, HandHeart, Plus, Smartphone, Sofa, Shirt, Baby, Dumbbell, Car, LayoutGrid, Carrot } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
@@ -85,6 +85,8 @@ interface BlockItem {
   color?: string;
   daysRemaining?: number;
   specialty?: string;
+  badge?: string;
+  badgeType?: 'farmer' | 'garden' | 'free' | 'used';
 }
 
 interface FilterOption {
@@ -151,6 +153,14 @@ const ICONS: Record<string, typeof Gift> = {
   baby: Baby,
   dumbbell: Dumbbell,
   car: Car,
+  carrot: Carrot,
+};
+
+const BADGE_COLORS: Record<string, { bg: string; text: string }> = {
+  farmer: { bg: '#059669', text: '#FFF' },
+  garden: { bg: '#84CC16', text: '#FFF' },
+  free: { bg: '#EC4899', text: '#FFF' },
+  used: { bg: '#F59E0B', text: '#FFF' },
 };
 
 export function BlockRenderer({ block, zone, uiConfig }: BlockRendererProps) {
@@ -467,51 +477,25 @@ function AdCard({
           loading="lazy"
         />
         
-        {item.isFree && (
+        {(item.badge || item.isFree || item.isFarmer || item.hasDiscount) && (
           <div style={{
             position: 'absolute',
             top: 8,
             left: 8,
-            background: '#ec4899',
+            background: item.badge 
+              ? (BADGE_COLORS[item.badgeType || 'used']?.bg || '#F59E0B')
+              : item.isFree 
+                ? '#ec4899' 
+                : item.isFarmer 
+                  ? '#059669' 
+                  : '#f59e0b',
             color: '#fff',
             fontSize: badgeSize,
             fontWeight: 700,
             padding: badgePadding,
             borderRadius: 6,
           }}>
-            ДАРОМ
-          </div>
-        )}
-        
-        {item.isFarmer && !item.isFree && (
-          <div style={{
-            position: 'absolute',
-            top: 8,
-            left: 8,
-            background: '#059669',
-            color: '#fff',
-            fontSize: badgeSize,
-            fontWeight: 700,
-            padding: badgePadding,
-            borderRadius: 6,
-          }}>
-            ФЕРМЕР
-          </div>
-        )}
-        
-        {item.hasDiscount && !item.isFree && !item.isFarmer && (
-          <div style={{
-            position: 'absolute',
-            top: 8,
-            left: 8,
-            background: '#f59e0b',
-            color: '#fff',
-            fontSize: badgeSize,
-            fontWeight: 700,
-            padding: badgePadding,
-            borderRadius: 6,
-          }}>
-            СКИДКА
+            {item.badge || (item.isFree ? 'ДАРОМ' : item.isFarmer ? 'ФЕРМЕР' : 'СКИДКА')}
           </div>
         )}
 

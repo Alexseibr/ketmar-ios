@@ -26,6 +26,7 @@ const ZONE_BLOCK_PRIORITY = {
     'banners',
     'darom',
     'second_hand',
+    'farmer',
     'garden_help',
     'lawn_mowing',
     'cleaning_house',
@@ -41,6 +42,7 @@ const ZONE_BLOCK_PRIORITY = {
     'banners',
     'darom',
     'second_hand',
+    'farmer',
     'tech_repair',
     'beauty',
     'cleaning',
@@ -68,12 +70,20 @@ const BLOCK_CONFIGS = {
     categoryFilter: { isFreeGiveaway: true },
   },
   farmer: {
-    title: 'Фермерские товары',
-    subtitle: 'Свежее с фермы',
-    icon: 'tractor',
+    title: 'Свежее с огорода',
+    subtitle: 'Овощи, фрукты, ягоды',
+    icon: 'carrot',
     accentColor: '#059669',
     link: '/category/farmer-market',
-    categoryFilter: { isFarmerAd: true },
+    categoryFilter: { 
+      $or: [
+        { isFarmerAd: true },
+        { isFoodProduct: true },
+      ],
+      isFreeGiveaway: { $ne: true },
+    },
+    searchTerms: ['малина', 'клубника', 'черника', 'смородина', 'крыжовник', 'ежевика', 'голубика', 'яблоки', 'груши', 'вишня', 'черешня', 'слива', 'абрикос', 'персик', 'виноград', 'арбуз', 'дыня', 'картофель', 'картошка', 'морковь', 'свекла', 'капуста', 'помидоры', 'томаты', 'огурцы', 'перец', 'баклажаны', 'кабачки', 'тыква', 'лук', 'чеснок', 'укроп', 'петрушка', 'салат', 'редис', 'редька', 'мёд', 'мед', 'молоко', 'сметана', 'творог', 'сыр', 'масло', 'яйца', 'мясо', 'курица', 'свинина', 'говядина', 'баранина', 'кролик', 'утка', 'гусь', 'индейка', 'сало', 'грибы', 'орехи', 'варенье', 'соленья', 'консервы', 'компот', 'сок'],
+    includeByKeywords: true,
   },
   services: {
     title: 'Услуги',
@@ -93,10 +103,11 @@ const BLOCK_CONFIGS = {
       isFreeGiveaway: { $ne: true },
       isFarmerAd: { $ne: true },
       isService: { $ne: true },
+      isFoodProduct: { $ne: true },
       price: { $gt: 0 },
-      category: { $nin: ['uslugi', 'remont', 'master', 'electrician', 'plumber', 'cleaning', 'klining', 'uborka', 'gruzoperevozki', 'perevozki', 'vyvoz', 'santehnik', 'elektrik', 'services'] },
+      category: { $nin: ['uslugi', 'remont', 'master', 'electrician', 'plumber', 'cleaning', 'klining', 'uborka', 'gruzoperevozki', 'perevozki', 'vyvoz', 'santehnik', 'elektrik', 'services', 'farmer', 'farmer-market', 'farmer-vegetables', 'farmer-fruits', 'farmer-berries', 'farmer-dairy', 'farmer-meat', 'farmer-honey', 'food', 'eda', 'produkty'] },
     },
-    excludeTerms: ['электрик', 'сантехник', 'уборка', 'клининг', 'вывоз', 'грузоперевозки', 'перевозки', 'ремонт квартир', 'услуги', 'мастер на час', 'покос', 'вспашка', 'уход за садом', 'под ключ', 'монтаж', 'установка', 'демонтаж'],
+    excludeTerms: ['электрик', 'сантехник', 'уборка', 'клининг', 'вывоз', 'грузоперевозки', 'перевозки', 'ремонт квартир', 'услуги', 'мастер на час', 'покос', 'вспашка', 'уход за садом', 'под ключ', 'монтаж', 'установка', 'демонтаж', 'малина', 'клубника', 'черника', 'смородина', 'яблоки', 'груши', 'вишня', 'слива', 'абрикос', 'персик', 'виноград', 'арбуз', 'дыня', 'картофель', 'картошка', 'морковь', 'свекла', 'капуста', 'помидоры', 'томаты', 'огурцы', 'перец', 'баклажаны', 'кабачки', 'тыква', 'лук', 'чеснок', 'укроп', 'петрушка', 'салат', 'редис', 'мёд', 'мед', 'молоко', 'сметана', 'творог', 'яйца', 'мясо', 'курица', 'свинина', 'говядина', 'сало', 'колбаса', 'грибы', 'орехи', 'варенье', 'соленья', 'консервы'],
     sortBy: { createdAt: -1 },
     filters: [
       { id: 'all', label: 'Все', icon: 'grid' },
@@ -437,16 +448,39 @@ class HomeDynamicEngine {
   async fetchAds(lat, lng, radiusKm, config) {
     const filter = {};
 
-    if (config.categoryFilter) {
-      Object.assign(filter, config.categoryFilter);
-    }
-
-    if (config.searchTerms?.length) {
+    if (config.includeByKeywords && config.searchTerms?.length) {
       const searchRegex = config.searchTerms.map(t => new RegExp(t, 'i'));
-      filter.$or = [
-        { title: { $in: searchRegex } },
-        { description: { $in: searchRegex } },
-      ];
+      const keywordCondition = {
+        $or: [
+          { title: { $in: searchRegex } },
+          { description: { $in: searchRegex } },
+        ],
+      };
+      
+      if (config.categoryFilter) {
+        filter.$or = [
+          config.categoryFilter,
+          keywordCondition,
+        ];
+      } else {
+        Object.assign(filter, keywordCondition);
+      }
+      
+      if (config.categoryFilter?.isFreeGiveaway) {
+        filter.isFreeGiveaway = config.categoryFilter.isFreeGiveaway;
+      }
+    } else {
+      if (config.categoryFilter) {
+        Object.assign(filter, config.categoryFilter);
+      }
+
+      if (config.searchTerms?.length) {
+        const searchRegex = config.searchTerms.map(t => new RegExp(t, 'i'));
+        filter.$or = [
+          { title: { $in: searchRegex } },
+          { description: { $in: searchRegex } },
+        ];
+      }
     }
 
     if (config.excludeTerms?.length) {
@@ -470,19 +504,39 @@ class HomeDynamicEngine {
         sortBy,
       });
 
-      return ads.map(ad => ({
-        id: ad._id.toString(),
-        title: ad.title,
-        price: ad.price,
-        currency: ad.currency || 'BYN',
-        photo: ad.photos?.[0] || null,
-        distance: ad.distanceMeters ? Math.round(ad.distanceMeters / 100) / 10 : null,
-        distanceKm: ad.distanceKm,
-        location: ad.location?.cityName || null,
-        isFarmer: ad.isFarmerAd,
-        isFree: ad.isFreeGiveaway,
-        hasDiscount: ad.priceHistory?.length > 0,
-      }));
+      return ads.map(ad => {
+        let badge = null;
+        let badgeType = null;
+        
+        if (config.includeByKeywords) {
+          if (ad.isFarmerAd) {
+            badge = 'Фермер';
+            badgeType = 'farmer';
+          } else {
+            badge = 'С огорода';
+            badgeType = 'garden';
+          }
+        } else if (ad.isFreeGiveaway) {
+          badge = 'Даром';
+          badgeType = 'free';
+        }
+        
+        return {
+          id: ad._id.toString(),
+          title: ad.title,
+          price: ad.price,
+          currency: ad.currency || 'BYN',
+          photo: ad.photos?.[0] || null,
+          distance: ad.distanceMeters ? Math.round(ad.distanceMeters / 100) / 10 : null,
+          distanceKm: ad.distanceKm,
+          location: ad.location?.cityName || null,
+          isFarmer: ad.isFarmerAd,
+          isFree: ad.isFreeGiveaway,
+          hasDiscount: ad.priceHistory?.length > 0,
+          badge,
+          badgeType,
+        };
+      });
     } catch (error) {
       console.error('[HomeDynamicEngine] fetchAds error:', error.message);
       return [];
