@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Loader2, Search, MapPin, ChevronRight, Gift, Tractor, Flame, Tag, Sparkles, Navigation, Play, Map, Bug } from 'lucide-react';
+import { Loader2, Search, MapPin, ChevronRight, Gift, Tractor, Flame, Tag, Sparkles, Navigation, Play, Map, Bug, Calendar, ShoppingBag } from 'lucide-react';
 import GeoOnboarding from '@/components/GeoOnboarding';
 import LocationSettingsModal from '@/components/LocationSettingsModal';
 import { useGeo, getLocationDisplayText } from '@/utils/geo';
@@ -67,6 +67,22 @@ interface NewAdItem {
   priceHistory?: Array<{ oldPrice: number; date: string }>;
   views?: number;
   favorites?: number;
+}
+
+// Type for seasonal fairs
+interface SeasonalFair {
+  _id: string;
+  code: string;
+  name: string;
+  title?: string;
+  description?: string;
+  bannerUrl?: string;
+  iconUrl?: string;
+  color?: string;
+  badges?: string[];
+  startDate: string;
+  endDate: string;
+  adsCount?: number;
 }
 
 const SECTION_ICONS: Record<string, typeof Flame> = {
@@ -208,6 +224,8 @@ export default function HomePage() {
   const [useZoneBased, setUseZoneBased] = useState(true);
   const [newAds, setNewAds] = useState<NewAdItem[]>([]);
   const [trendingAds, setTrendingAds] = useState<NewAdItem[]>([]);
+  const [fairs, setFairs] = useState<SeasonalFair[]>([]);
+  const [freeAds, setFreeAds] = useState<NewAdItem[]>([]);
 
   useEffect(() => {
     if (!hasCompletedOnboarding && !coords && !debugZone) {
@@ -374,6 +392,74 @@ export default function HomePage() {
     };
     
     fetchTrendingAds();
+  }, [coords, radiusKm, debugZone]);
+
+  // Fetch active seasonal fairs
+  useEffect(() => {
+    const fetchFairs = async () => {
+      try {
+        const response = await fetch('/api/seasons/active');
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            setFairs(data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch fairs:', error);
+      }
+    };
+    
+    fetchFairs();
+  }, []);
+
+  // Fetch free giveaway ads
+  useEffect(() => {
+    const fetchFreeAds = async () => {
+      if (!coords && !debugZone) return;
+      
+      try {
+        const params = new URLSearchParams();
+        if (coords) {
+          params.set('lat', coords.lat.toString());
+          params.set('lng', coords.lng.toString());
+        }
+        params.set('radiusKm', (radiusKm || 30).toString());
+        params.set('limit', '20');
+        params.set('isFreeGiveaway', 'true');
+        
+        const response = await fetch(`/api/ads?${params.toString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.items && Array.isArray(data.items)) {
+            const normalizedAds: NewAdItem[] = data.items
+              .map((item: any) => {
+                const id = item._id?.toString() || item.id || '';
+                if (!id || !item.title) return null;
+                
+                return {
+                  _id: id,
+                  title: item.title,
+                  price: 0,
+                  photos: item.photos,
+                  photo: item.photo || item.photos?.[0],
+                  distanceKm: item.distanceKm,
+                  isFreeGiveaway: true,
+                  views: item.views || 0,
+                  favorites: item.favorites || 0,
+                };
+              })
+              .filter((item: NewAdItem | null): item is NewAdItem => item !== null);
+            
+            setFreeAds(normalizedAds.slice(0, 20));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch free ads:', error);
+      }
+    };
+    
+    fetchFreeAds();
   }, [coords, radiusKm, debugZone]);
 
   const handleOnboardingComplete = () => {
@@ -767,6 +853,156 @@ export default function HomePage() {
                 </SwiperSlide>
               ))}
             </Swiper>
+          </section>
+        )}
+
+        {/* Seasonal Fairs Carousel */}
+        {!loading && fairs.length > 0 && (
+          <section style={{ marginBottom: 24 }}>
+            <div style={{
+              padding: '0 16px 12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Calendar size={18} color="#14B8A6" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1F2937' }}>
+                    Ярмарки
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9CA3AF' }}>
+                    Сезонные предложения
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => navigate('/fairs')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#14B8A6',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}
+                data-testid="button-see-all-fairs"
+              >
+                Все
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            {/* Horizontal Scroll Carousel */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              overflowX: 'auto',
+              paddingLeft: 16,
+              paddingRight: 16,
+              paddingBottom: 8,
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+            }}>
+              {fairs.map((fair) => (
+                <FairCard 
+                  key={fair._id} 
+                  fair={fair} 
+                  onClick={() => navigate(`/fair/${fair.code}`)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Free Giveaway Section - Отдам даром */}
+        {!loading && freeAds.length > 0 && (
+          <section style={{ marginBottom: 24 }}>
+            <div style={{
+              padding: '0 16px 12px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(52, 211, 153, 0.15) 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Gift size={18} color="#10B981" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1F2937' }}>
+                    Отдам даром
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9CA3AF' }}>
+                    Бесплатные вещи рядом
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => navigate('/feed?free=true')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#10B981',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}
+                data-testid="button-see-all-free"
+              >
+                Все
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            {/* Horizontal Scroll Carousel */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              overflowX: 'auto',
+              paddingLeft: 16,
+              paddingRight: 16,
+              paddingBottom: 8,
+              scrollSnapType: 'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+            }}>
+              {freeAds.map((ad) => (
+                <FreeAdCard 
+                  key={ad._id} 
+                  ad={ad} 
+                  onClick={() => handleAdClick(ad._id)}
+                />
+              ))}
+            </div>
           </section>
         )}
 
@@ -1612,6 +1848,282 @@ function TrendingAdCard({
               -{discountPercent}%
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Fair Card - seasonal fair/event card
+function FairCard({ 
+  fair, 
+  onClick,
+}: { 
+  fair: SeasonalFair; 
+  onClick: () => void;
+}) {
+  const defaultColors = ['#14B8A6', '#06B6D4', '#8B5CF6', '#F59E0B', '#EC4899'];
+  const colorIndex = fair.code ? fair.code.charCodeAt(0) % defaultColors.length : 0;
+  const bgColor = fair.color || defaultColors[colorIndex];
+  
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        minWidth: 200,
+        maxWidth: 200,
+        height: 120,
+        borderRadius: 16,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        scrollSnapAlign: 'start',
+        flexShrink: 0,
+        position: 'relative',
+        background: `linear-gradient(135deg, ${bgColor} 0%, ${bgColor}dd 100%)`,
+        boxShadow: `0 4px 16px ${bgColor}40`,
+        transition: 'transform 0.15s ease',
+      }}
+      onTouchStart={(e) => {
+        e.currentTarget.style.transform = 'scale(0.98)';
+      }}
+      onTouchEnd={(e) => {
+        e.currentTarget.style.transform = 'scale(1)';
+      }}
+      data-testid={`fair-card-${fair.code}`}
+    >
+      {/* Icon/Banner */}
+      {fair.iconUrl ? (
+        <img
+          src={fair.iconUrl}
+          alt={fair.name}
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            width: 40,
+            height: 40,
+            objectFit: 'contain',
+            opacity: 0.9,
+          }}
+        />
+      ) : (
+        <div style={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          width: 40,
+          height: 40,
+          borderRadius: 12,
+          background: 'rgba(255, 255, 255, 0.2)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <Calendar size={20} color="#fff" />
+        </div>
+      )}
+      
+      {/* Content */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: 16,
+        background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%)',
+      }}>
+        <div style={{
+          fontSize: 15,
+          fontWeight: 700,
+          color: '#FFFFFF',
+          marginBottom: 4,
+          textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+        }}>
+          {fair.title || fair.name}
+        </div>
+        <div style={{
+          fontSize: 11,
+          color: 'rgba(255, 255, 255, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}>
+          <span>{formatDate(fair.startDate)} — {formatDate(fair.endDate)}</span>
+          {fair.adsCount !== undefined && fair.adsCount > 0 && (
+            <>
+              <span style={{ opacity: 0.6 }}>•</span>
+              <span>{fair.adsCount} товаров</span>
+            </>
+          )}
+        </div>
+      </div>
+      
+      {/* Badges */}
+      {fair.badges && fair.badges.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: 12,
+          left: 12,
+          display: 'flex',
+          gap: 6,
+        }}>
+          {fair.badges.slice(0, 2).map((badge, i) => (
+            <div key={i} style={{
+              background: 'rgba(255, 255, 255, 0.25)',
+              backdropFilter: 'blur(4px)',
+              color: '#FFFFFF',
+              fontSize: 10,
+              fontWeight: 600,
+              padding: '4px 8px',
+              borderRadius: 6,
+            }}>
+              {badge}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Free Ad Card - for free giveaway items
+function FreeAdCard({ 
+  ad, 
+  onClick,
+}: { 
+  ad: NewAdItem; 
+  onClick: () => void;
+}) {
+  const photoUrl = ad.photo || ad.photos?.[0] ? getThumbnailUrl(ad.photo || ad.photos?.[0] || '') : NO_PHOTO_PLACEHOLDER;
+  const distanceKm = ad.distanceKm;
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        minWidth: 156,
+        maxWidth: 156,
+        background: '#FFFFFF',
+        borderRadius: 16,
+        overflow: 'hidden',
+        cursor: 'pointer',
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+        scrollSnapAlign: 'start',
+        flexShrink: 0,
+        transition: 'transform 0.15s ease',
+        border: '1px solid rgba(16, 185, 129, 0.2)',
+      }}
+      onTouchStart={(e) => {
+        e.currentTarget.style.transform = 'scale(0.98)';
+      }}
+      onTouchEnd={(e) => {
+        e.currentTarget.style.transform = 'scale(1)';
+      }}
+      data-testid={`free-ad-card-${ad._id}`}
+    >
+      {/* Image Container */}
+      <div style={{ 
+        position: 'relative',
+        width: '100%',
+        paddingTop: '100%',
+        background: '#F3F4F6',
+      }}>
+        <img
+          src={photoUrl}
+          alt={ad.title}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+          loading="lazy"
+        />
+        
+        {/* Free Badge */}
+        <div style={{
+          position: 'absolute',
+          top: 8,
+          left: 8,
+          background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+          color: '#FFFFFF',
+          fontSize: 10,
+          fontWeight: 700,
+          padding: '4px 10px',
+          borderRadius: 8,
+          boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)',
+        }}>
+          ДАРОМ
+        </div>
+        
+        {/* Favorite Button */}
+        <div style={{
+          position: 'absolute',
+          top: 8,
+          right: 8,
+        }}>
+          <FavoriteButton 
+            adId={ad._id} 
+            size={20}
+          />
+        </div>
+        
+        {/* Distance Badge */}
+        {distanceKm !== undefined && (
+          <div style={{
+            position: 'absolute',
+            bottom: 8,
+            left: 8,
+            background: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
+            color: '#FFFFFF',
+            fontSize: 10,
+            fontWeight: 500,
+            padding: '4px 8px',
+            borderRadius: 6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            <MapPin size={10} />
+            {distanceKm < 1 ? `${Math.round(distanceKm * 1000)} м` : `${distanceKm.toFixed(1)} км`}
+          </div>
+        )}
+      </div>
+      
+      {/* Content */}
+      <div style={{ padding: '12px' }}>
+        {/* Title */}
+        <div style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: '#1F2937',
+          lineHeight: 1.3,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          minHeight: 34,
+          marginBottom: 8,
+        }}>
+          {ad.title}
+        </div>
+        
+        {/* Price - Always Free */}
+        <div style={{
+          fontSize: 15,
+          fontWeight: 700,
+          color: '#10B981',
+        }}>
+          Бесплатно
         </div>
       </div>
     </div>

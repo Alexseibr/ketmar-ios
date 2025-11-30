@@ -34,6 +34,7 @@ function buildAdQuery(query = {}) {
     season,
     limit,
     offset,
+    isFreeGiveaway,
   } = query;
 
   const filter = {};
@@ -44,6 +45,14 @@ function buildAdQuery(query = {}) {
 
   if (status) {
     filter.status = status;
+  }
+
+  // Filter by free giveaway items
+  const isFreeGiveawayBool = parseBoolean(isFreeGiveaway);
+  if (isFreeGiveawayBool === true) {
+    filter.isFreeGiveaway = true;
+  } else if (isFreeGiveawayBool === false) {
+    filter.isFreeGiveaway = { $ne: true };
   }
 
   if (sellerId) {
