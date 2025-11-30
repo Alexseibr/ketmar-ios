@@ -62,6 +62,7 @@ const CampaignPage = lazy(() => import('@/pages/CampaignPage'));
 const CampaignAnalyticsPage = lazy(() => import('@/pages/CampaignAnalyticsPage'));
 const NeonDemoPage = lazy(() => import('@/pages/NeonDemoPage'));
 const LocalDemandPage = lazy(() => import('@/pages/LocalDemandPage'));
+const JobSeekersPage = lazy(() => import('@/pages/JobSeekersPage'));
 const AuthScreen = lazy(() => import('@/components/AuthScreen'));
 const AdminSellersPage = lazy(() => import('@/pages/AdminSellersPage'));
 const AdminShopRequestsPage = lazy(() => import('@/pages/AdminShopRequestsPage'));
@@ -251,6 +252,7 @@ export default function App() {
               <Route path="/for-you" element={<ForYouFeedPage />} />
               <Route path="/neon-demo" element={<NeonDemoPage />} />
               <Route path="/local-demand" element={<LocalDemandPage />} />
+              <Route path="/job-seekers" element={<JobSeekersPage />} />
 
               {/* Private routes - require authentication */}
               <Route path="/create" element={

@@ -58,6 +58,7 @@ import homeFeedRoutes from './routes/home-feed.js';
 import homeConfigRoutes from './routes/home-config.js';
 import socialTrafficRoutes from './routes/social-traffic.js';
 import localDemandRoutes from './routes/local-demand.js';
+import jobSeekersRoutes from './routes/job-seekers.js';
 import { registerMobileApi } from './mobile/index.js';
 
 const app = express();
@@ -167,6 +168,7 @@ app.use('/api/home-feed', homeFeedRoutes);
 app.use('/api/home/config', homeConfigRoutes);
 app.use('/api/social-traffic', socialTrafficRoutes);
 app.use('/api/local-demand', localDemandRoutes);
+app.use('/api/job-seekers', jobSeekersRoutes);
 
 // Mobile API v1 (for native apps)
 registerMobileApi(app);
