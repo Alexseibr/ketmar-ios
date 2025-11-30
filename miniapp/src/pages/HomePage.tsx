@@ -809,6 +809,7 @@ export default function HomePage() {
               modules={[Autoplay, Pagination]}
               spaceBetween={12}
               slidesPerView={1.1}
+              loop={bannersBlock.items.length >= 2}
               autoplay={{ delay: 4000, disableOnInteraction: false }}
               pagination={{ clickable: true }}
               style={{ paddingBottom: 24 }}
