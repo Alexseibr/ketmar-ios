@@ -1078,3 +1078,90 @@ body.screen-layout-active {
     margin: 0 auto;
   }
 }
+
+/* ============================================
+   ZONE-ADAPTIVE STYLES
+   Styles for village, suburb, and city_center zones
+   ============================================ */
+
+/* Village Zone - Simple, larger elements */
+.zone-village {
+  --zone-radius: 12px;
+  --zone-title-size: 17px;
+  --zone-card-padding: 16px;
+  --zone-accent: #059669;
+}
+
+.zone-village .category-tile {
+  border-radius: 12px;
+}
+
+.zone-village .category-icon {
+  width: 64px;
+  height: 64px;
+}
+
+.zone-village .category-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.zone-village .btn-primary {
+  padding: 18px 28px;
+  font-size: 18px;
+  border-radius: 12px;
+}
+
+.zone-village .section-title {
+  font-size: 18px;
+}
+
+/* Suburb Zone - Balanced, standard elements */
+.zone-suburb {
+  --zone-radius: 16px;
+  --zone-title-size: 16px;
+  --zone-card-padding: 14px;
+  --zone-accent: #3A7BFF;
+}
+
+/* City Center Zone - Refined, compact elements */
+.zone-city_center {
+  --zone-radius: 20px;
+  --zone-title-size: 15px;
+  --zone-card-padding: 12px;
+  --zone-accent: #8B5CF6;
+}
+
+.zone-city_center .category-tile {
+  border-radius: 16px;
+  padding: 12px 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.zone-city_center .category-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.zone-city_center .category-name {
+  font-size: 11px;
+}
+
+.zone-city_center .card {
+  border-radius: 16px;
+}
+
+.zone-city_center .section-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Debug mode indicator pulse */
+@keyframes debugPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}
+
+.debug-indicator {
+  animation: debugPulse 2s ease-in-out infinite;
+}

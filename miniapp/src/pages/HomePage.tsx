@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, Search, MapPin, ChevronRight, Gift, Tractor, Flame, Tag, Sparkles, Navigation, Play, Map } from 'lucide-react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Loader2, Search, MapPin, ChevronRight, Gift, Tractor, Flame, Tag, Sparkles, Navigation, Play, Map, Bug } from 'lucide-react';
 import GeoOnboarding from '@/components/GeoOnboarding';
 import LocationSettingsModal from '@/components/LocationSettingsModal';
 import { useGeo, getLocationDisplayText } from '@/utils/geo';
@@ -90,8 +90,107 @@ const SECTION_ICONS: Record<string, typeof Flame> = {
   sparkles: Sparkles,
 };
 
+const DEBUG_ZONE_BLOCKS: Record<ZoneType, string[]> = {
+  village: [
+    'darom',
+    'farmer_goods',
+    'garden_help',
+    'machinery_spare',
+    'tractor_services',
+  ],
+  suburb: [
+    'darom',
+    'village_offers',
+    'lawn_mowing',
+    'repair_house',
+    'local_shops',
+    'cleaning_house',
+  ],
+  city_center: [
+    'darom',
+    'trending',
+    'services',
+    'author_brands',
+    'beauty',
+    'handmade',
+    'demand',
+  ],
+};
+
+const DEBUG_UI_CONFIG: Record<ZoneType, HomeConfigResponse['uiConfig']> = {
+  village: {
+    buttonSize: 'large',
+    cardStyle: 'simple',
+    animations: false,
+    colorAccent: '#059669',
+    categoryGridCols: 3,
+  },
+  suburb: {
+    buttonSize: 'medium',
+    cardStyle: 'standard',
+    animations: true,
+    colorAccent: '#3A7BFF',
+    categoryGridCols: 4,
+  },
+  city_center: {
+    buttonSize: 'small',
+    cardStyle: 'fancy',
+    animations: true,
+    colorAccent: '#8B5CF6',
+    categoryGridCols: 4,
+  },
+};
+
+const ZONE_LABELS: Record<ZoneType, string> = {
+  village: 'Деревня',
+  suburb: 'Окраина',
+  city_center: 'Центр города',
+};
+
+const BLOCK_CONFIG: Record<string, { title: string; subtitle: string; icon: string; accentColor: string; link?: string }> = {
+  darom: { title: 'Даром', subtitle: 'Бесплатные вещи рядом', icon: 'gift', accentColor: '#EC4899', link: '/category/darom' },
+  farmer_goods: { title: 'Фермерские товары', subtitle: 'Свежие продукты от фермеров', icon: 'tractor', accentColor: '#059669', link: '/category/farmer-market' },
+  garden_help: { title: 'Помощь в огороде', subtitle: 'Услуги для дачи и сада', icon: 'shovel', accentColor: '#16A34A', link: '/category/uslugi' },
+  machinery_spare: { title: 'Запчасти', subtitle: 'Для сельхозтехники', icon: 'wrench', accentColor: '#D97706', link: '/category/selhoztekhnika' },
+  tractor_services: { title: 'Услуги трактора', subtitle: 'Вспашка, уборка, перевозка', icon: 'tractor', accentColor: '#7C3AED', link: '/category/uslugi' },
+  village_offers: { title: 'Предложения рядом', subtitle: 'Товары в вашем районе', icon: 'tag', accentColor: '#3B82F6', link: '/search' },
+  lawn_mowing: { title: 'Покос травы', subtitle: 'Уход за участком', icon: 'grass', accentColor: '#22C55E', link: '/category/uslugi' },
+  repair_house: { title: 'Ремонт дома', subtitle: 'Строительство и ремонт', icon: 'hammer', accentColor: '#F59E0B', link: '/category/uslugi' },
+  local_shops: { title: 'Местные магазины', subtitle: 'Продавцы рядом с вами', icon: 'store', accentColor: '#6366F1', link: '/shops' },
+  cleaning_house: { title: 'Уборка дома', subtitle: 'Клининг и уборка', icon: 'sparkles', accentColor: '#14B8A6', link: '/category/uslugi' },
+  snow_cleaning: { title: 'Уборка снега', subtitle: 'Очистка территории', icon: 'snowflake', accentColor: '#0EA5E9', link: '/category/uslugi' },
+  trending: { title: 'Популярное', subtitle: 'Самые просматриваемые', icon: 'fire', accentColor: '#EF4444', link: '/trending' },
+  services: { title: 'Услуги', subtitle: 'Мастера и специалисты', icon: 'wrench', accentColor: '#8B5CF6', link: '/category/uslugi' },
+  author_brands: { title: 'Авторские бренды', subtitle: 'Уникальные товары', icon: 'palette', accentColor: '#F43F5E', link: '/shops?role=BLOGGER' },
+  beauty: { title: 'Красота', subtitle: 'Косметика и уход', icon: 'lipstick', accentColor: '#EC4899', link: '/category/krasota' },
+  handmade: { title: 'Handmade', subtitle: 'Ручная работа', icon: 'palette', accentColor: '#A855F7', link: '/shops?role=ARTISAN' },
+  demand: { title: 'Ищут сейчас', subtitle: 'Популярные запросы', icon: 'search', accentColor: '#3B82F6', link: '/demand' },
+  seasonal_fairs: { title: 'Сезонные ярмарки', subtitle: 'Тематические распродажи', icon: 'calendar', accentColor: '#14B8A6', link: '/fairs' },
+};
+
+function getBlockTitle(blockId: string): string {
+  return BLOCK_CONFIG[blockId]?.title || blockId;
+}
+
+function getBlockSubtitle(blockId: string): string {
+  return BLOCK_CONFIG[blockId]?.subtitle || '';
+}
+
+function getBlockIcon(blockId: string): string {
+  return BLOCK_CONFIG[blockId]?.icon || 'sparkles';
+}
+
+function getBlockAccentColor(blockId: string): string {
+  return BLOCK_CONFIG[blockId]?.accentColor || '#6366F1';
+}
+
+function getBlockLink(blockId: string): string | undefined {
+  return BLOCK_CONFIG[blockId]?.link;
+}
+
 export default function HomePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const user = useUserStore((state) => state.user);
   const { 
     coords, 
@@ -102,6 +201,14 @@ export default function HomePage() {
     hasCompletedOnboarding,
   } = useGeo(false);
 
+  const debugZone = useMemo(() => {
+    const zone = searchParams.get('debugZone');
+    if (zone && ['village', 'suburb', 'city_center'].includes(zone)) {
+      return zone as ZoneType;
+    }
+    return null;
+  }, [searchParams]);
+
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showLocationSettings, setShowLocationSettings] = useState(false);
   const [feedData, setFeedData] = useState<HomeFeedResponse | null>(null);
@@ -111,10 +218,10 @@ export default function HomePage() {
   const [useZoneBased, setUseZoneBased] = useState(true);
 
   useEffect(() => {
-    if (!hasCompletedOnboarding && !coords) {
+    if (!hasCompletedOnboarding && !coords && !debugZone) {
       setShowOnboarding(true);
     }
-  }, [hasCompletedOnboarding, coords]);
+  }, [hasCompletedOnboarding, coords, debugZone]);
 
   const fetchHomeFeed = useCallback(async () => {
     setLoading(true);
@@ -129,12 +236,21 @@ export default function HomePage() {
         params.set('userId', user.telegramId.toString());
       }
       
-      if (useZoneBased && coords) {
+      if (debugZone) {
+        params.set('zone', debugZone);
+      }
+      
+      if (useZoneBased && (coords || debugZone)) {
         try {
           const configResponse = await fetch(`/api/home/config?${params.toString()}`);
           if (configResponse.ok) {
             const configData: HomeConfigResponse = await configResponse.json();
             if (configData.success) {
+              if (debugZone) {
+                configData.zone = debugZone;
+                configData.location = `${ZONE_LABELS[debugZone]} (DEBUG)`;
+                configData.uiConfig = DEBUG_UI_CONFIG[debugZone];
+              }
               setHomeConfig(configData);
               setFeedData(null);
               setLocationName(configData.location || cityName || t('location.your_area'));
@@ -160,7 +276,7 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, [coords, radiusKm, cityName, user?.telegramId, useZoneBased]);
+  }, [coords, radiusKm, cityName, user?.telegramId, useZoneBased, debugZone]);
 
   useEffect(() => {
     fetchHomeFeed();
@@ -197,7 +313,7 @@ export default function HomePage() {
     animations: true,
     colorAccent: '#3A7BFF',
   };
-  const currentZone: ZoneType = homeConfig?.zone || 'suburb';
+  const currentZone: ZoneType = debugZone || homeConfig?.zone || 'suburb';
   
   const bannersBlock = homeConfig 
     ? zoneBlocks.find(b => b.type === 'banners')
@@ -206,13 +322,74 @@ export default function HomePage() {
     ? zoneBlocks.filter(b => b.type === 'horizontal_list') 
     : (feedData?.blocks.filter(b => b.type === 'horizontal_list') || []);
 
+  const zoneBackgroundStyles: Record<ZoneType, { background: string }> = {
+    village: { background: '#F0FDF4' },
+    suburb: { background: '#F5F6F7' },
+    city_center: { background: '#FAFAFA' },
+  };
+
   return (
-    <div style={{ 
-      background: '#F5F6F7', 
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-    }}>
+    <div 
+      className={`home-root zone-${currentZone}`}
+      style={{ 
+        ...zoneBackgroundStyles[currentZone],
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {debugZone && (
+        <div 
+          style={{
+            position: 'fixed',
+            bottom: 100,
+            left: 16,
+            right: 16,
+            zIndex: 100,
+            background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+            color: '#fff',
+            padding: '10px 16px',
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+          }}
+          data-testid="debug-zone-banner"
+        >
+          <Bug size={20} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Debug Mode</div>
+            <div style={{ fontSize: 11, opacity: 0.9 }}>
+              Zone: {ZONE_LABELS[debugZone]} | Blocks: {DEBUG_ZONE_BLOCKS[debugZone].length}
+            </div>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            gap: 6,
+          }}>
+            {(['village', 'suburb', 'city_center'] as ZoneType[]).map((z) => (
+              <button
+                key={z}
+                onClick={() => navigate(`/?debugZone=${z}`)}
+                style={{
+                  padding: '4px 8px',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  background: z === debugZone ? '#fff' : 'rgba(255,255,255,0.2)',
+                  color: z === debugZone ? '#D97706' : '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                }}
+                data-testid={`debug-zone-switch-${z}`}
+              >
+                {z === 'village' ? 'V' : z === 'suburb' ? 'S' : 'C'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {/* Fixed Header */}
       <div style={{
         position: 'fixed',

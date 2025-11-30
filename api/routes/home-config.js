@@ -12,30 +12,33 @@ router.get('/', async (req, res) => {
     const userLng = parseFloat(lng);
     const radius = parseFloat(radiusKm);
 
-    if (isNaN(userLat) || isNaN(userLng)) {
+    const hasValidCoords = !isNaN(userLat) && !isNaN(userLng) &&
+      userLat >= -90 && userLat <= 90 && userLng >= -180 && userLng <= 180;
+
+    if (!hasValidCoords && !forceZone) {
       return res.status(400).json({
         success: false,
-        error: 'Valid lat and lng parameters are required',
+        error: 'Valid lat and lng parameters are required (or use zone parameter for debug)',
       });
     }
 
-    if (userLat < -90 || userLat > 90 || userLng < -180 || userLng > 180) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid coordinates',
-      });
-    }
+    const defaultLat = 53.9045;
+    const defaultLng = 27.5615;
+    const effectiveLat = hasValidCoords ? userLat : defaultLat;
+    const effectiveLng = hasValidCoords ? userLng : defaultLng;
 
     const [homeConfig, geoData] = await Promise.all([
-      homeDynamicEngine.getHomeConfig(userLat, userLng, {
+      homeDynamicEngine.getHomeConfig(effectiveLat, effectiveLng, {
         radiusKm: radius,
         userId,
         forceZone,
       }),
-      reverseGeocodingService.reverseGeocode(userLat, userLng),
+      hasValidCoords ? reverseGeocodingService.reverseGeocode(effectiveLat, effectiveLng) : Promise.resolve(null),
     ]);
 
-    const locationName = geoData?.label || geoData?.city || 'Ваш район';
+    const locationName = forceZone 
+      ? `${forceZone === 'village' ? 'Деревня' : forceZone === 'suburb' ? 'Окраина' : 'Центр города'} (DEBUG)`
+      : geoData?.label || geoData?.city || 'Ваш район';
 
     res.json({
       success: true,

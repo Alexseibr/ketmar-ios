@@ -1,0 +1,173 @@
+2) СУПЕР-ПРОМПТ ДЛЯ FRONTEND
+Задача: HomePage.tsx → запрос /api/home/config → рендер блоков → отдельные компоненты для блоков.
+Нужно доработать frontend миниаппа KETMAR (React / TS).
+
+Цель: главная страница (HomePage) должна динамически меняться в зависимости от конфигурации, которую отдаёт backend /api/home/config.
+
+1. HomePage.tsx
+----------------
+Файл: /miniapp/src/pages/HomePage.tsx (или аналогичный корневой для главной).
+
+Нужно:
+- При монтировании страницы:
+  - Получить текущие координаты пользователя (lat/lng) — либо через уже существующий geo контекст, либо через Navigator API (если уже есть).
+  - Вызвать GET /api/home/config?lat=..&lng=..
+
+- Состояние:
+  - loading: boolean
+  - error: string | null
+  - zone: "village" | "suburb" | "city_center" | null
+  - blocks: string[]
+
+Пример:
+
+const [config, setConfig] = useState<{ zone: string; blocks: string[] } | null>(null);
+
+useEffect(() => {
+  // 1. Получить гео
+  // 2. Вызвать /api/home/config
+  // 3. setConfig(response.data)
+}, []);
+
+Рендер:
+- Если loading → skeleton / loader.
+- Если error → показать ошибку/кнопку "повторить".
+- Если есть config → отрисовать блоки:
+
+{config.blocks.map(block => (
+  <RenderBlock key={block} type={block} zone={config.zone} />
+))}
+
+2. Компонент RenderBlock
+------------------------
+Файл: /miniapp/src/components/home/RenderBlock.tsx
+
+Пример:
+
+interface RenderBlockProps {
+  type: string;
+  zone: "village" | "suburb" | "city_center";
+}
+
+export const RenderBlock: React.FC<RenderBlockProps> = ({ type, zone }) => {
+  switch (type) {
+    case "darom":
+      return <DaromBlock zone={zone} />;
+    case "garden_help":
+      return <GardenHelpBlock zone={zone} />;
+    case "machinery_spare":
+      return <MachinerySpareBlock zone={zone} />;
+    case "tractor_services":
+      return <TractorServicesBlock zone={zone} />;
+    case "farmer_goods":
+      return <FarmerGoodsBlock zone={zone} />;
+
+    case "village_offers":
+      return <VillageOffersBlock zone={zone} />;
+    case "lawn_mowing":
+      return <LawnMowingBlock zone={zone} />;
+    case "cleaning_house":
+      return <CleaningHouseBlock zone={zone} />;
+    case "repair_house":
+      return <RepairHouseBlock zone={zone} />;
+    case "snow_cleaning":
+      return <SnowCleaningBlock zone={zone} />;
+    case "local_shops":
+      return <LocalShopsBlock zone={zone} />;
+
+    case "services":
+      return <ServicesBlock zone={zone} />;
+    case "author_brands":
+      return <AuthorBrandsBlock zone={zone} />;
+    case "beauty":
+      return <BeautyBlock zone={zone} />;
+    case "cleaning":
+      return <CleaningBlock zone={zone} />;
+    case "handmade":
+      return <HandmadeBlock zone={zone} />;
+    case "trending":
+      return <TrendingBlock zone={zone} />;
+    case "demand":
+      return <DemandBlock zone={zone} />;
+    case "seasonal_fairs":
+      return <SeasonalFairsBlock zone={zone} />;
+    default:
+      return null;
+  }
+};
+
+3. Компоненты блоков
+---------------------
+Каждый блок — это самостоятельный компонент, который:
+- делает запрос к соответствующему API (например, /api/ads?type=farmer_goods&zone=village),
+- рендерит список карточек (AdCard / ServiceCard),
+- учитывает zone (можно использовать для текста или доп. фильтров).
+
+Папка:
+- /miniapp/src/components/home/blocks/
+
+Примеры файлов:
+- DaromBlock.tsx
+- GardenHelpBlock.tsx
+- MachinerySpareBlock.tsx
+- TractorServicesBlock.tsx
+- FarmerGoodsBlock.tsx
+- VillageOffersBlock.tsx
+- LawnMowingBlock.tsx
+- CleaningHouseBlock.tsx
+- RepairHouseBlock.tsx
+- SnowCleaningBlock.tsx
+- LocalShopsBlock.tsx
+- ServicesBlock.tsx
+- AuthorBrandsBlock.tsx
+- BeautyBlock.tsx
+- CleaningBlock.tsx
+- HandmadeBlock.tsx
+- TrendingBlock.tsx
+- DemandBlock.tsx
+- SeasonalFairsBlock.tsx
+
+4. Взаимодействие с API
+------------------------
+Каждый блок должен:
+- либо использовать общий хук useAds({ category, zone }),
+- либо напрямую дергать API.
+
+Пример для фермерских товаров:
+
+GET /api/ads?categoryGroup=farmer&zone=village&limit=10
+
+Для авторских брендов:
+
+GET /api/ads?categoryGroup=author_brand&zone=city_center&limit=10
+
+Для услуг:
+
+GET /api/services?zone=suburb&type=garden_help
+
+5. UI-различия по зоне
+-----------------------
+На уровне HomePage можно добавить лёгкий визуальный акцент:
+
+- Если zone = "village":
+  - более простые фоны
+  - крупнее заголовки
+  - крупные кнопки
+
+- Если zone = "city_center":
+  - немного более "инстаграмный" стиль:
+    - карточки с фото
+    - больше белого пространства
+    - плавные скроллы
+
+Это можно сделать классами:
+- className={`home-root zone-${zone}`}
+
+и завести минимальные CSS/Styled-константы.
+
+6. Режим отладки
+-----------------
+Сделать возможность принудительно задать zone через query-параметр:
+- например, если в URL есть ?debugZone=village — не вызывать /home/config, а использовать эту зону и соответствующий заранее описанный массив блоков.
+
+Это поможет тестировать три варианта интерфейса без реального GPS.
