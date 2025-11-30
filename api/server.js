@@ -55,6 +55,7 @@ import myShopRoutes from './routes/my-shop.js';
 import storiesRoutes from './routes/stories.js';
 import categoryProposalsRoutes from './routes/categoryProposals.js';
 import homeFeedRoutes from './routes/home-feed.js';
+import homeConfigRoutes from './routes/home-config.js';
 import socialTrafficRoutes from './routes/social-traffic.js';
 import { registerMobileApi } from './mobile/index.js';
 
@@ -162,6 +163,7 @@ app.use('/api/my-shop', myShopRoutes);
 app.use('/api/stories', storiesRoutes);
 app.use('/api/admin/category-proposals', adminAuth, categoryProposalsRoutes);
 app.use('/api/home-feed', homeFeedRoutes);
+app.use('/api/home/config', homeConfigRoutes);
 app.use('/api/social-traffic', socialTrafficRoutes);
 
 // Mobile API v1 (for native apps)
