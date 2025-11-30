@@ -10,6 +10,32 @@ class GeoZoneClassifier {
     this.villagePlaceTypes = ['village', 'hamlet', 'isolated_dwelling', 'farm', 'allotments'];
     this.suburbPlaceTypes = ['suburb', 'neighbourhood', 'residential', 'quarter'];
     this.cityPlaceTypes = ['city', 'town', 'borough', 'city_block'];
+    
+    this.majorCities = [
+      'минск', 'minsk',
+      'брест', 'brest',
+      'гродно', 'grodno',
+      'витебск', 'vitebsk',
+      'могилёв', 'могилев', 'mogilev',
+      'гомель', 'gomel',
+      'бобруйск', 'bobruisk',
+      'барановичи', 'baranovichi',
+      'борисов', 'borisov',
+      'пинск', 'pinsk',
+      'орша', 'orsha',
+      'мозырь', 'mozyr',
+      'солигорск', 'soligorsk',
+      'новополоцк', 'novopolotsk',
+      'лида', 'lida',
+      'молодечно', 'molodechno',
+      'полоцк', 'polotsk',
+      'жлобин', 'zhlobin',
+      'светлогорск', 'svetlogorsk',
+      'речица', 'rechitsa',
+      'слуцк', 'slutsk',
+      'жодино', 'zhodino',
+      'кобрин', 'kobrin',
+    ];
   }
 
   getCacheKey(lat, lng) {
@@ -174,57 +200,83 @@ class GeoZoneClassifier {
     }
   }
 
+  isMajorCity(cityName) {
+    if (!cityName) return false;
+    const normalized = cityName.toLowerCase().trim();
+    return this.majorCities.some(city => normalized.includes(city) || city.includes(normalized));
+  }
+
   determineZone(osmData, adMetrics) {
     let villageScore = 0;
     let suburbScore = 0;
     let cityScore = 0;
 
-    if (osmData.isVillage) {
-      villageScore += 40;
-    } else if (osmData.isCity && !osmData.hasSuburb) {
-      cityScore += 30;
-    } else if (osmData.hasSuburb) {
-      suburbScore += 25;
-      cityScore += 15;
+    const cityName = osmData.city || osmData.raw?.city || osmData.raw?.town;
+    const isMajorCity = this.isMajorCity(cityName);
+    const metricsAvailable = adMetrics.totalAds > 0;
+
+    if (isMajorCity) {
+      cityScore += 50;
+      
+      if (osmData.hasSuburb) {
+        suburbScore += 20;
+      } else {
+        cityScore += 10;
+      }
+      
+      console.log(`[GeoZoneClassifier] Major city detected: ${cityName}`);
+    } else {
+      if (osmData.isVillage) {
+        villageScore += 40;
+      } else if (osmData.isCity && !osmData.hasSuburb) {
+        cityScore += 30;
+      } else if (osmData.hasSuburb) {
+        suburbScore += 25;
+        cityScore += 15;
+      }
     }
 
-    if (osmData.placeType === 'village' || osmData.placeType === 'hamlet') {
-      villageScore += 30;
-    } else if (osmData.placeType === 'suburb' || osmData.placeType === 'neighbourhood') {
-      suburbScore += 30;
-    } else if (osmData.placeType === 'city' || osmData.placeType === 'city_district') {
-      cityScore += 30;
-    } else if (osmData.placeType === 'town') {
-      suburbScore += 15;
-      cityScore += 15;
+    if (!isMajorCity) {
+      if (osmData.placeType === 'village' || osmData.placeType === 'hamlet') {
+        villageScore += 30;
+      } else if (osmData.placeType === 'suburb' || osmData.placeType === 'neighbourhood') {
+        suburbScore += 30;
+      } else if (osmData.placeType === 'city' || osmData.placeType === 'city_district') {
+        cityScore += 30;
+      } else if (osmData.placeType === 'town') {
+        suburbScore += 15;
+        cityScore += 15;
+      }
     }
 
-    if (adMetrics.adDensity > 50) {
-      cityScore += 20;
-    } else if (adMetrics.adDensity > 10) {
-      suburbScore += 15;
-      cityScore += 5;
-    } else if (adMetrics.adDensity < 5) {
-      villageScore += 15;
-    }
+    if (metricsAvailable) {
+      if (adMetrics.adDensity > 50) {
+        cityScore += 20;
+      } else if (adMetrics.adDensity > 10) {
+        suburbScore += 15;
+        cityScore += 5;
+      } else if (adMetrics.adDensity < 5) {
+        villageScore += 10;
+      }
 
-    if (adMetrics.farmerRatio > 0.3) {
-      villageScore += 25;
-    } else if (adMetrics.farmerRatio > 0.15) {
-      suburbScore += 10;
-      villageScore += 10;
-    }
+      if (adMetrics.farmerRatio > 0.3) {
+        villageScore += 20;
+      } else if (adMetrics.farmerRatio > 0.15) {
+        suburbScore += 8;
+        villageScore += 8;
+      }
 
-    if (adMetrics.beautyRatio > 0.1) {
-      cityScore += 20;
-    } else if (adMetrics.beautyRatio > 0.05) {
-      suburbScore += 10;
-      cityScore += 5;
-    }
+      if (adMetrics.beautyRatio > 0.1) {
+        cityScore += 15;
+      } else if (adMetrics.beautyRatio > 0.05) {
+        suburbScore += 8;
+        cityScore += 4;
+      }
 
-    if (adMetrics.serviceRatio > 0.25) {
-      suburbScore += 15;
-      cityScore += 10;
+      if (adMetrics.serviceRatio > 0.25) {
+        suburbScore += 12;
+        cityScore += 8;
+      }
     }
 
     const maxScore = Math.max(villageScore, suburbScore, cityScore);
@@ -232,7 +284,9 @@ class GeoZoneClassifier {
     const confidence = totalScore > 0 ? maxScore / totalScore : 0.33;
 
     let zone;
-    if (villageScore >= suburbScore && villageScore >= cityScore) {
+    if (isMajorCity && cityScore >= suburbScore) {
+      zone = osmData.hasSuburb ? 'suburb' : 'city_center';
+    } else if (villageScore > suburbScore && villageScore > cityScore) {
       zone = 'village';
     } else if (cityScore >= suburbScore) {
       zone = 'city_center';
@@ -254,6 +308,9 @@ class GeoZoneClassifier {
         isVillage: osmData.isVillage,
         isCity: osmData.isCity,
         hasSuburb: osmData.hasSuburb,
+        isMajorCity,
+        cityName,
+        metricsAvailable,
         adDensity: adMetrics.adDensity,
         farmerRatio: adMetrics.farmerRatio,
         beautyRatio: adMetrics.beautyRatio,
