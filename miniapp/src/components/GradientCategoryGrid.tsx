@@ -1,7 +1,7 @@
 import { useState, useEffect, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import http from '@/api/http';
-import handshakeIcon from '@assets/generated_images/clean_3d_handshake_emoji_icon.png';
+import handshakeIcon from '@assets/generated_images/handshake_icon_transparent_background.png';
 
 interface CategoryItem {
   id: string;
