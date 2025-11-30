@@ -646,15 +646,18 @@ export default function HomePage() {
         {/* <StoryCarousel /> */}
 
         {/* Category Grid with Gradients & Emoji Icons */}
-        <section style={{ padding: '16px 4px 20px' }}>
-          <GradientCategoryGrid 
-            userLat={coords?.lat}
-            userLng={coords?.lng}
-            radiusKm={radiusKm || 30}
-          />
-        </section>
+        {!loading && (
+          <section style={{ padding: '16px 4px 20px' }}>
+            <GradientCategoryGrid 
+              userLat={coords?.lat}
+              userLng={coords?.lng}
+              radiusKm={radiusKm || 30}
+            />
+          </section>
+        )}
 
         {/* Quick Action Buttons - TikTok Feed & Map */}
+        {!loading && (
         <section style={{ padding: '0 16px 20px' }}>
           <div style={{
             display: 'flex',
@@ -755,9 +758,10 @@ export default function HomePage() {
             </button>
           </div>
         </section>
+        )}
 
         {/* Promo Banners Carousel */}
-        {bannersBlock && bannersBlock.items.length > 0 && (
+        {!loading && bannersBlock && bannersBlock.items.length > 0 && (
           <section style={{ padding: '0 16px 20px' }}>
             <Swiper
               modules={[Autoplay, Pagination]}
