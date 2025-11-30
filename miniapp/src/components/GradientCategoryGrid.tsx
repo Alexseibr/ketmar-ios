@@ -1,7 +1,6 @@
 import { useState, useEffect, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import http from '@/api/http';
-import handshakeIcon from '@assets/generated_images/handshake_icon_transparent_background.png';
 
 interface CategoryItem {
   id: string;
@@ -72,7 +71,7 @@ const CATEGORY_ITEMS: CategoryItem[] = [
     id: 'second_hand', 
     slug: 'iz-ruk-v-ruki', 
     name: 'Из рук в руки', 
-    image: handshakeIcon,
+    emoji: '🤝',
     gradient: ['#A78BFA', '#8B5CF6'],
     alwaysShow: true,
   },
