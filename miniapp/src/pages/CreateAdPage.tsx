@@ -12,6 +12,7 @@ import { SchedulePublishBlock } from '@/components/schedule/SchedulePublishBlock
 import { showPublishNotification } from '@/utils/showPublishNotification';
 import ScreenLayout from '@/components/layout/ScreenLayout';
 import { useFormatPrice } from '@/hooks/useFormatPrice';
+import { compressImage } from '@/utils/imageCompression';
 
 const BRAND_BLUE = '#2B5CFF';
 const BRAND_BLUE_LIGHT = 'rgba(43, 92, 255, 0.12)';
@@ -1031,7 +1032,13 @@ function Step2Photos({
     onUpdatePhoto(photo.id, { uploadStatus: 'uploading' });
     
     try {
-      const extension = photo.file.name.split('.').pop() || 'jpg';
+      const compressedFile = await compressImage(photo.file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85,
+      });
+      
+      const extension = compressedFile.name.split('.').pop() || 'jpg';
       const initData = window.Telegram?.WebApp?.initData;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (initData) {
@@ -1052,8 +1059,8 @@ function Step2Photos({
       
       const uploadResponse = await fetch(uploadURL, {
         method: 'PUT',
-        body: photo.file,
-        headers: { 'Content-Type': photo.file.type },
+        body: compressedFile,
+        headers: { 'Content-Type': compressedFile.type },
       });
 
       if (!uploadResponse.ok) {

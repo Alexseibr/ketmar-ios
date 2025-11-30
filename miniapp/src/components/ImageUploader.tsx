@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Camera, Upload, X, Loader2 } from 'lucide-react';
 import http from '@/api/http';
+import { compressImage } from '@/utils/imageCompression';
 
 interface ImageUploaderProps {
   onUpload: (url: string) => void;
@@ -31,7 +32,13 @@ export default function ImageUploader({ onUpload, maxSizeMB = 10 }: ImageUploade
         return;
       }
 
-      const extension = file.name.split('.').pop() || 'jpg';
+      const compressedFile = await compressImage(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85,
+      });
+      
+      const extension = compressedFile.name.split('.').pop() || 'jpg';
       
       const presignedResponse = await http.post('/api/uploads/presigned-url', {
         fileExtension: extension,
@@ -41,9 +48,9 @@ export default function ImageUploader({ onUpload, maxSizeMB = 10 }: ImageUploade
 
       const uploadResponse = await fetch(uploadURL, {
         method: 'PUT',
-        body: file,
+        body: compressedFile,
         headers: {
-          'Content-Type': file.type,
+          'Content-Type': compressedFile.type,
         },
       });
 

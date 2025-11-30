@@ -6,6 +6,7 @@ import { resolveGeoLocation, getPresetLocations, PresetLocation } from '@/api/ge
 import { ArrowLeft, MapPin, Loader2, Camera, X, Check, RefreshCw, Edit3, Gift } from 'lucide-react';
 import { showPublishNotification } from '@/utils/showPublishNotification';
 import ScreenLayout from '@/components/layout/ScreenLayout';
+import { compressImage } from '@/utils/imageCompression';
 
 const PINK_ACCENT = '#EC4899';
 const PINK_LIGHT = 'rgba(236, 72, 153, 0.12)';
@@ -683,7 +684,13 @@ function Step2Photo({
     onUpdatePhoto({ uploadStatus: 'uploading' });
 
     try {
-      const extension = photoData.file.name.split('.').pop() || 'jpg';
+      const compressedFile = await compressImage(photoData.file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85,
+      });
+      
+      const extension = compressedFile.name.split('.').pop() || 'jpg';
       const initData = window.Telegram?.WebApp?.initData;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (initData) {
@@ -704,8 +711,8 @@ function Step2Photo({
 
       const uploadResponse = await fetch(uploadURL, {
         method: 'PUT',
-        body: photoData.file,
-        headers: { 'Content-Type': photoData.file.type },
+        body: compressedFile,
+        headers: { 'Content-Type': compressedFile.type },
       });
 
       if (!uploadResponse.ok) {
