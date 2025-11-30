@@ -73,3 +73,41 @@ $or: [
 - `api/routes/seller-profile.js` - Role management endpoints
 - `miniapp/src/config/businessConfig.ts` - Multi-role utility functions
 - `miniapp/src/pages/ShopCabinetPage.tsx` - UI for multiple roles
+
+## Zone-Adaptive HomePage
+
+### Overview
+The HomePage dynamically adapts its layout and content based on the user's geographic zone (village, suburb, or city_center). The GeoZoneClassifier analyzes user coordinates to determine their zone.
+
+### Debug Mode for QA Testing
+Use URL query parameter `?debugZone=village|suburb|city_center` to test zone-specific layouts without GPS.
+
+**Test URLs:**
+- `/?debugZone=village` - Village zone (larger elements, simpler UI)
+- `/?debugZone=suburb` - Suburban zone (balanced layout)
+- `/?debugZone=city_center` - City center zone (compact, refined elements)
+
+### How Debug Mode Works
+1. Frontend passes `zone` parameter to `/api/home/config`
+2. API uses default Minsk coordinates when no real coords provided
+3. Real content blocks are fetched, only zone metadata is overridden
+4. Debug banner with zone switcher appears at top of page
+5. Zone-specific CSS classes (`.zone-village`, `.zone-suburb`, `.zone-city_center`) applied
+
+### API Endpoint
+`GET /api/home/config?zone=village|suburb|city_center`
+- Accepts `zone` parameter to force zone classification
+- Works without lat/lng when zone is specified
+- Returns real block content with forced zone metadata
+
+### Zone-Specific UI Config
+- **Village**: Large buttons, simple card style, no animations, 3-column category grid
+- **Suburb**: Medium buttons, standard cards, animations enabled, 4-column grid  
+- **City Center**: Small buttons, minimal cards, fast animations, 5-column grid
+
+### Key Files
+- `miniapp/src/pages/HomePage.tsx` - Debug mode logic and zone switching
+- `miniapp/src/styles/global.css` - Zone-specific CSS variables
+- `api/routes/home-config.js` - API with forceZone support
+- `services/HomeDynamicEngine.js` - Zone classification and block generation
+- `services/GeoZoneClassifier.js` - Geographic zone detection
