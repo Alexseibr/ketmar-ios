@@ -153,3 +153,48 @@ Comprehensive STOP_WORDS array filters:
 - `api/routes/local-demand.js` - API endpoint with filtering
 - `miniapp/src/pages/LocalDemandPage.tsx` - Full demand list page
 - `services/HomeDynamicEngine.js` - Banner card configuration
+
+## Workers & Services Module (YouDo-style)
+
+### Overview
+Separate service module for finding contractors and posting service requests. Accessible via "Услуги и Мастера" banner on HomePage, NOT integrated into main ad search.
+
+### Models
+- **Worker** - Contractor profile with ratings, portfolio, service areas
+- **WorkerOrder** - Service requests from customers
+- **WorkerResponse** - Worker responses/bids on orders
+- **WorkerCategory** - Service categories (plumber, electrician, etc.)
+- **WorkerPortfolio** - Work examples for workers
+- **WorkerReview** - Customer reviews
+
+### API Endpoints
+- `GET /api/workers` - List workers with geo-search
+- `POST /api/workers/register` - Worker registration
+- `GET /api/worker-orders` - List orders with geo-search ($geoWithin)
+- `POST /api/worker-orders` - Create order (customerId optional)
+- `GET /api/worker-orders/:id` - Order details with customer/worker info
+- `GET /api/worker-orders/:id/responses` - Paginated responses with worker enrichment
+- `POST /api/worker-responses` - Create response to order
+
+### Frontend Pages
+- `/services-workers` - ServicesWorkersPage (workers list, order tabs)
+- `/worker-profile/:id` - WorkerProfilePage (worker details, portfolio)
+- `/create-worker-order` - CreateWorkerOrderPage (order creation form)
+- `/worker-order/:id` - WorkerOrderDetailPage (order with responses)
+
+### Geo-Search Implementation
+Uses `$geoWithin` with `$centerSphere` instead of `$nearSphere` to allow sorting:
+```javascript
+query['location.geo'] = {
+  $geoWithin: {
+    $centerSphere: [[lng, lat], radiusKm / 6378.1]
+  }
+};
+```
+
+### Key Files
+- `models/Worker.js` - Worker schema with 2dsphere index
+- `models/WorkerOrder.js` - Order schema with optional customerId
+- `api/routes/worker-orders.js` - Order CRUD with geo-search
+- `services/workers/WorkerMatchingService.js` - Intelligent matching
+- `miniapp/src/pages/ServicesWorkersPage.tsx` - Main workers page

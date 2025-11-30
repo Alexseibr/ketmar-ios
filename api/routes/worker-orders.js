@@ -25,13 +25,13 @@ router.get('/', async (req, res) => {
     const query = { status };
 
     if (lat && lng) {
+      const radiusInRadians = parseInt(radiusKm) / 6378.1;
       query['location.geo'] = {
-        $nearSphere: {
-          $geometry: {
-            type: 'Point',
-            coordinates: [parseFloat(lng), parseFloat(lat)],
-          },
-          $maxDistance: parseInt(radiusKm) * 1000,
+        $geoWithin: {
+          $centerSphere: [
+            [parseFloat(lng), parseFloat(lat)],
+            radiusInRadians,
+          ],
         },
       };
     }
@@ -124,11 +124,17 @@ router.get('/recommended', async (req, res) => {
       category: { $in: worker.categories },
     };
 
-    if (worker.location?.geo) {
+    const coords = worker.location?.geo?.coordinates;
+    if (Array.isArray(coords) && coords.length === 2 && 
+        typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+      const radiusKm = 50;
+      const radiusInRadians = radiusKm / 6378.1;
       query['location.geo'] = {
-        $nearSphere: {
-          $geometry: worker.location.geo,
-          $maxDistance: 50000,
+        $geoWithin: {
+          $centerSphere: [
+            coords,
+            radiusInRadians,
+          ],
         },
       };
     }
@@ -221,12 +227,14 @@ router.get('/:id/responses', async (req, res) => {
 
     const total = await WorkerResponse.countDocuments({ orderId: req.params.id });
 
-    const workerIds = responses.map(r => r.workerId);
-    const workers = await Worker.find({ _id: { $in: workerIds } });
+    const workerIds = responses.filter(r => r.workerId).map(r => r.workerId);
+    const workers = workerIds.length > 0 
+      ? await Worker.find({ _id: { $in: workerIds } })
+      : [];
     const workersMap = new Map(workers.map(w => [w._id.toString(), w]));
 
     const result = responses.map(r => {
-      const worker = workersMap.get(r.workerId.toString());
+      const worker = r.workerId ? workersMap.get(r.workerId.toString()) : null;
       return {
         id: r._id,
         message: r.message,
@@ -547,42 +555,6 @@ router.get('/my/customer', async (req, res) => {
   } catch (error) {
     console.error('[WorkerOrders] Error fetching customer orders:', error);
     res.status(500).json({ error: 'Ошибка загрузки заказов' });
-  }
-});
-
-router.get('/:id/responses', async (req, res) => {
-  try {
-    const responses = await WorkerResponse.find({ orderId: req.params.id })
-      .populate('workerId')
-      .sort({ createdAt: -1 });
-
-    const result = responses.map(r => ({
-      id: r._id,
-      message: r.message,
-      priceOffer: r.priceOffer,
-      priceType: r.priceType,
-      currency: r.currency,
-      estimatedDuration: r.estimatedDuration,
-      canStartAt: r.canStartAt,
-      materialsIncluded: r.materialsIncluded,
-      status: r.status,
-      createdAt: r.createdAt,
-      worker: r.workerId ? {
-        id: r.workerId._id,
-        name: r.workerId.name,
-        avatar: r.workerId.avatar,
-        rating: r.workerId.rating,
-        reviewsCount: r.workerId.reviewsCount,
-        completedOrdersCount: r.workerId.completedOrdersCount,
-        isVerified: r.workerId.isVerified,
-        categories: r.workerId.categories,
-      } : null,
-    }));
-
-    res.json({ responses: result });
-  } catch (error) {
-    console.error('[WorkerOrders] Error fetching responses:', error);
-    res.status(500).json({ error: 'Ошибка загрузки откликов' });
   }
 });
 

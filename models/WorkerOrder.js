@@ -32,12 +32,13 @@ const workerOrderSchema = new mongoose.Schema(
     customerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
       index: true,
+      sparse: true,
     },
     customerTelegramId: {
       type: Number,
       index: true,
+      sparse: true,
     },
     customerName: {
       type: String,
@@ -188,15 +189,15 @@ workerOrderSchema.methods.cancel = async function() {
 };
 
 workerOrderSchema.statics.findNearby = async function(lat, lng, radiusKm = 30, filters = {}) {
+  const radiusInRadians = radiusKm / 6378.1;
   const query = {
     status: 'open',
     'location.geo': {
-      $nearSphere: {
-        $geometry: {
-          type: 'Point',
-          coordinates: [lng, lat],
-        },
-        $maxDistance: radiusKm * 1000,
+      $geoWithin: {
+        $centerSphere: [
+          [lng, lat],
+          radiusInRadians,
+        ],
       },
     },
   };
