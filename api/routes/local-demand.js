@@ -25,6 +25,16 @@ const STOP_WORDS = [
   'доставка', 'такси', 'курьер', 'ремонт квартир', 'ремонт техники', 'починка',
   'настройка', 'обслуживание', 'сервис', 'мастер на час', 'помощь', 'уход за садом',
   'стрижка газона', 'вырубка', 'спил', 'благоустройство', 'земляные работы',
+  // Farmer products (excluded - this section is for second-hand goods only)
+  'малина', 'клубника', 'черника', 'смородина', 'крыжовник', 'вишня', 'черешня', 'слива', 'яблоки', 'груши',
+  'огурцы', 'помидоры', 'томаты', 'картофель', 'картошка', 'морковь', 'свекла', 'капуста', 'лук', 'чеснок',
+  'перец', 'баклажаны', 'кабачки', 'тыква', 'арбуз', 'дыня', 'виноград', 'абрикосы', 'персики',
+  'мёд', 'мед', 'молоко', 'сметана', 'творог', 'сыр', 'масло сливочное', 'яйца', 'яйцо',
+  'мясо', 'свинина', 'говядина', 'баранина', 'курица', 'индейка', 'утка', 'гусь', 'кролик',
+  'рыба', 'карп', 'щука', 'сом', 'форель', 'судак', 'окунь',
+  'грибы', 'белые грибы', 'подберезовики', 'подосиновики', 'лисички', 'опята', 'маслята',
+  'зелень', 'укроп', 'петрушка', 'салат', 'шпинат', 'базилик', 'мята', 'рассада', 'саженцы',
+  'варенье', 'джем', 'компот', 'соленья', 'маринады', 'квашеная капуста', 'соки',
 ];
 
 function containsStopWords(text) {
@@ -63,9 +73,51 @@ router.get('/', async (req, res) => {
 
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const hoursAgo = new Date();
+    hoursAgo.setHours(hoursAgo.getHours() - 24);
 
-    const excludeCategories = ['uslugi', 'remont', 'master', 'electrician', 'plumber', 'services', 'cleaning', 'klining'];
+    const excludeCategories = ['uslugi', 'remont', 'master', 'electrician', 'plumber', 'services', 'cleaning', 'klining', 'farmer-market', 'food', 'vegetables', 'fruits', 'dairy', 'meat', 'fish', 'honey'];
 
+    const uniqueQueries = new Map();
+
+    // First, get fresh searches from SearchLog (last 24 hours) for immediate visibility
+    const recentSearches = await SearchLog.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: hoursAgo },
+          geoHash: { $regex: `^${geoHashPrefix}` },
+        }
+      },
+      {
+        $group: {
+          _id: '$normalizedQuery',
+          count: { $sum: 1 },
+          lastSearch: { $max: '$createdAt' },
+        }
+      },
+      { $match: { count: { $gte: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 30 }
+    ]);
+
+    for (const s of recentSearches) {
+      const normalized = normalizeQuery(s._id);
+      if (!normalized || normalized.length < 2) continue;
+      if (containsStopWords(normalized)) continue;
+      
+      uniqueQueries.set(normalized, {
+        id: `fresh_${normalized}`,
+        query: normalized,
+        displayQuery: capitalizeFirst(normalized),
+        category: null,
+        count: s.count,
+        isHot: false,
+        isFresh: true,
+      });
+    }
+
+    // Then get aggregated stats from DemandStats
     const demands = await DemandStats.find({
       geoHash: { $regex: `^${geoHashPrefix}` },
       period: { $in: ['day', 'week'] },
@@ -77,8 +129,6 @@ router.get('/', async (req, res) => {
       .limit(50)
       .lean();
 
-    const uniqueQueries = new Map();
-    
     for (const d of demands) {
       const query = d.normalizedQuery || '';
       const normalized = normalizeQuery(query);
