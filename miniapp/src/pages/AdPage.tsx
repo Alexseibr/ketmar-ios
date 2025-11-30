@@ -39,6 +39,8 @@ export default function AdPage() {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [similarAds, setSimilarAds] = useState<AdPreview[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
+  const [alsoViewedAds, setAlsoViewedAds] = useState<AdPreview[]>([]);
+  const [loadingAlsoViewed, setLoadingAlsoViewed] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [showPhoneActionSheet, setShowPhoneActionSheet] = useState(false);
   const { coords } = useGeo(false);
@@ -68,13 +70,23 @@ export default function AdPage() {
           trackView(fetchedAd._id);
         }
         
-        if (fetchedAd.subcategoryId) {
-          setLoadingSimilar(true);
-          getSimilarAds(fetchedAd._id, fetchedAd.subcategoryId, 6)
-            .then((response) => setSimilarAds(response.items || []))
-            .catch(() => setSimilarAds([]))
-            .finally(() => setLoadingSimilar(false));
+        const fetchParams = new URLSearchParams();
+        if (coords) {
+          fetchParams.set('lat', coords.lat.toString());
+          fetchParams.set('lng', coords.lng.toString());
         }
+        
+        setLoadingSimilar(true);
+        http.get(`/api/recommendations/similar/${fetchedAd._id}?${fetchParams.toString()}`)
+          .then((res) => setSimilarAds(res.data.items || []))
+          .catch(() => setSimilarAds([]))
+          .finally(() => setLoadingSimilar(false));
+        
+        setLoadingAlsoViewed(true);
+        http.get(`/api/recommendations/also-viewed/${fetchedAd._id}?${fetchParams.toString()}`)
+          .then((res) => setAlsoViewedAds(res.data.items || []))
+          .catch(() => setAlsoViewedAds([]))
+          .finally(() => setLoadingAlsoViewed(false));
       })
       .catch(() => setAd(null))
       .finally(() => setLoading(false));
@@ -664,7 +676,7 @@ export default function AdPage() {
             {similarAds.length > 0 && (
               <div style={{ marginBottom: 24 }}>
                 <h3 style={{ fontSize: 18, fontWeight: 600, color: '#111827', margin: '0 0 16px' }}>
-                  Похожие объявления
+                  Похожие товары
                 </h3>
                 <div style={{
                   display: 'flex',
@@ -728,6 +740,25 @@ export default function AdPage() {
                               Нет фото
                             </div>
                           )}
+                          {(similarAd as any).distance !== undefined && (
+                            <div style={{
+                              position: 'absolute',
+                              bottom: 6,
+                              left: 6,
+                              background: 'rgba(0,0,0,0.6)',
+                              borderRadius: 6,
+                              padding: '3px 6px',
+                              fontSize: 10,
+                              fontWeight: 500,
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}>
+                              <MapPin size={9} />
+                              {(similarAd as any).distance} км
+                            </div>
+                          )}
                         </div>
                         <div style={{ padding: 12 }}>
                           <div style={{
@@ -748,18 +779,121 @@ export default function AdPage() {
                           }}>
                             {similarAd.title}
                           </div>
-                          {similarAd.city && (
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Also viewed ads - horizontal scroll */}
+            {alsoViewedAds.length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 600, color: '#111827', margin: '0 0 16px' }}>
+                  С этим смотрят
+                </h3>
+                <div style={{
+                  display: 'flex',
+                  gap: 12,
+                  overflowX: 'auto',
+                  paddingBottom: 8,
+                  marginLeft: -20,
+                  marginRight: -20,
+                  paddingLeft: 20,
+                  paddingRight: 20,
+                  scrollSnapType: 'x mandatory',
+                  WebkitOverflowScrolling: 'touch',
+                }}>
+                  {alsoViewedAds.map((viewedAd) => (
+                    <div
+                      key={viewedAd._id}
+                      onClick={() => navigate(`/ads/${viewedAd._id}`)}
+                      style={{ 
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        width: 160,
+                        scrollSnapAlign: 'start',
+                      }}
+                      data-testid={`also-viewed-ad-${viewedAd._id}`}
+                    >
+                      <div style={{
+                        background: '#fff',
+                        borderRadius: 16,
+                        overflow: 'hidden',
+                        border: '1px solid #E5E7EB',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+                      }}>
+                        <div style={{
+                          width: '100%',
+                          aspectRatio: '4/3',
+                          background: '#F3F4F6',
+                          position: 'relative',
+                          overflow: 'hidden',
+                        }}>
+                          {viewedAd.photos && viewedAd.photos.length > 0 ? (
+                            <img
+                              src={getThumbnailUrl(viewedAd.photos[0])}
+                              alt={viewedAd.title}
+                              loading="lazy"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          ) : (
                             <div style={{
-                              fontSize: 11,
-                              color: '#6B7280',
+                              width: '100%',
+                              height: '100%',
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 4
+                              justifyContent: 'center',
+                              color: '#9CA3AF',
+                              fontSize: 12
                             }}>
-                              <MapPin size={11} />
-                              {similarAd.city}
+                              Нет фото
                             </div>
                           )}
+                          {(viewedAd as any).distance !== undefined && (
+                            <div style={{
+                              position: 'absolute',
+                              bottom: 6,
+                              left: 6,
+                              background: 'rgba(0,0,0,0.6)',
+                              borderRadius: 6,
+                              padding: '3px 6px',
+                              fontSize: 10,
+                              fontWeight: 500,
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 3,
+                            }}>
+                              <MapPin size={9} />
+                              {(viewedAd as any).distance} км
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ padding: 12 }}>
+                          <div style={{
+                            fontSize: 15,
+                            fontWeight: 700,
+                            color: '#111827',
+                            marginBottom: 4
+                          }}>
+                            {formatCard(viewedAd.price ?? 0, viewedAd.price === 0)}
+                          </div>
+                          <div style={{
+                            fontSize: 13,
+                            color: '#374151',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            marginBottom: 4
+                          }}>
+                            {viewedAd.title}
+                          </div>
                         </div>
                       </div>
                     </div>

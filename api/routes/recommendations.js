@@ -1,6 +1,12 @@
 import express from 'express';
 import aiGateway from '../../services/ai/AiGateway.js';
 import RecommendationEngine from '../../services/RecommendationEngine.js';
+import { 
+  fetchSimilarAdsProgressive, 
+  fetchPeopleAlsoViewedProgressive,
+  fetchTrendingAdsProgressive,
+} from '../../utils/fetchAdsProgressiveRadius.js';
+import Ad from '../../models/Ad.js';
 
 const router = express.Router();
 
@@ -36,13 +42,41 @@ router.get('/feed', async (req, res) => {
 router.get('/similar/:adId', async (req, res) => {
   try {
     const { adId } = req.params;
-    const { limit = 10 } = req.query;
+    const { limit = 15, lat, lng } = req.query;
+    const userLat = lat ? parseFloat(lat) : null;
+    const userLng = lng ? parseFloat(lng) : null;
 
-    const result = await RecommendationEngine.getSimilarItems(adId, {
-      limit: parseInt(limit),
+    const ad = await Ad.findById(adId).lean();
+    if (!ad) {
+      return res.status(404).json({
+        success: false,
+        error: 'Объявление не найдено',
+        items: [],
+      });
+    }
+
+    const adLat = ad.location?.lat || userLat;
+    const adLng = ad.location?.lng || userLng;
+    const categoryId = ad.categoryId || ad.category;
+    const keywords = ad.title?.split(' ').filter(w => w.length > 3).slice(0, 3) || [];
+
+    const items = await fetchSimilarAdsProgressive(adLat, adLng, adId, categoryId, keywords);
+
+    return res.json({
+      success: true,
+      items: items.map(item => ({
+        id: item._id.toString(),
+        title: item.title,
+        price: item.price,
+        currency: item.currency || 'BYN',
+        photo: item.photos?.[0] || null,
+        distanceKm: item.distanceKm,
+        distance: item.distanceMeters ? Math.round(item.distanceMeters / 100) / 10 : null,
+        location: item.location?.cityName || null,
+        isFarmer: item.isFarmerAd,
+        isFree: item.isFreeGiveaway,
+      })),
     });
-
-    return res.json(result);
   } catch (error) {
     console.error('[Recommendations] similar error:', error);
     return res.status(500).json({
@@ -53,18 +87,75 @@ router.get('/similar/:adId', async (req, res) => {
   }
 });
 
+router.get('/also-viewed/:adId', async (req, res) => {
+  try {
+    const { adId } = req.params;
+    const { lat, lng } = req.query;
+    const userLat = lat ? parseFloat(lat) : null;
+    const userLng = lng ? parseFloat(lng) : null;
+
+    const ad = await Ad.findById(adId).lean();
+    if (!ad) {
+      return res.status(404).json({
+        success: false,
+        error: 'Объявление не найдено',
+        items: [],
+      });
+    }
+
+    const adLat = ad.location?.lat || userLat;
+    const adLng = ad.location?.lng || userLng;
+
+    const items = await fetchPeopleAlsoViewedProgressive(adLat, adLng, adId);
+
+    return res.json({
+      success: true,
+      items: items.map(item => ({
+        id: item._id.toString(),
+        title: item.title,
+        price: item.price,
+        currency: item.currency || 'BYN',
+        photo: item.photos?.[0] || null,
+        distanceKm: item.distanceKm,
+        distance: item.distanceMeters ? Math.round(item.distanceMeters / 100) / 10 : null,
+        location: item.location?.cityName || null,
+        isFarmer: item.isFarmerAd,
+        isFree: item.isFreeGiveaway,
+      })),
+    });
+  } catch (error) {
+    console.error('[Recommendations] also-viewed error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Ошибка получения рекомендаций',
+      items: [],
+    });
+  }
+});
+
 router.get('/trending-nearby', async (req, res) => {
   try {
-    const { lat, lng, radiusKm = 5, limit = 10 } = req.query;
+    const { lat, lng } = req.query;
+    const userLat = lat ? parseFloat(lat) : null;
+    const userLng = lng ? parseFloat(lng) : null;
 
-    const result = await RecommendationEngine.getTrendingNearby({
-      lat: lat ? parseFloat(lat) : null,
-      lng: lng ? parseFloat(lng) : null,
-      radiusKm: parseFloat(radiusKm),
-      limit: parseInt(limit),
+    const items = await fetchTrendingAdsProgressive(userLat, userLng);
+
+    return res.json({
+      success: true,
+      items: items.map(item => ({
+        id: item._id.toString(),
+        title: item.title,
+        price: item.price,
+        currency: item.currency || 'BYN',
+        photo: item.photos?.[0] || null,
+        distanceKm: item.distanceKm,
+        distance: item.distanceMeters ? Math.round(item.distanceMeters / 100) / 10 : null,
+        location: item.location?.cityName || null,
+        isFarmer: item.isFarmerAd,
+        isFree: item.isFreeGiveaway,
+      })),
     });
-
-    return res.json(result);
   } catch (error) {
     console.error('[Recommendations] trending-nearby error:', error);
     return res.status(500).json({
@@ -77,16 +168,27 @@ router.get('/trending-nearby', async (req, res) => {
 
 router.get('/trending', async (req, res) => {
   try {
-    const { lat, lng, radiusKm = 5, limit = 10 } = req.query;
+    const { lat, lng } = req.query;
+    const userLat = lat ? parseFloat(lat) : null;
+    const userLng = lng ? parseFloat(lng) : null;
 
-    const result = await RecommendationEngine.getTrendingNearby({
-      lat: lat ? parseFloat(lat) : null,
-      lng: lng ? parseFloat(lng) : null,
-      radiusKm: parseFloat(radiusKm),
-      limit: parseInt(limit),
+    const items = await fetchTrendingAdsProgressive(userLat, userLng);
+
+    return res.json({
+      success: true,
+      items: items.map(item => ({
+        id: item._id.toString(),
+        title: item.title,
+        price: item.price,
+        currency: item.currency || 'BYN',
+        photo: item.photos?.[0] || null,
+        distanceKm: item.distanceKm,
+        distance: item.distanceMeters ? Math.round(item.distanceMeters / 100) / 10 : null,
+        location: item.location?.cityName || null,
+        isFarmer: item.isFarmerAd,
+        isFree: item.isFreeGiveaway,
+      })),
     });
-
-    return res.json(result);
   } catch (error) {
     console.error('[Recommendations] trending error:', error);
     return res.status(500).json({
