@@ -40,6 +40,9 @@ router.get('/', async (req, res) => {
       ? `${forceZone === 'village' ? 'Деревня' : forceZone === 'suburb' ? 'Окраина' : 'Центр города'} (DEBUG)`
       : geoData?.label || geoData?.city || 'Ваш район';
 
+    // Private cache for user-specific content (based on lat/lng/userId)
+    res.set('Cache-Control', 'private, max-age=120, stale-while-revalidate=300');
+    
     res.json({
       success: true,
       zone: homeConfig.zone,

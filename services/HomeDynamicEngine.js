@@ -625,6 +625,7 @@ class HomeDynamicEngine {
           },
         },
       })
+        .select('storeName displayName name storeLogo avatar categories rating ratings reviewCount role roles')
         .limit(this.maxItemsPerBlock)
         .lean();
 
@@ -659,6 +660,7 @@ class HomeDynamicEngine {
           },
         },
       })
+        .select('storeName displayName name storeLogo avatar categories socialLinks role roles')
         .limit(this.maxItemsPerBlock)
         .lean();
 
@@ -692,6 +694,7 @@ class HomeDynamicEngine {
           },
         },
       })
+        .select('storeName displayName name storeLogo avatar categories role roles')
         .limit(this.maxItemsPerBlock)
         .lean();
 
