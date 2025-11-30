@@ -86,8 +86,14 @@ export default function BottomTabs() {
       const stableHeight = stableHeightRef.current;
       const heightDiff = stableHeight - currentHeight;
       
-      const keyboardThreshold = Math.min(150, stableHeight * 0.2);
-      setIsKeyboardVisible(heightDiff > keyboardThreshold);
+      // Lower threshold for Telegram WebApp - keyboard shows at smaller height changes
+      const keyboardThreshold = isTelegramWebApp ? 100 : Math.min(150, stableHeight * 0.2);
+      
+      // Also check if viewport is significantly smaller than screen height
+      const screenRatio = currentHeight / screen.height;
+      const isLikelyKeyboard = screenRatio < 0.7;
+      
+      setIsKeyboardVisible(heightDiff > keyboardThreshold || (focused && isLikelyKeyboard));
     };
     
     const handleViewportChange = (event?: { isStateStable?: boolean; viewportStableHeight?: number }) => {
@@ -158,8 +164,20 @@ export default function BottomTabs() {
     return null;
   }
 
-  // Hide on chat page (has its own input area)
-  if (location.pathname.startsWith('/chat/')) {
+  // Hide on pages with input forms to avoid keyboard issues
+  const hideOnPaths = [
+    '/chat/',
+    '/create-ad',
+    '/create-free',
+    '/create-giveaway',
+    '/new-ad',
+    '/edit-ad',
+    '/worker-order',
+    '/create-worker',
+    '/search',
+  ];
+  
+  if (hideOnPaths.some(path => location.pathname.startsWith(path))) {
     return null;
   }
 
