@@ -760,7 +760,7 @@ export default function HomePage() {
         </section>
         )}
 
-        {/* Services & Workers Banner */}
+        {/* Services & Workers Banner - TEMPORARILY HIDDEN
         {!loading && (
           <section style={{ padding: '0 16px 20px' }}>
             <button
@@ -811,6 +811,7 @@ export default function HomePage() {
             </button>
           </section>
         )}
+        */}
 
         {/* Promo Banners Carousel */}
         {!loading && bannersBlock && bannersBlock.items.length > 0 && (
