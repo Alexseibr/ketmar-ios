@@ -1,8 +1,32 @@
 import { Router } from 'express';
 import SmartSearchService from '../../services/SmartSearchService.js';
 import asyncHandler from '../middleware/asyncHandler.js';
+import Ad from '../../models/Ad.js';
 
 const router = Router();
+
+function haversineDistanceKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function parseNumber(value) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function matchesQuery(ad, regex) {
+  return regex.test(ad.title) || (ad.description && regex.test(ad.description));
+}
 
 router.get(
   '/',
@@ -84,5 +108,92 @@ router.get(
     }
   })
 );
+
+router.get('/giveaways', async (req, res) => {
+  try {
+    const {
+      q,
+      lat,
+      lng,
+      subcategoryId,
+      maxDistanceKm,
+      sort = 'newest',
+      limit = '50',
+      offset = '0',
+    } = req.query;
+
+    const limitNumber = Math.min(parseNumber(limit) || 50, 100);
+    const offsetNumber = parseNumber(offset) || 0;
+
+    const baseQuery = {
+      status: 'active',
+      moderationStatus: 'approved',
+      isFreeGiveaway: true,
+    };
+
+    if (subcategoryId && subcategoryId !== 'all') {
+      baseQuery.giveawaySubcategoryId = subcategoryId;
+    }
+
+    const ads = await Ad.find(baseQuery)
+      .sort({ createdAt: -1 })
+      .limit(500)
+      .select('_id title description photos location createdAt giveawaySubcategoryId')
+      .lean();
+
+    const regex = q ? new RegExp(q, 'i') : null;
+    let filtered = regex ? ads.filter((ad) => matchesQuery(ad, regex)) : ads;
+
+    const latNumber = parseNumber(lat);
+    const lngNumber = parseNumber(lng);
+    const hasGeo = Number.isFinite(latNumber) && Number.isFinite(lngNumber);
+    const maxDistanceNumber = parseNumber(maxDistanceKm);
+
+    if (hasGeo) {
+      filtered = filtered
+        .map((ad) => {
+          if (!ad.location || ad.location.lat == null || ad.location.lng == null) {
+            return { ...ad, distanceKm: null };
+          }
+
+          const distanceKm = haversineDistanceKm(
+            latNumber,
+            lngNumber,
+            Number(ad.location.lat),
+            Number(ad.location.lng)
+          );
+
+          return { ...ad, distanceKm };
+        })
+        .filter((ad) => {
+          if (maxDistanceNumber != null && ad.distanceKm != null) {
+            return ad.distanceKm <= maxDistanceNumber;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          if (sort === 'distance') {
+            const distA = a.distanceKm ?? Infinity;
+            const distB = b.distanceKm ?? Infinity;
+            return distA - distB;
+          }
+          return 0;
+        });
+    }
+
+    const total = filtered.length;
+    const paginated = filtered.slice(offsetNumber, offsetNumber + limitNumber);
+
+    res.json({
+      success: true,
+      ads: paginated,
+      total,
+      hasMore: offsetNumber + limitNumber < total,
+    });
+  } catch (error) {
+    console.error('GET /api/search/giveaways error:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
 
 export default router;
