@@ -13,36 +13,9 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
 import { t } from '@/lib/i18n';
 import { BlockRenderer, ZoneType } from '@/components/blocks/BlockRenderer';
+import GradientCategoryGrid from '@/components/GradientCategoryGrid';
 import 'swiper/css';
 import 'swiper/css/pagination';
-
-import farmerMarketIcon from '@assets/generated_images/farmer_market_vegetables_icon.png';
-import vegetablesIcon from '@assets/generated_images/fruits_vegetables_apple_icon.png';
-import bakeryIcon from '@assets/generated_images/fresh_bakery_bread_icon.png';
-import personalItemsIcon from '@assets/generated_images/personal_items_clothes_icon.png';
-import clothesIcon from '@assets/generated_images/clothing_dress_icon.png';
-import shoesIcon from '@assets/generated_images/footwear_sneaker_icon.png';
-import householdIcon from '@assets/generated_images/home_household_items_icon.png';
-import electronicsIcon from '@assets/generated_images/electronics_phone_icon.png';
-import tractorIcon from '@assets/generated_images/farm_tractor_equipment_icon.png';
-import servicesIcon from '@assets/generated_images/services_wrench_tool_icon.png';
-import toolsIcon from '@assets/generated_images/tool_rental_repair_icon.png';
-import giftIcon from '@assets/generated_images/free_giveaway_gift_icon.png';
-
-const QUICK_CATEGORIES_CONFIG = [
-  { slug: 'farmer-market', labelKey: 'cat.farmers', icon: farmerMarketIcon, bgColor: '#E8F5E9' },
-  { slug: 'vypechka', labelKey: 'cat.bakery', icon: bakeryIcon, bgColor: '#FFF8E1' },
-  { slug: 'ovoschi-frukty', labelKey: 'cat.food', icon: vegetablesIcon, bgColor: '#FFEBEE' },
-  { slug: 'darom', labelKey: 'cat.free', icon: giftIcon, bgColor: '#FCE4EC', isHot: true },
-  { slug: 'odezhda', labelKey: 'cat.clothes', icon: clothesIcon, bgColor: '#E0F7FA' },
-  { slug: 'obuv', labelKey: 'cat.shoes', icon: shoesIcon, bgColor: '#E3F2FD' },
-  { slug: 'bytovye-melochi', labelKey: 'cat.home', icon: householdIcon, bgColor: '#FFF3E0' },
-  { slug: 'elektronika', labelKey: 'cat.tech', icon: electronicsIcon, bgColor: '#ECEFF1' },
-  { slug: 'selhoztekhnika', labelKey: 'cat.agro', icon: tractorIcon, bgColor: '#FFF8E1' },
-  { slug: 'uslugi', labelKey: 'cat.services', icon: servicesIcon, bgColor: '#E8EAF6' },
-  { slug: 'arenda', labelKey: 'cat.rental', icon: toolsIcon, bgColor: '#ECEFF1' },
-  { slug: 'lichnye-veshchi', labelKey: 'cat.items', icon: personalItemsIcon, bgColor: '#F3E5F5' },
-];
 
 interface HomeFeedBlock {
   type: 'banners' | 'horizontal_list';
@@ -511,83 +484,13 @@ export default function HomePage() {
         {/* Stories - temporarily hidden */}
         {/* <StoryCarousel /> */}
 
-        {/* Service Icons Grid */}
-        <section style={{ padding: '16px 16px 20px' }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 10,
-          }}>
-            {QUICK_CATEGORIES_CONFIG.map((cat) => (
-              <button
-                key={cat.slug}
-                onClick={() => handleCategoryClick(cat.slug)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  padding: '12px 4px 10px',
-                  background: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: 16,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-                  transition: 'transform 0.15s ease',
-                  position: 'relative',
-                }}
-                data-testid={`category-quick-${cat.slug}`}
-              >
-                {cat.isHot && (
-                  <span style={{
-                    position: 'absolute',
-                    top: 4,
-                    right: 4,
-                    background: '#EC4899',
-                    color: '#FFFFFF',
-                    fontSize: 8,
-                    fontWeight: 700,
-                    padding: '2px 5px',
-                    borderRadius: 4,
-                  }}>
-                    HOT
-                  </span>
-                )}
-                
-                <div style={{
-                  width: 52,
-                  height: 52,
-                  background: cat.bgColor,
-                  borderRadius: 16,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: 6,
-                  overflow: 'hidden',
-                }}>
-                  <img 
-                    src={cat.icon} 
-                    alt={t(cat.labelKey)}
-                    style={{
-                      width: 38,
-                      height: 38,
-                      objectFit: 'contain',
-                    }}
-                    loading="lazy"
-                  />
-                </div>
-                
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: '#1F2937',
-                  textAlign: 'center',
-                  lineHeight: 1.2,
-                }}>
-                  {t(cat.labelKey)}
-                </span>
-              </button>
-            ))}
-          </div>
+        {/* Category Grid with Gradients & Emoji Icons */}
+        <section style={{ padding: '16px 4px 20px' }}>
+          <GradientCategoryGrid 
+            userLat={savedLocation?.latitude}
+            userLng={savedLocation?.longitude}
+            radiusKm={30}
+          />
         </section>
 
         {/* Quick Action Buttons - TikTok Feed & Map */}

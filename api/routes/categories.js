@@ -231,6 +231,62 @@ router.get(
   })
 );
 
+// GET counts for multiple categories (used by GradientCategoryGrid)
+// Must be before /:slug routes to avoid being caught by path parameters
+router.get(
+  '/counts',
+  asyncHandler(async (req, res) => {
+    const { categories, lat, lng, radiusKm = '30' } = req.query;
+
+    if (!categories) {
+      return res.status(400).json({
+        ok: false,
+        error: 'categories parameter is required',
+      });
+    }
+
+    const categorySlugs = categories.split(',').map(s => s.trim()).filter(Boolean);
+    
+    if (categorySlugs.length === 0) {
+      return res.json({ ok: true, counts: {} });
+    }
+
+    try {
+      const Ad = (await import('../../models/Ad.js')).default;
+      
+      // Aggregate counts by category
+      const pipeline = [
+        { $match: { status: 'active', categoryId: { $in: categorySlugs } } },
+        { $group: { _id: '$categoryId', count: { $sum: 1 } } },
+      ];
+
+      const results = await Ad.aggregate(pipeline);
+      
+      // Convert to object
+      const counts = {};
+      categorySlugs.forEach(slug => {
+        counts[slug] = 0;
+      });
+      results.forEach(r => {
+        counts[r._id] = r.count;
+      });
+
+      res.set('Cache-Control', 'public, max-age=60');
+      res.json({
+        ok: true,
+        counts,
+        total: Object.values(counts).reduce((a, b) => a + b, 0),
+      });
+    } catch (error) {
+      console.error('Category counts API error:', error);
+      res.status(500).json({
+        ok: false,
+        error: 'Failed to fetch category counts',
+      });
+    }
+  })
+);
+
 router.get(
   '/visible',
   asyncHandler(async (req, res) => {
