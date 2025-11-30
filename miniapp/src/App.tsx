@@ -73,6 +73,7 @@ const ShopCreationWizardPage = lazy(() => import('@/pages/ShopCreationWizardPage
 const MyShopPage = lazy(() => import('@/pages/MyShopPage'));
 const StoryCreatorPage = lazy(() => import('@/pages/StoryCreatorPage'));
 const GiveawayFeedPage = lazy(() => import('@/pages/GiveawayFeedPage'));
+const SecondHandFeedPage = lazy(() => import('@/pages/SecondHandFeedPage'));
 const CreateGiveawayAdPage = lazy(() => import('@/pages/CreateGiveawayAdPage'));
 const AdEditPage = lazy(() => import('@/pages/AdEditPage'));
 const AdStatsPage = lazy(() => import('@/pages/AdStatsPage'));
@@ -251,6 +252,8 @@ export default function App() {
               <Route path="/farmer-feed" element={<FarmerFeedPage />} />
               <Route path="/category/darom" element={<GiveawayFeedPage />} />
               <Route path="/giveaways" element={<GiveawayFeedPage />} />
+              <Route path="/feed" element={<SecondHandFeedPage />} />
+              <Route path="/second-hand" element={<SecondHandFeedPage />} />
               <Route path="/campaigns" element={<CampaignsListPage />} />
               <Route path="/campaigns/:campaignCode" element={<CampaignPage />} />
               <Route path="/for-you" element={<ForYouFeedPage />} />

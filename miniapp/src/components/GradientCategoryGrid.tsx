@@ -153,8 +153,15 @@ const GradientCategoryGrid = memo(({ userLat, userLng, radiusKm = 30 }: Gradient
     fetchCounts();
   }, [userLat, userLng, radiusKm]);
 
-  const handleCategoryClick = (slug: string) => {
-    navigate(`/category/${slug}`);
+  const handleCategoryClick = (category: CategoryItem) => {
+    // Special handling for categories with custom routes
+    if (category.id === 'second_hand') {
+      navigate('/second-hand');
+    } else if (category.id === 'darom') {
+      navigate('/category/darom');
+    } else {
+      navigate(`/category/${category.slug}`);
+    }
   };
 
   const visibleCategories = CATEGORY_ITEMS.filter(cat => {
@@ -177,7 +184,7 @@ const GradientCategoryGrid = memo(({ userLat, userLng, radiusKm = 30 }: Gradient
       {visibleCategories.map((cat) => (
         <button
           key={cat.id}
-          onClick={() => handleCategoryClick(cat.slug)}
+          onClick={() => handleCategoryClick(cat)}
           style={{
             display: 'flex',
             flexDirection: 'column',

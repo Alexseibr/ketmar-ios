@@ -772,6 +772,168 @@ router.get('/near', async (req, res) => {
 });
 
 /**
+ * GET /api/ads/second-hand
+ * 
+ * Получение б/у товаров (Из рук в руки) для главной страницы
+ * Исключает: giveaway, farmer ads, services, food products
+ * 
+ * @route GET /api/ads/second-hand
+ * @param {number} [lat] - Широта пользователя для geo-поиска
+ * @param {number} [lng] - Долгота пользователя для geo-поиска
+ * @param {number} [radiusKm=30] - Радиус поиска в км
+ * @param {string} [categories] - Фильтр по категориям (через запятую)
+ * @param {number} [limit=20] - Количество результатов
+ * @param {number} [offset=0] - Смещение для пагинации
+ * 
+ * @returns {Object} { items: Ad[], total: number, hasMore: boolean }
+ */
+router.get('/second-hand', async (req, res, next) => {
+  try {
+    const {
+      lat,
+      lng,
+      radiusKm = 30,
+      categories,
+      limit = 20,
+      offset = 0,
+    } = req.query;
+
+    const limitNum = Math.min(Math.max(1, Number(limit) || 20), 100);
+    const offsetNum = Math.max(0, Number(offset) || 0);
+    const radiusNum = Math.max(1, Math.min(Number(radiusKm) || 30, 100));
+
+    // Исключаемые категории (фермеры, услуги, дарение)
+    const EXCLUDED_CATEGORIES = [
+      'farmer-market',
+      'uslugi', 
+      'darom',
+      'services',
+      'rabota',
+    ];
+
+    // Базовый фильтр для б/у товаров
+    const baseFilter = {
+      status: 'active',
+      moderationStatus: 'approved',
+      isFreeGiveaway: { $ne: true },
+      categoryId: { $nin: EXCLUDED_CATEGORIES },
+      price: { $gt: 0 },
+    };
+
+    // Если указаны категории - фильтруем по ним
+    if (categories) {
+      const catArray = categories.split(',').map(c => c.trim()).filter(Boolean);
+      if (catArray.length > 0) {
+        baseFilter.categoryId = { $in: catArray };
+      }
+    }
+
+    const hasGeo = lat && lng && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng));
+
+    let items = [];
+    let total = 0;
+
+    if (hasGeo) {
+      const latNum = Number(lat);
+      const lngNum = Number(lng);
+      const radiusInMeters = radiusNum * 1000;
+
+      // Используем $geoWithin вместо $nearSphere для совместимости с MongoDB Atlas
+      const geoFilter = {
+        ...baseFilter,
+        'location.geo': {
+          $geoWithin: {
+            $centerSphere: [[lngNum, latNum], radiusNum / 6378.1]
+          }
+        }
+      };
+
+      total = await Ad.countDocuments(geoFilter);
+
+      // Агрегация с расчетом расстояния
+      items = await Ad.aggregate([
+        { $match: geoFilter },
+        {
+          $addFields: {
+            distanceKm: {
+              $round: [
+                {
+                  $divide: [
+                    {
+                      $multiply: [
+                        6378.1,
+                        {
+                          $acos: {
+                            $add: [
+                              {
+                                $multiply: [
+                                  { $sin: { $degreesToRadians: latNum } },
+                                  { $sin: { $degreesToRadians: '$location.lat' } }
+                                ]
+                              },
+                              {
+                                $multiply: [
+                                  { $cos: { $degreesToRadians: latNum } },
+                                  { $cos: { $degreesToRadians: '$location.lat' } },
+                                  { $cos: { $subtract: [{ $degreesToRadians: '$location.lng' }, { $degreesToRadians: lngNum }] } }
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    },
+                    1
+                  ]
+                },
+                2
+              ]
+            }
+          }
+        },
+        { $sort: { distanceKm: 1, createdAt: -1 } },
+        { $skip: offsetNum },
+        { $limit: limitNum },
+        {
+          $project: {
+            _id: 1,
+            title: 1,
+            price: 1,
+            currency: 1,
+            photos: 1,
+            location: 1,
+            categoryId: 1,
+            subcategoryId: 1,
+            condition: 1,
+            createdAt: 1,
+            distanceKm: 1,
+          }
+        }
+      ]);
+    } else {
+      // Без гео-координат - сортировка по дате
+      total = await Ad.countDocuments(baseFilter);
+      items = await Ad.find(baseFilter)
+        .select('_id title price currency photos location categoryId subcategoryId condition createdAt')
+        .sort({ createdAt: -1 })
+        .skip(offsetNum)
+        .limit(limitNum)
+        .lean();
+    }
+
+    res.set('Cache-Control', 'private, max-age=30');
+    return res.json({
+      items,
+      total,
+      hasMore: offsetNum + items.length < total,
+    });
+  } catch (error) {
+    console.error('GET /api/ads/second-hand error:', error);
+    next(error);
+  }
+});
+
+/**
  * GET /api/ads/nearby
  * 
  * Geo-поиск объявлений в заданном радиусе от координат пользователя.
