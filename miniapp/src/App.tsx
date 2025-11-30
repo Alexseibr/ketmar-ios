@@ -211,7 +211,7 @@ export default function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public routes */}
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<ErrorBoundary><HomePage /></ErrorBoundary>} />
               <Route path="/auth" element={<AuthScreen />} />
               <Route path="/search" element={<SearchPage />} />
               <Route path="/search/results" element={<SearchResultsPage />} />
