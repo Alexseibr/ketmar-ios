@@ -1,4 +1,10 @@
 import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
+
+declare global {
+  interface Window {
+    __REACT_READY__?: () => void;
+  }
+}
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import AppLayout from '@/components/layout/AppLayout';
@@ -115,6 +121,11 @@ export default function App() {
       
       setIsInitialized(true);
       console.log('✅ App initialization complete');
+      
+      // Hide HTML loading indicator
+      if (typeof window !== 'undefined' && window.__REACT_READY__) {
+        window.__REACT_READY__();
+      }
       
       const runDeferredTasks = () => {
         prefetchCriticalData().catch(console.error);
