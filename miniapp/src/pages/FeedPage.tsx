@@ -38,10 +38,14 @@ interface FeedHeaderProps {
 }
 
 function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: FeedHeaderProps) {
+  const navigate = useNavigate();
+  
   return (
     <header
       style={{
-        background: '#000',
+        background: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         flexShrink: 0,
       }}
     >
@@ -51,16 +55,26 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 16px 8px',
+          padding: '16px 16px 10px',
         }}
       >
         <h1
+          onClick={() => navigate('/')}
+          data-testid="link-home-logo"
           style={{
             margin: 0,
-            fontSize: 22,
+            fontSize: 24,
             fontWeight: 800,
             color: '#fff',
             letterSpacing: '-0.5px',
+            cursor: 'pointer',
+            transition: 'opacity 0.2s ease',
+          }}
+          onTouchStart={(e) => {
+            e.currentTarget.style.opacity = '0.7';
+          }}
+          onTouchEnd={(e) => {
+            e.currentTarget.style.opacity = '1';
           }}
         >
           KETMAR
@@ -69,18 +83,19 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
           onClick={onNotificationsClick}
           data-testid="button-notifications"
           style={{
-            width: 40,
-            height: 40,
+            width: 44,
+            height: 44,
             borderRadius: '50%',
             border: 'none',
-            background: 'rgba(255,255,255,0.15)',
+            background: 'rgba(255,255,255,0.12)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
+            transition: 'background 0.2s ease',
           }}
         >
-          <Bell size={20} color="#fff" />
+          <Bell size={22} color="#fff" />
         </button>
       </div>
       
@@ -89,7 +104,7 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
         style={{
           display: 'flex',
           gap: 8,
-          padding: '8px 16px 12px',
+          padding: '10px 16px 16px',
           overflowX: 'auto',
           scrollbarWidth: 'none',
           msOverflowStyle: 'none',
@@ -107,12 +122,12 @@ function FeedHeader({ onNotificationsClick, activeFilter, onFilterChange }: Feed
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                padding: '8px 14px',
-                borderRadius: 20,
+                padding: '10px 16px',
+                borderRadius: 22,
                 border: 'none',
-                background: isActive ? '#fff' : 'rgba(255,255,255,0.15)',
-                color: isActive ? '#000' : '#fff',
-                fontSize: 13,
+                background: isActive ? '#fff' : 'rgba(255,255,255,0.12)',
+                color: isActive ? '#000' : 'rgba(255,255,255,0.9)',
+                fontSize: 14,
                 fontWeight: 600,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
