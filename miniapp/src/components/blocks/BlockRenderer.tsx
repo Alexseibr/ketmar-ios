@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Gift, Tractor, Wrench, Shovel, Sparkles, Store, Palette, Flame, Search, Heart, Tag, Snowflake, Home, Calendar, ChevronRight, MapPin, Scissors, Hammer, Droplets, Trees, Leaf, Wheat, Star, Package } from 'lucide-react';
+import { Gift, Tractor, Wrench, Shovel, Sparkles, Store, Palette, Flame, Search, Heart, Tag, Snowflake, Home, Calendar, ChevronRight, MapPin, Scissors, Hammer, Droplets, Trees, Leaf, Wheat, Star, Package, HandHeart, Plus } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
 import { getThumbnailUrl, NO_PHOTO_PLACEHOLDER } from '@/constants/placeholders';
@@ -134,17 +134,34 @@ const ICONS: Record<string, typeof Gift> = {
   wheat: Wheat,
   star: Star,
   package: Package,
+  hand: HandHeart,
 };
 
 export function BlockRenderer({ block, zone, uiConfig }: BlockRendererProps) {
   const navigate = useNavigate();
 
   if (!block.items?.length && block.type !== 'banners') {
+    if (block.id === 'second_hand') {
+      return <SecondHandEmptyState zone={zone} onPostClick={() => navigate('/create')} />;
+    }
     return null;
   }
 
   if (block.type === 'banners') {
     return <BannersBlock items={block.items} zone={zone} uiConfig={uiConfig} />;
+  }
+
+  if (block.id === 'second_hand') {
+    return (
+      <SecondHandBlock 
+        block={block} 
+        zone={zone} 
+        uiConfig={uiConfig}
+        onItemClick={(id) => navigate(`/ads/${id}`)}
+        onSeeAllClick={() => block.link && navigate(block.link)}
+        onPostClick={() => navigate('/create')}
+      />
+    );
   }
 
   return (
@@ -698,6 +715,387 @@ function FairCard({
         </div>
       )}
     </div>
+  );
+}
+
+function SecondHandEmptyState({ 
+  zone, 
+  onPostClick 
+}: { 
+  zone: ZoneType; 
+  onPostClick: () => void;
+}) {
+  const styles = ZONE_STYLES[zone];
+  const accentColor = '#F59E0B';
+
+  return (
+    <section style={{ marginBottom: 24, padding: `0 ${styles.sectionPadding}px` }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: styles.headerGap,
+        marginBottom: 16,
+      }}>
+        <div style={{
+          width: zone === 'village' ? 40 : 36,
+          height: zone === 'village' ? 40 : 36,
+          borderRadius: 10,
+          background: `${accentColor}15`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <HandHeart size={styles.iconSize} color={accentColor} />
+        </div>
+        <div>
+          <h3 style={{ 
+            margin: 0, 
+            fontSize: styles.titleSize, 
+            fontWeight: 700, 
+            color: '#1F2937' 
+          }}>
+            Из рук в руки
+          </h3>
+          <p style={{ 
+            margin: '2px 0 0', 
+            fontSize: styles.subtitleSize, 
+            color: '#9CA3AF' 
+          }}>
+            Б/У товары от соседей
+          </p>
+        </div>
+      </div>
+
+      <div style={{
+        background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+        borderRadius: styles.cardBorderRadius,
+        padding: zone === 'village' ? 24 : 20,
+        textAlign: 'center',
+      }}>
+        <div style={{
+          width: 64,
+          height: 64,
+          borderRadius: '50%',
+          background: '#FFF',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 16px',
+          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)',
+        }}>
+          <HandHeart size={32} color={accentColor} />
+        </div>
+        
+        <h4 style={{
+          margin: '0 0 8px',
+          fontSize: zone === 'village' ? 18 : 16,
+          fontWeight: 700,
+          color: '#92400E',
+        }}>
+          Здесь соседи продают ненужное
+        </h4>
+        
+        <p style={{
+          margin: '0 0 20px',
+          fontSize: zone === 'village' ? 15 : 14,
+          color: '#B45309',
+          lineHeight: 1.5,
+        }}>
+          Продай вещи, которые тебе уже не нужны — они ещё послужат кому-то рядом
+        </p>
+
+        <button
+          onClick={onPostClick}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: accentColor,
+            color: '#FFF',
+            border: 'none',
+            borderRadius: 12,
+            padding: styles.buttonPadding,
+            fontSize: zone === 'village' ? 16 : 15,
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+          }}
+          data-testid="button-post-second-hand"
+        >
+          <Plus size={20} />
+          Подать объявление
+        </button>
+
+        <p style={{
+          margin: '16px 0 0',
+          fontSize: 13,
+          color: '#92400E',
+          fontStyle: 'italic',
+        }}>
+          Пусть объявление найдёт того, кому это нужнее 😊
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function SecondHandBlock({ 
+  block, 
+  zone, 
+  uiConfig,
+  onItemClick,
+  onSeeAllClick,
+  onPostClick,
+}: { 
+  block: HomeBlock; 
+  zone: ZoneType; 
+  uiConfig: UIConfig;
+  onItemClick: (id: string) => void;
+  onSeeAllClick: () => void;
+  onPostClick: () => void;
+}) {
+  const user = useUserStore((state) => state.user);
+  const styles = ZONE_STYLES[zone];
+  const accentColor = block.accentColor || '#F59E0B';
+  const cardWidth = styles.cardWidth;
+  const cardBorderRadius = styles.cardBorderRadius;
+
+  return (
+    <section style={{ marginBottom: 24 }}>
+      <div style={{
+        padding: `0 ${styles.sectionPadding}px 12px`,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: styles.headerGap }}>
+          <div style={{
+            width: zone === 'village' ? 40 : 36,
+            height: zone === 'village' ? 40 : 36,
+            borderRadius: 10,
+            background: `${accentColor}15`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <HandHeart size={styles.iconSize} color={accentColor} />
+          </div>
+          <div>
+            <h3 style={{ 
+              margin: 0, 
+              fontSize: styles.titleSize, 
+              fontWeight: 700, 
+              color: '#1F2937' 
+            }}>
+              {block.title}
+            </h3>
+            <p style={{ 
+              margin: '2px 0 0', 
+              fontSize: styles.subtitleSize, 
+              color: '#9CA3AF' 
+            }}>
+              {block.subtitle}
+            </p>
+          </div>
+        </div>
+        
+        <button
+          onClick={onSeeAllClick}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: accentColor,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}
+          data-testid="button-see-all-second-hand"
+        >
+          Все
+          <ChevronRight size={16} />
+        </button>
+      </div>
+
+      <Swiper
+        modules={[Autoplay]}
+        spaceBetween={styles.cardGap}
+        slidesPerView="auto"
+        loop={block.items.length >= 3}
+        freeMode={true}
+        style={{ paddingLeft: styles.sectionPadding, paddingRight: styles.sectionPadding }}
+      >
+        {block.items.map((item) => (
+          <SwiperSlide key={item.id} style={{ width: 'auto' }}>
+            <div
+              onClick={() => onItemClick(item.id)}
+              style={{
+                minWidth: cardWidth,
+                maxWidth: cardWidth,
+                cursor: 'pointer',
+                background: '#FFFFFF',
+                borderRadius: cardBorderRadius,
+                overflow: 'hidden',
+                boxShadow: styles.shadowStrength,
+                border: styles.borderStyle,
+              }}
+              data-testid={`card-second-hand-${item.id}`}
+            >
+              <div style={{ 
+                position: 'relative', 
+                paddingTop: '100%',
+                background: '#F3F4F6',
+              }}>
+                <img
+                  src={getThumbnailUrl(item.photo)}
+                  alt={item.title || item.name}
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = NO_PHOTO_PLACEHOLDER;
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                  }}
+                />
+                
+                <div style={{
+                  position: 'absolute',
+                  top: 8,
+                  left: 8,
+                  background: accentColor,
+                  color: '#FFF',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                }}>
+                  Б/У
+                </div>
+
+                {user?.telegramId && (
+                  <div style={{ position: 'absolute', top: 8, right: 8 }}>
+                    <FavoriteButton adId={item.id} size="sm" />
+                  </div>
+                )}
+
+                {item.distance != null && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 8,
+                    left: 8,
+                    background: 'rgba(0,0,0,0.6)',
+                    color: '#FFF',
+                    fontSize: 11,
+                    fontWeight: 500,
+                    padding: '3px 8px',
+                    borderRadius: 10,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}>
+                    <MapPin size={12} />
+                    {item.distance < 1 ? `${Math.round(item.distance * 1000)} м` : `${item.distance.toFixed(1)} км`}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: 12 }}>
+                <div style={{
+                  fontSize: styles.itemTitleSize,
+                  fontWeight: 600,
+                  color: '#111827',
+                  marginBottom: 6,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {item.title || item.name}
+                </div>
+                
+                <div style={{
+                  fontSize: styles.priceSize,
+                  fontWeight: 700,
+                  color: accentColor,
+                }}>
+                  {item.price ? `${item.price.toLocaleString()} ${item.currency || 'BYN'}` : 'Цена по запросу'}
+                </div>
+              </div>
+            </div>
+          </SwiperSlide>
+        ))}
+        
+        <SwiperSlide style={{ width: 'auto' }}>
+          <div
+            onClick={onPostClick}
+            style={{
+              minWidth: cardWidth,
+              maxWidth: cardWidth,
+              height: cardWidth + 80,
+              cursor: 'pointer',
+              background: `${accentColor}10`,
+              borderRadius: cardBorderRadius,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: `2px dashed ${accentColor}40`,
+              padding: 16,
+            }}
+            data-testid="card-post-second-hand"
+          >
+            <div style={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              background: `${accentColor}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 12,
+            }}>
+              <Plus size={28} color={accentColor} />
+            </div>
+            <div style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: accentColor,
+              textAlign: 'center',
+            }}>
+              Продать своё
+            </div>
+            <div style={{
+              fontSize: 12,
+              color: '#9CA3AF',
+              textAlign: 'center',
+              marginTop: 4,
+            }}>
+              Быстро и бесплатно
+            </div>
+          </div>
+        </SwiperSlide>
+      </Swiper>
+
+      <div style={{
+        padding: `12px ${styles.sectionPadding}px 0`,
+        textAlign: 'center',
+      }}>
+        <p style={{
+          margin: 0,
+          fontSize: 13,
+          color: '#9CA3AF',
+          fontStyle: 'italic',
+        }}>
+          Пусть твоё объявление найдёт того, кому это нужнее 😊
+        </p>
+      </div>
+    </section>
   );
 }
 

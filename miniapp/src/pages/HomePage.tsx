@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Loader2, Search, MapPin, ChevronRight, Gift, Tractor, Flame, Tag, Sparkles, Navigation, Play, Map, Bug, Calendar, ShoppingBag } from 'lucide-react';
+import { Loader2, Search, MapPin, ChevronRight, Gift, Tractor, Flame, Tag, Sparkles, Navigation, Play, Map, Bug, Calendar, ShoppingBag, HandHeart, Plus } from 'lucide-react';
 import GeoOnboarding from '@/components/GeoOnboarding';
 import LocationSettingsModal from '@/components/LocationSettingsModal';
 import { useGeo, getLocationDisplayText } from '@/utils/geo';
@@ -91,11 +91,13 @@ const SECTION_ICONS: Record<string, typeof Flame> = {
   tractor: Tractor,
   tag: Tag,
   sparkles: Sparkles,
+  hand: HandHeart,
 };
 
 const DEBUG_ZONE_BLOCKS: Record<ZoneType, string[]> = {
   village: [
     'darom',
+    'second_hand',
     'farmer_goods',
     'garden_help',
     'machinery_spare',
@@ -103,6 +105,7 @@ const DEBUG_ZONE_BLOCKS: Record<ZoneType, string[]> = {
   ],
   suburb: [
     'darom',
+    'second_hand',
     'village_offers',
     'lawn_mowing',
     'repair_house',
@@ -111,8 +114,8 @@ const DEBUG_ZONE_BLOCKS: Record<ZoneType, string[]> = {
   ],
   city_center: [
     'darom',
+    'second_hand',
     'trending',
-    'services',
     'author_brands',
     'beauty',
     'handmade',
@@ -152,6 +155,7 @@ const ZONE_LABELS: Record<ZoneType, string> = {
 
 const BLOCK_CONFIG: Record<string, { title: string; subtitle: string; icon: string; accentColor: string; link?: string }> = {
   darom: { title: 'Даром', subtitle: 'Бесплатные вещи рядом', icon: 'gift', accentColor: '#EC4899', link: '/category/darom' },
+  second_hand: { title: 'Из рук в руки', subtitle: 'Б/У товары от соседей', icon: 'hand', accentColor: '#F59E0B', link: '/feed?type=second_hand' },
   farmer_goods: { title: 'Фермерские товары', subtitle: 'Свежие продукты от фермеров', icon: 'tractor', accentColor: '#059669', link: '/category/farmer-market' },
   garden_help: { title: 'Помощь в огороде', subtitle: 'Услуги для дачи и сада', icon: 'shovel', accentColor: '#16A34A', link: '/category/uslugi' },
   machinery_spare: { title: 'Запчасти', subtitle: 'Для сельхозтехники', icon: 'wrench', accentColor: '#D97706', link: '/category/selhoztekhnika' },
