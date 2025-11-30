@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation } from 'wouter';
 import { Loader2, Search, MapPin, ChevronRight, Gift, Tractor, Flame, Tag, Sparkles, Navigation, Play, Map, Bug } from 'lucide-react';
 import GeoOnboarding from '@/components/GeoOnboarding';
 import LocationSettingsModal from '@/components/LocationSettingsModal';
@@ -162,8 +162,17 @@ function getBlockLink(blockId: string): string | undefined {
 }
 
 export default function HomePage() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [, setLocation] = useLocation();
+  const navigate = useCallback((path: string) => setLocation(path), [setLocation]);
+  
+  // Parse search params from URL
+  const searchParams = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search);
+    }
+    return new URLSearchParams();
+  }, []);
+  
   const user = useUserStore((state) => state.user);
   const { 
     coords, 
