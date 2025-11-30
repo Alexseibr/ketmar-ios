@@ -76,6 +76,10 @@ const GiveawayFeedPage = lazy(() => import('@/pages/GiveawayFeedPage'));
 const CreateGiveawayAdPage = lazy(() => import('@/pages/CreateGiveawayAdPage'));
 const AdEditPage = lazy(() => import('@/pages/AdEditPage'));
 const AdStatsPage = lazy(() => import('@/pages/AdStatsPage'));
+const ServicesWorkersPage = lazy(() => import('@/pages/ServicesWorkersPage'));
+const WorkerProfilePage = lazy(() => import('@/pages/WorkerProfilePage'));
+const CreateWorkerOrderPage = lazy(() => import('@/pages/CreateWorkerOrderPage'));
+const WorkerOrderDetailPage = lazy(() => import('@/pages/WorkerOrderDetailPage'));
 
 export default function App() {
   const location = useLocation();
@@ -253,6 +257,12 @@ export default function App() {
               <Route path="/neon-demo" element={<NeonDemoPage />} />
               <Route path="/local-demand" element={<LocalDemandPage />} />
               <Route path="/job-seekers" element={<JobSeekersPage />} />
+              
+              {/* Services & Workers */}
+              <Route path="/services-workers" element={<ServicesWorkersPage />} />
+              <Route path="/services-workers/worker/:id" element={<WorkerProfilePage />} />
+              <Route path="/services-workers/order/:id" element={<WorkerOrderDetailPage />} />
+              <Route path="/services-workers/create-order" element={<CreateWorkerOrderPage />} />
 
               {/* Private routes - require authentication */}
               <Route path="/create" element={

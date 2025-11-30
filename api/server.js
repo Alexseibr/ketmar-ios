@@ -59,6 +59,9 @@ import homeConfigRoutes from './routes/home-config.js';
 import socialTrafficRoutes from './routes/social-traffic.js';
 import localDemandRoutes from './routes/local-demand.js';
 import jobSeekersRoutes from './routes/job-seekers.js';
+import workersRoutes from './routes/workers.js';
+import workerOrdersRoutes from './routes/worker-orders.js';
+import workerResponsesRoutes from './routes/worker-responses.js';
 import { registerMobileApi } from './mobile/index.js';
 
 const app = express();
@@ -169,6 +172,9 @@ app.use('/api/home/config', homeConfigRoutes);
 app.use('/api/social-traffic', socialTrafficRoutes);
 app.use('/api/local-demand', localDemandRoutes);
 app.use('/api/job-seekers', jobSeekersRoutes);
+app.use('/api/workers', workersRoutes);
+app.use('/api/worker-orders', workerOrdersRoutes);
+app.use('/api/worker-responses', workerResponsesRoutes);
 
 // Mobile API v1 (for native apps)
 registerMobileApi(app);

@@ -760,6 +760,58 @@ export default function HomePage() {
         </section>
         )}
 
+        {/* Services & Workers Banner */}
+        {!loading && (
+          <section style={{ padding: '0 16px 20px' }}>
+            <button
+              onClick={() => navigate('/services-workers')}
+              data-testid="button-services-workers"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                padding: '16px 20px',
+                background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)',
+                border: 'none',
+                borderRadius: 16,
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(79, 70, 229, 0.35)',
+              }}
+            >
+              <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 14,
+                background: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+              }}>
+                🔧
+              </div>
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: '#fff',
+                  marginBottom: 2,
+                }}>
+                  Услуги и Мастера
+                </div>
+                <div style={{
+                  fontSize: 13,
+                  color: 'rgba(255, 255, 255, 0.8)',
+                }}>
+                  Найти мастера • Создать заказ
+                </div>
+              </div>
+              <ChevronRight size={24} color="rgba(255, 255, 255, 0.8)" />
+            </button>
+          </section>
+        )}
+
         {/* Promo Banners Carousel */}
         {!loading && bannersBlock && bannersBlock.items.length > 0 && (
           <section style={{ padding: '0 16px 20px' }}>
