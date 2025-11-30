@@ -802,13 +802,23 @@ router.get('/second-hand', async (req, res, next) => {
     const offsetNum = Math.max(0, Number(offset) || 0);
     const radiusNum = Math.max(1, Math.min(Number(radiusKm) || 30, 100));
 
-    // Исключаемые категории (фермеры, услуги, дарение)
+    // Исключаемые категории (фермеры, услуги, дарение, работа)
     const EXCLUDED_CATEGORIES = [
       'farmer-market',
       'uslugi', 
       'darom',
       'services',
       'rabota',
+      'sad-ogorod',
+      'landscaping',
+      'remont',
+      'stroitelstvo',
+    ];
+    
+    // Ключевые слова услуг в названии/категории
+    const SERVICE_KEYWORDS = [
+      'посадка', 'уборка', 'ремонт', 'установка', 'монтаж',
+      'доставка', 'перевозк', 'услуг', 'работ', 'обслуживан',
     ];
 
     // Базовый фильтр для б/у товаров
@@ -816,6 +826,8 @@ router.get('/second-hand', async (req, res, next) => {
       status: 'active',
       moderationStatus: 'approved',
       isFreeGiveaway: { $ne: true },
+      isService: { $ne: true },
+      isFarmerAd: { $ne: true },
       categoryId: { $nin: EXCLUDED_CATEGORIES },
       price: { $gt: 0 },
     };
@@ -909,6 +921,7 @@ router.get('/second-hand', async (req, res, next) => {
             distanceKm: 1,
             isFarmerAd: 1,
             isFreeGiveaway: 1,
+            isService: 1,
           }
         }
       ]);
@@ -916,7 +929,7 @@ router.get('/second-hand', async (req, res, next) => {
       // Без гео-координат - сортировка по дате
       total = await Ad.countDocuments(baseFilter);
       items = await Ad.find(baseFilter)
-        .select('_id title price currency photos location categoryId subcategoryId condition createdAt isFarmerAd isFreeGiveaway')
+        .select('_id title price currency photos location categoryId subcategoryId condition createdAt isFarmerAd isFreeGiveaway isService')
         .sort({ createdAt: -1 })
         .skip(offsetNum)
         .limit(limitNum)

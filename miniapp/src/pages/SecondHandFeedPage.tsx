@@ -13,6 +13,7 @@ interface SecondHandAd extends AdPreview {
   distanceKm?: number;
   isFarmerAd?: boolean;
   isFreeGiveaway?: boolean;
+  isService?: boolean;
 }
 
 interface SecondHandResponse {

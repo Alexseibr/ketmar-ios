@@ -3,7 +3,7 @@
  * Определяет тип бейджа на основе данных объявления
  */
 
-export type BadgeType = 'farmer' | 'garden' | 'secondhand' | 'free';
+export type BadgeType = 'farmer' | 'garden' | 'secondhand' | 'free' | 'service';
 
 export interface BadgeConfig {
   text: string;
@@ -14,7 +14,6 @@ export interface BadgeConfig {
 
 // Категории продуктов из огорода (от физлиц)
 const GARDEN_CATEGORIES = [
-  'sad-ogorod',
   'ogorod', 
   'fruits',
   'vegetables',
@@ -39,6 +38,27 @@ const FARMER_CATEGORIES = [
   'farmer-potato',
 ];
 
+// Категории услуг
+const SERVICE_CATEGORIES = [
+  'uslugi',
+  'services',
+  'rabota',
+  'remont',
+  'stroitelstvo',
+  'landscaping',
+  'sad-ogorod',
+  'uborka',
+  'gruzoperevozki',
+  'dostavka',
+];
+
+// Ключевые слова услуг в названии
+const SERVICE_KEYWORDS = [
+  'посадка', 'уборка', 'ремонт', 'установка', 'монтаж',
+  'доставка', 'перевозк', 'услуг', 'работ', 'обслуживан',
+  'укладка', 'покраска', 'чистка', 'стрижка',
+];
+
 export const BADGE_CONFIGS: Record<BadgeType, BadgeConfig> = {
   farmer: { 
     text: 'Фермер', 
@@ -60,12 +80,19 @@ export const BADGE_CONFIGS: Record<BadgeType, BadgeConfig> = {
     background: '#EC4899', 
     color: '#FFFFFF',
   },
+  service: { 
+    text: 'Услуга', 
+    background: '#6366F1', 
+    color: '#FFFFFF',
+  },
 };
 
 interface AdForBadge {
   price?: number;
+  title?: string;
   isFreeGiveaway?: boolean;
   isFarmerAd?: boolean;
+  isService?: boolean;
   categoryId?: string;
   subcategoryId?: string;
   sellerId?: string;
@@ -83,14 +110,29 @@ export function getBadgeType(ad: AdForBadge): BadgeType {
     return 'free';
   }
   
-  // 2. От профессионального фермера (есть профиль или флаг)
+  // 2. Услуга (по флагу, категории или ключевым словам)
+  if (ad.isService) {
+    return 'service';
+  }
+  
+  const category = ad.categoryId?.toLowerCase() || '';
+  const subcategory = ad.subcategoryId?.toLowerCase() || '';
+  const title = ad.title?.toLowerCase() || '';
+  
+  // Проверка по категории услуг
+  if (SERVICE_CATEGORIES.some(sc => category.includes(sc) || subcategory.includes(sc))) {
+    return 'service';
+  }
+  
+  // Проверка по ключевым словам в названии
+  if (SERVICE_KEYWORDS.some(kw => title.includes(kw))) {
+    return 'service';
+  }
+  
+  // 3. От профессионального фермера (есть профиль или флаг)
   if (ad.isFarmerAd) {
     return 'farmer';
   }
-  
-  // 3. Проверяем категорию
-  const category = ad.categoryId?.toLowerCase() || '';
-  const subcategory = ad.subcategoryId?.toLowerCase() || '';
   
   // Категории фермерского рынка → Фермер
   if (FARMER_CATEGORIES.some(fc => category.includes(fc) || subcategory.includes(fc))) {
