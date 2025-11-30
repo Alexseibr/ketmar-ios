@@ -24,6 +24,17 @@ import ScreenLayout from '@/components/layout/ScreenLayout';
 import { useFormatPrice } from '@/hooks/useFormatPrice';
 import RatingModal from '@/components/RatingModal';
 
+interface RecommendationItem {
+  id: string;
+  title: string;
+  price: number;
+  currency: string;
+  photo: string | null;
+  distance: number | null;
+  distanceKm: number | null;
+  isFree: boolean;
+}
+
 export default function AdPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -37,9 +48,9 @@ export default function AdPage() {
   const [startingChat, setStartingChat] = useState(false);
   const [fullscreenGallery, setFullscreenGallery] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
-  const [similarAds, setSimilarAds] = useState<AdPreview[]>([]);
+  const [similarAds, setSimilarAds] = useState<RecommendationItem[]>([]);
   const [loadingSimilar, setLoadingSimilar] = useState(false);
-  const [alsoViewedAds, setAlsoViewedAds] = useState<AdPreview[]>([]);
+  const [alsoViewedAds, setAlsoViewedAds] = useState<RecommendationItem[]>([]);
   const [loadingAlsoViewed, setLoadingAlsoViewed] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [showPhoneActionSheet, setShowPhoneActionSheet] = useState(false);
@@ -690,17 +701,17 @@ export default function AdPage() {
                   scrollSnapType: 'x mandatory',
                   WebkitOverflowScrolling: 'touch',
                 }}>
-                  {similarAds.map((similarAd) => (
+                  {similarAds.map((item) => (
                     <div
-                      key={similarAd._id}
-                      onClick={() => navigate(`/ads/${similarAd._id}`)}
+                      key={item.id}
+                      onClick={() => navigate(`/ads/${item.id}`)}
                       style={{ 
                         cursor: 'pointer',
                         flexShrink: 0,
                         width: 160,
                         scrollSnapAlign: 'start',
                       }}
-                      data-testid={`similar-ad-${similarAd._id}`}
+                      data-testid={`similar-ad-${item.id}`}
                     >
                       <div style={{
                         background: '#fff',
@@ -716,10 +727,10 @@ export default function AdPage() {
                           position: 'relative',
                           overflow: 'hidden',
                         }}>
-                          {similarAd.photos && similarAd.photos.length > 0 ? (
+                          {item.photo ? (
                             <img
-                              src={getThumbnailUrl(similarAd.photos[0])}
-                              alt={similarAd.title}
+                              src={getThumbnailUrl(item.photo)}
+                              alt={item.title}
                               loading="lazy"
                               style={{
                                 width: '100%',
@@ -740,7 +751,7 @@ export default function AdPage() {
                               Нет фото
                             </div>
                           )}
-                          {(similarAd as any).distance !== undefined && (
+                          {item.distance !== null && item.distance !== undefined && (
                             <div style={{
                               position: 'absolute',
                               bottom: 6,
@@ -756,7 +767,7 @@ export default function AdPage() {
                               gap: 3,
                             }}>
                               <MapPin size={9} />
-                              {(similarAd as any).distance} км
+                              {item.distance} км
                             </div>
                           )}
                         </div>
@@ -767,7 +778,7 @@ export default function AdPage() {
                             color: '#111827',
                             marginBottom: 4
                           }}>
-                            {formatCard(similarAd.price ?? 0, similarAd.price === 0)}
+                            {formatCard(item.price ?? 0, item.isFree)}
                           </div>
                           <div style={{
                             fontSize: 13,
@@ -777,7 +788,7 @@ export default function AdPage() {
                             whiteSpace: 'nowrap',
                             marginBottom: 4
                           }}>
-                            {similarAd.title}
+                            {item.title}
                           </div>
                         </div>
                       </div>
@@ -805,17 +816,17 @@ export default function AdPage() {
                   scrollSnapType: 'x mandatory',
                   WebkitOverflowScrolling: 'touch',
                 }}>
-                  {alsoViewedAds.map((viewedAd) => (
+                  {alsoViewedAds.map((item) => (
                     <div
-                      key={viewedAd._id}
-                      onClick={() => navigate(`/ads/${viewedAd._id}`)}
+                      key={item.id}
+                      onClick={() => navigate(`/ads/${item.id}`)}
                       style={{ 
                         cursor: 'pointer',
                         flexShrink: 0,
                         width: 160,
                         scrollSnapAlign: 'start',
                       }}
-                      data-testid={`also-viewed-ad-${viewedAd._id}`}
+                      data-testid={`also-viewed-ad-${item.id}`}
                     >
                       <div style={{
                         background: '#fff',
@@ -831,10 +842,10 @@ export default function AdPage() {
                           position: 'relative',
                           overflow: 'hidden',
                         }}>
-                          {viewedAd.photos && viewedAd.photos.length > 0 ? (
+                          {item.photo ? (
                             <img
-                              src={getThumbnailUrl(viewedAd.photos[0])}
-                              alt={viewedAd.title}
+                              src={getThumbnailUrl(item.photo)}
+                              alt={item.title}
                               loading="lazy"
                               style={{
                                 width: '100%',
@@ -855,7 +866,7 @@ export default function AdPage() {
                               Нет фото
                             </div>
                           )}
-                          {(viewedAd as any).distance !== undefined && (
+                          {item.distance !== null && item.distance !== undefined && (
                             <div style={{
                               position: 'absolute',
                               bottom: 6,
@@ -871,7 +882,7 @@ export default function AdPage() {
                               gap: 3,
                             }}>
                               <MapPin size={9} />
-                              {(viewedAd as any).distance} км
+                              {item.distance} км
                             </div>
                           )}
                         </div>
@@ -882,7 +893,7 @@ export default function AdPage() {
                             color: '#111827',
                             marginBottom: 4
                           }}>
-                            {formatCard(viewedAd.price ?? 0, viewedAd.price === 0)}
+                            {formatCard(item.price ?? 0, item.isFree)}
                           </div>
                           <div style={{
                             fontSize: 13,
@@ -892,7 +903,7 @@ export default function AdPage() {
                             whiteSpace: 'nowrap',
                             marginBottom: 4
                           }}>
-                            {viewedAd.title}
+                            {item.title}
                           </div>
                         </div>
                       </div>
