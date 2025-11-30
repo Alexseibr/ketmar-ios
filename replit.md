@@ -111,3 +111,45 @@ Use URL query parameter `?debugZone=village|suburb|city_center` to test zone-spe
 - `api/routes/home-config.js` - API with forceZone support
 - `services/HomeDynamicEngine.js` - Zone classification and block generation
 - `services/GeoZoneClassifier.js` - Geographic zone detection
+
+## Category Grid System
+
+### GradientCategoryGrid Component
+Located at `miniapp/src/components/GradientCategoryGrid.tsx`, displays quick access category icons in a 4-column grid on the home page.
+
+### Always Visible Categories
+- **Фермеры** (farmer-market) - Green gradient, lettuce emoji
+- **Выпечка** (vypechka) - Orange/yellow gradient, baguette emoji
+- **Даром** (darom) - Pink gradient, gift emoji, HOT badge
+- **Из рук в руки** (iz-ruk-v-ruki) - Purple gradient, 3D handshake image
+
+### Dynamic Categories (shown based on ad count)
+- **Услуги** (uslugi) - Indigo gradient, wrench emoji - services category
+- **Техника** (elektronika), **Одежда** (odezhda), **Для дома** (dlya-doma), **Авто** (avto), etc.
+
+### 3D Icons
+Category icons can use either emoji or 3D images. Image-based icons are stored in `attached_assets/generated_images/` and imported in the component.
+
+## Local Demand Feature
+
+### Overview
+Shows what people are searching for in the user's area, helping sellers create relevant ads.
+
+### Components
+- **Banner Card** on HomePage - "В вашем районе ищут" with indigo gradient
+- **LocalDemandPage** (/local-demand) - Full list with radius selector and clickable chips
+- **API** /api/local-demand - Returns filtered search queries with progressive radius expansion
+
+### Stop-Words Filtering
+Comprehensive STOP_WORDS array filters:
+- Profanity and offensive content
+- Drugs and prohibited substances
+- Weapons and violence
+- Adult content
+- Stolen/counterfeit goods
+- Service-related terms (электрик, сантехник, ремонт, услуги, etc.)
+
+### Key Files
+- `api/routes/local-demand.js` - API endpoint with filtering
+- `miniapp/src/pages/LocalDemandPage.tsx` - Full demand list page
+- `services/HomeDynamicEngine.js` - Banner card configuration

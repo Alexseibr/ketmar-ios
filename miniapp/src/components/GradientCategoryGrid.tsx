@@ -1,12 +1,14 @@
 import { useState, useEffect, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import http from '@/api/http';
+import handshakeIcon from '@assets/generated_images/3d_handshake_icon_purple_background.png';
 
 interface CategoryItem {
   id: string;
   slug: string;
   name: string;
-  emoji: string;
+  emoji?: string;
+  image?: string;
   gradient: [string, string];
   isHot?: boolean;
   alwaysShow?: boolean;
@@ -67,12 +69,19 @@ const CATEGORY_ITEMS: CategoryItem[] = [
     gradient: ['#F87171', '#EF4444'],
   },
   { 
+    id: 'second_hand', 
+    slug: 'iz-ruk-v-ruki', 
+    name: 'Из рук в руки', 
+    image: handshakeIcon,
+    gradient: ['#A78BFA', '#8B5CF6'],
+    alwaysShow: true,
+  },
+  { 
     id: 'services', 
     slug: 'uslugi', 
     name: 'Услуги', 
     emoji: '🔧',
-    gradient: ['#A78BFA', '#8B5CF6'],
-    alwaysShow: true,
+    gradient: ['#818CF8', '#6366F1'],
   },
   { 
     id: 'hobby', 
@@ -222,13 +231,26 @@ const GradientCategoryGrid = memo(({ userLat, userLng, radiusKm = 30 }: Gradient
                 HOT
               </span>
             )}
-            <span style={{
-              fontSize: 36,
-              lineHeight: 1,
-              filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
-            }}>
-              {cat.emoji}
-            </span>
+            {cat.image ? (
+              <img 
+                src={cat.image} 
+                alt={cat.name}
+                style={{
+                  width: '70%',
+                  height: '70%',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
+                }}
+              />
+            ) : (
+              <span style={{
+                fontSize: 36,
+                lineHeight: 1,
+                filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))',
+              }}>
+                {cat.emoji}
+              </span>
+            )}
           </div>
           <span style={{
             marginTop: 8,
