@@ -1190,7 +1190,7 @@ function Step2Photos({
               onDragEnd={handleDragEnd}
               style={{ 
                 position: 'relative', 
-                height: 120,
+                aspectRatio: '3 / 4',
                 background: isEmptySlot ? '#F3F4F6' : 'transparent', 
                 borderRadius: 10, 
                 overflow: 'hidden', 
@@ -1330,11 +1330,22 @@ function Step2Photos({
                     border: 'none', 
                     cursor: (!canAddMore || isAnyUploading) ? 'not-allowed' : 'pointer', 
                     opacity: (!canAddMore || isAnyUploading) ? 0.5 : 1,
+                    gap: 6,
                   }}
                   data-testid={`button-add-photo-${idx}`}
                 >
-                  <Camera size={28} color="#9CA3AF" />
-                  <span style={{ fontSize: 13, color: '#9CA3AF', marginTop: 6 }}>Добавить</span>
+                  <div style={{
+                    width: 40,
+                    height: 56,
+                    border: '2px dashed #C0C7D0',
+                    borderRadius: 6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    <Camera size={20} color="#9CA3AF" />
+                  </div>
+                  <span style={{ fontSize: 12, color: '#9CA3AF' }}>Добавить</span>
                 </button>
               )}
             </div>
@@ -1379,8 +1390,51 @@ function Step2Photos({
         </div>
       )}
 
-      <div style={{ marginTop: 12, padding: 10, background: '#EBF3FF', borderRadius: 8, fontSize: 13, color: '#1E40AF' }}>
-        Качественные фотографии помогают быстрее продать товар
+      <div style={{ 
+        marginTop: 12, 
+        padding: 12, 
+        background: 'linear-gradient(135deg, #EBF3FF 0%, #F0F7FF 100%)', 
+        borderRadius: 10, 
+        border: '1px solid rgba(43, 92, 255, 0.15)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ 
+            width: 36, 
+            height: 52, 
+            background: '#fff', 
+            borderRadius: 6, 
+            border: '2px solid ' + BRAND_BLUE,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            position: 'relative',
+          }}>
+            <Camera size={14} color={BRAND_BLUE} />
+            <div style={{
+              position: 'absolute',
+              bottom: -2,
+              right: -2,
+              width: 12,
+              height: 12,
+              background: '#10B981',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Check size={8} color="#fff" />
+            </div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#1E40AF', marginBottom: 2 }}>
+              Вертикальные фото — лучший выбор
+            </div>
+            <div style={{ fontSize: 12, color: '#3B82F6', lineHeight: 1.4 }}>
+              Снимайте товар вертикально — так он займёт больше места на экране и привлечёт больше внимания
+            </div>
+          </div>
+        </div>
       </div>
 
       <div style={{ marginTop: 10, padding: 10, background: '#F3F4F6', borderRadius: 8, fontSize: 12, color: '#6B7280', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
