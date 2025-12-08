@@ -93,3 +93,5 @@ $RECYCLE.BIN/
 attached_assets/generated_images.tar.gz
 ketmar-deploy.tar.gz
 *.tar.gz
+.github/workflows/
+*.MP4
