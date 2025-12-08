@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, staging]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install root dependencies
+        run: npm ci
+      
+      - name: Install miniapp dependencies  
+        run: cd miniapp && npm ci
+      
+      - name: Lint root (baseline check)
+        id: lint-root
+        shell: bash
+        run: |
+          echo "### Root Lint Results" >> $GITHUB_STEP_SUMMARY
+          
+          # Run ESLint and capture output
+          npx eslint . --ext .js,.ts,.tsx \
+            --ignore-pattern 'node_modules/**' \
+            --ignore-pattern 'dist/**' \
+            --ignore-pattern 'miniapp/**' \
+            --format stylish 2>&1 | tee lint-root.log || true
+          
+          # Count errors (lines containing "error")
+          ERROR_COUNT=$(grep -c " error " lint-root.log 2>/dev/null || echo "0")
+          
+          # Baseline from .eslint-baseline or default high value
+          BASELINE=100
+          if [ -f .eslint-baseline ]; then
+            BASELINE=$(grep "ROOT_ERRORS" .eslint-baseline | cut -d= -f2 | tr -d ' ' || echo "100")
+          fi
+          
+          echo "Errors: $ERROR_COUNT (baseline: $BASELINE)" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$ERROR_COUNT" -gt "$BASELINE" ]; then
+            echo "❌ Error count exceeds baseline!" >> $GITHUB_STEP_SUMMARY
+            echo "::error::ESLint errors ($ERROR_COUNT) exceed baseline ($BASELINE)"
+            exit 1
+          else
+            echo "✅ Within baseline" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Lint miniapp (baseline check)
+        id: lint-miniapp
+        shell: bash
+        run: |
+          echo "### MiniApp Lint Results" >> $GITHUB_STEP_SUMMARY
+          
+          cd miniapp
+          npm run lint 2>&1 | tee ../lint-miniapp.log || true
+          
+          # Count errors
+          ERROR_COUNT=$(grep -c " error " ../lint-miniapp.log 2>/dev/null || echo "0")
+          
+          # Baseline
+          BASELINE=50
+          if [ -f ../.eslint-baseline ]; then
+            BASELINE=$(grep "MINIAPP_ERRORS" ../.eslint-baseline | cut -d= -f2 | tr -d ' ' || echo "50")
+          fi
+          
+          echo "Errors: $ERROR_COUNT (baseline: $BASELINE)" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$ERROR_COUNT" -gt "$BASELINE" ]; then
+            echo "❌ Error count exceeds baseline!" >> $GITHUB_STEP_SUMMARY
+            echo "::error::MiniApp ESLint errors ($ERROR_COUNT) exceed baseline ($BASELINE)"
+            exit 1
+          else
+            echo "✅ Within baseline" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload lint reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-reports
+          path: |
+            lint-root.log
+            lint-miniapp.log
+          retention-days: 7
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install root dependencies
+        run: npm ci
+      
+      - name: Install miniapp dependencies  
+        run: cd miniapp && npm ci
+      
+      - name: Build root
+        run: npm run build
+      
+      - name: Build miniapp
+        run: cd miniapp && npm run build
+      
+      - name: Build success
+        run: echo "✅ Build completed successfully!" >> $GITHUB_STEP_SUMMARY
