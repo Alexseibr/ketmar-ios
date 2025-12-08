@@ -1,0 +1,43 @@
+~/workspace$ # Удалить workflow файлы из коммита
+git rm -r --cached .github/workflows/
+
+# Добавить в gitignore
+echo ".github/workflows/" >> .gitignore
+
+# Удалить большой видео файл тоже
+git rm --cached "attached_assets/ScreenRecording_12-06-2025_19-25-19_1_1765038444040.MP4"
+echo "*.MP4" >> .gitignore
+
+# Пересоздать коммит
+git add .
+git commit --amend -m "Publish stable working version from Replit to main"
+
+# Пуш снова
+git push -u origin main --force
+rm '.github/workflows/ci.yml'
+rm '.github/workflows/deploy.yml'
+rm '.github/workflows/summary.yml'
+rm 'attached_assets/ScreenRecording_12-06-2025_19-25-19_1_1765038444040.MP4'
+[main a19ebc4] Publish stable working version from Replit to main
+ Author: alexseibr <49338738-alexseibr@users.noreply.replit.com>
+ Date: Mon Dec 8 10:14:21 2025 +0000
+ 6 files changed, 2 insertions(+), 256 deletions(-)
+ delete mode 100644 .github/workflows/ci.yml
+ delete mode 100644 .github/workflows/deploy.yml
+ delete mode 100644 .github/workflows/summary.yml
+ delete mode 100644 attached_assets/ScreenRecording_12-06-2025_19-25-19_1_1765038444040.MP4
+ create mode 100644 attached_assets/image_1765188843280.png
+Enumerating objects: 22, done.
+Counting objects: 100% (22/22), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (16/16), done.
+Writing objects: 100% (17/17), 54.11 MiB | 4.75 MiB/s, done.
+Total 17 (delta 7), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (7/7), completed with 3 local objects.
+remote: warning: See https://gh.io/lfs for more information.
+remote: warning: File attached_assets/ScreenRecording_12-06-2025_19-25-19_1_1765038444040.MP4 is 63.06 MB; this is larger than GitHub's recommended maximum file size of 50.00 MB
+remote: warning: GH001: Large files detected. You may want to try Git Large File Storage - https://git-lfs.github.com.
+To https://github.com/Alexseibr/miniapp.git
+ + 0974c34...a19ebc4 main -> main (forced update)
+branch 'main' set up to track 'origin/main'.
+~/workspace$ 
